@@ -17,8 +17,27 @@ export const JournalEntryModal = ({
   entry,
   onClose,
   onLoadIntoEditor,
+  onDeleteEntry,
 }) => {
   if (!entry) return null;
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Moment',
+      `Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            onDeleteEntry?.(entry.id);
+            onClose();
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal
@@ -62,25 +81,36 @@ export const JournalEntryModal = ({
 
           {/* Modal Footer Actions */}
           <View style={styles.modalFooter}>
-            {onLoadIntoEditor && (
+            {onDeleteEntry && (
               <TouchableOpacity
-                style={styles.editBtn}
-                onPress={() => {
-                  onLoadIntoEditor(entry);
-                  onClose();
-                }}
-                activeOpacity={0.8}
+                style={styles.deleteBtn}
+                onPress={handleDelete}
+                activeOpacity={0.7}
               >
-                <Text style={styles.editBtnText}>Edit in journal</Text>
+                <Text style={styles.deleteBtnText}>Delete</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.doneBtn}
-              onPress={onClose}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.doneBtnText}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.rightActions}>
+              {onLoadIntoEditor && (
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => {
+                    onLoadIntoEditor(entry);
+                    onClose();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.editBtnText}>Edit in journal</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.doneBtn}
+                onPress={onClose}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.doneBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -167,11 +197,26 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 10,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(73, 37, 66, 0.06)',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  deleteBtn: {
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  deleteBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#C0392B',
   },
   editBtn: {
     paddingVertical: 9,

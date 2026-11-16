@@ -1,6 +1,6 @@
 // src/screens/journal/components/JournalArchive.jsx
 // Sidebar card listing saved journal moments with real-time search
-// Matches the Figma design right-column archive widget
+// Clean pill-shaped search bar with no browser outlines, and View All hook
 
 import React, { useState, useMemo } from 'react';
 import {
@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { colors } from '../../../theme/colors';
 
@@ -40,7 +41,7 @@ export const JournalArchive = ({
         </Text>
       </View>
 
-      {/* Search Input */}
+      {/* Search Input — Clean rounded pill with zero boxy outlines */}
       <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FAF5EE',
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
@@ -168,6 +169,9 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: '#2E1E3B',
     paddingVertical: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   clearSearchText: {
     fontSize: 12,

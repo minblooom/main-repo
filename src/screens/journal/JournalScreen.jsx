@@ -25,6 +25,7 @@ import { JournalEditor } from './components/JournalEditor';
 import { JournalArchive } from './components/JournalArchive';
 import { JournalInspirationCard } from './components/JournalInspirationCard';
 import { JournalEntryModal } from './components/JournalEntryModal';
+import { AllEntriesModal } from './components/AllEntriesModal';
 
 const SPARKS = [
   'What is one small thing that felt gentle today?',
@@ -78,7 +79,8 @@ export const JournalScreen = ({ navigation, route }) => {
   const [sparkIndex, setSparkIndex] = useState(0);
   const [isSparkVisible, setIsSparkVisible] = useState(true);
 
-  // Active Draft
+  // Active Draft / Editor State
+  const [editingEntryId, setEditingEntryId] = useState(null);
   const [title, setTitle] = useState('A small, softer moment');
   const [body, setBody] = useState(
     'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.'
@@ -86,9 +88,10 @@ export const JournalScreen = ({ navigation, route }) => {
   const [feeling, setFeeling] = useState('lighter');
   const [draftState, setDraftState] = useState('Unsaved draft');
 
-  // Modal inspection
+  // Modals
   const [selectedEntry, setSelectedEntry] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [singleModalVisible, setSingleModalVisible] = useState(false);
+  const [allEntriesVisible, setAllEntriesVisible] = useState(false);
 
   // Handlers
   const handleNextSpark = () => {
@@ -102,6 +105,14 @@ export const JournalScreen = ({ navigation, route }) => {
       setBody((prev) => (prev ? `${prev}\n\nPrompt: "${promptText}"\n` : `Prompt: "${promptText}"\n`));
     }
     setDraftState('Draft updated');
+  };
+
+  const handleNewEntry = () => {
+    setEditingEntryId(null);
+    setTitle('');
+    setBody('');
+    setFeeling('lighter');
+    setDraftState('Blank reflection');
   };
 
   const handleSaveEntry = () => {
@@ -120,40 +131,72 @@ export const JournalScreen = ({ navigation, route }) => {
     const now = new Date();
     const dayStr = String(now.getDate()).padStart(2, '0');
 
-    const newEntry = {
-      id: `entry-${Date.now()}`,
-      dayNumber: dayStr,
-      badgeBg: feelingInfo.bg,
-      badgeColor: feelingInfo.color,
-      title: title.trim() || 'A quiet thought',
-      feelingLabel: feelingInfo.label,
-      body: body.trim(),
-      dateString: 'TODAY, 16 NOVEMBER',
-    };
+    if (editingEntryId) {
+      // Update existing entry
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === editingEntryId
+            ? {
+                ...e,
+                title: title.trim() || 'A quiet thought',
+                body: body.trim(),
+                feelingLabel: feelingInfo.label,
+                badgeBg: feelingInfo.bg,
+                badgeColor: feelingInfo.color,
+                dateString: `UPDATED, ${dayStr} NOVEMBER`,
+              }
+            : e
+        )
+      );
+      setDraftState('Saved · Just now');
+      Alert.alert('Updated', 'Your changes have been quietly saved to this moment.');
+    } else {
+      // Create new entry
+      const newEntry = {
+        id: `entry-${Date.now()}`,
+        dayNumber: dayStr,
+        badgeBg: feelingInfo.bg,
+        badgeColor: feelingInfo.color,
+        title: title.trim() || 'A quiet thought',
+        feelingLabel: feelingInfo.label,
+        body: body.trim(),
+        dateString: `TODAY, ${dayStr} NOVEMBER`,
+      };
+      setEntries((prev) => [newEntry, ...prev]);
+      setDraftState('Saved · Just now');
+      Alert.alert(
+        'Saved in Your Sanctuary',
+        'Your words have been gently tucked into your private journal.'
+      );
+    }
+  };
 
-    setEntries((prev) => [newEntry, ...prev]);
-    setDraftState('Saved · Just now');
-    Alert.alert(
-      'Saved in Your Sanctuary',
-      'Your words have been gently tucked into your private journal.'
-    );
+  const handleDeleteEntry = (id) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+    if (editingEntryId === id) {
+      handleNewEntry();
+    }
   };
 
   const handleOpenEntry = (entry) => {
     setSelectedEntry(entry);
-    setModalVisible(true);
+    setSingleModalVisible(true);
   };
 
   const handleLoadIntoEditor = (entry) => {
+    setEditingEntryId(entry.id);
     setTitle(entry.title || '');
     setBody(entry.body || '');
+    if (entry.feelingLabel?.toLowerCase().includes('heavy')) setFeeling('heavy');
+    else if (entry.feelingLabel?.toLowerCase().includes('between')) setFeeling('between');
+    else setFeeling('lighter');
     setDraftState('Editing saved moment');
   };
 
   const handlePrivacyInfo = () => {
     Alert.alert(
       'Your Private Sanctuary 🔒',
-      'Everything you write stays privately in your sanctuary. Zero tracking, zero ads, zero judgment.'
+      'Everything you write stays privately on this device. Zero tracking, zero ads, zero judgment.'
     );
   };
 
@@ -223,7 +266,7 @@ export const JournalScreen = ({ navigation, route }) => {
 
               {/* 2-Column Responsive Layout */}
               <View style={[styles.columnsRow, isWide && styles.columnsRowWide]}>
-                {/* Left Column: Writing Editor */}
+                {/* Left Column: Clearly Defined Writing Editor */}
                 <View style={styles.editorCol}>
                   <JournalEditor
                     dateString="MONDAY, 16 NOVEMBER"
@@ -246,7 +289,9 @@ export const JournalScreen = ({ navigation, route }) => {
                     onHidePrompt={() => setIsSparkVisible(false)}
                     onShowPrompt={() => setIsSparkVisible(true)}
                     onSave={handleSaveEntry}
+                    onNewEntry={handleNewEntry}
                     draftState={draftState}
+                    isEditingExisting={Boolean(editingEntryId)}
                   />
 
                   {/* Gentle Footer Tagline */}
@@ -266,7 +311,7 @@ export const JournalScreen = ({ navigation, route }) => {
                   <JournalArchive
                     entries={entries}
                     onSelectEntry={handleOpenEntry}
-                    onViewAll={() => Alert.alert('All Entries', `You have ${entries.length} saved moments in your journal.`)}
+                    onViewAll={() => setAllEntriesVisible(true)}
                   />
 
                   <JournalInspirationCard />
@@ -286,12 +331,22 @@ export const JournalScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* Entry Inspection Modal */}
+      {/* Single Entry Detail Modal */}
       <JournalEntryModal
-        visible={modalVisible}
+        visible={singleModalVisible}
         entry={selectedEntry}
-        onClose={() => setModalVisible(false)}
+        onClose={() => setSingleModalVisible(false)}
         onLoadIntoEditor={handleLoadIntoEditor}
+        onDeleteEntry={handleDeleteEntry}
+      />
+
+      {/* "View All" Complete Journal History Modal */}
+      <AllEntriesModal
+        visible={allEntriesVisible}
+        entries={entries}
+        onClose={() => setAllEntriesVisible(false)}
+        onSelectEntry={handleLoadIntoEditor}
+        onDeleteEntry={handleDeleteEntry}
       />
     </SafeAreaView>
   );
