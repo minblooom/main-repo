@@ -1,0 +1,175 @@
+// src/screens/journal/components/JournalHeader.jsx
+// Top sanctuary navigation bar for the Journal screen with breadcrumb, weather, and privacy toggle
+
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { colors } from '../../../theme/colors';
+import { COMPANION_MAP } from '../../../constants/companions';
+
+export const JournalHeader = ({
+  companionId = 'noodle',
+  onPrivacyPress,
+  onProfilePress,
+  onHomePress,
+}) => {
+  const [language, setLanguage] = useState('EN');
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+
+  const handleNotifications = () => {
+    Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
+  };
+
+  const handlePrivacy = () => {
+    if (onPrivacyPress) {
+      onPrivacyPress();
+      return;
+    }
+    Alert.alert(
+      'Journal Privacy & Security 🔒',
+      'Your reflections are saved locally and privately on this device. They are never sold, analyzed, or shared with third parties.'
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Breadcrumb / Location Indicator */}
+      <TouchableOpacity
+        style={styles.breadcrumb}
+        onPress={onHomePress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.breadcrumbText}>
+          <Text style={styles.breadcrumbLink}>My sanctuary</Text>  /  Journal
+        </Text>
+      </TouchableOpacity>
+
+      {/* Auxiliary Controls */}
+      <View style={styles.controlsRow}>
+        {/* Peaceful Weather Pill — Strictly Zero County Names */}
+        <View style={styles.weatherPill}>
+          <Text style={styles.weatherText}>☀️ Warm & Calm · 25°C</Text>
+        </View>
+
+        {/* Language Toggle */}
+        <TouchableOpacity
+          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          style={styles.langBtn}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.langText}>
+            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
+            {' / '}
+            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
+          </Text>
+        </TouchableOpacity>
+
+        {/* Notification Bell */}
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={handleNotifications}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.iconEmoji}>🔔</Text>
+        </TouchableOpacity>
+
+        {/* Profile Companion Avatar */}
+        <TouchableOpacity
+          style={styles.avatarCircle}
+          onPress={onProfilePress}
+          activeOpacity={0.8}
+        >
+          <Image
+            source={companion.image}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  breadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  breadcrumbText: {
+    fontSize: 12,
+    color: '#8B6DA8',
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  breadcrumbLink: {
+    color: colors.brand,
+    fontWeight: '700',
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  weatherPill: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 37, 66, 0.08)',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  weatherText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  langBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  langText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  langActive: {
+    color: colors.textPrimary,
+    fontWeight: '800',
+  },
+  langInactive: {
+    color: colors.textMuted,
+  },
+  iconBtn: {
+    padding: 6,
+  },
+  iconEmoji: {
+    fontSize: 16,
+  },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EAE3F7',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 32,
+    height: 36,
+  },
+});
