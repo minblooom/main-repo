@@ -81,7 +81,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     if (onFinish) {
       onFinish();
     } else if (navigation) {
-      navigation.navigate('Onboarding');
+      navigation.navigate('Signup');
     }
   };
 
