@@ -28,6 +28,7 @@ export const HomeScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
+  const companionId = route?.params?.companion || 'noodle';
   const [activeTab, setActiveTab] = useState('home');
 
   const handleNavigate = (routeId) => {
@@ -35,11 +36,11 @@ export const HomeScreen = ({ navigation, route }) => {
     if (routeId === 'journal') {
       navigation?.navigate?.('Journal');
     } else if (routeId === 'breath') {
-      navigation?.navigate?.('Breath');
+      Alert.alert('Tulia Breath', 'A 2-minute reset. Inhale gently, exhale slowly.');
     } else if (routeId === 'soundscapes') {
-      navigation?.navigate?.('Soundscapes');
+      Alert.alert('Chill & Soundscapes', 'Playing relaxing acoustic melodies and rain on tin roof.');
     } else if (routeId === 'aurora') {
-      Alert.alert('Aurora AI Companion', 'Aurora and Noodle are ready to listen. Start anywhere.');
+      Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza') {
       Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
     } else if (routeId === 'acacia') {
@@ -57,6 +58,7 @@ export const HomeScreen = ({ navigation, route }) => {
           <SidebarNav
             activeRoute={activeTab}
             onNavigate={handleNavigate}
+            companionId={companionId}
           />
         )}
 
@@ -100,6 +102,7 @@ export const HomeScreen = ({ navigation, route }) => {
             <BottomNavBar
               activeRoute={activeTab}
               onNavigate={handleNavigate}
+              companionId={companionId}
             />
           )}
         </View>

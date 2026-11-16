@@ -1,10 +1,11 @@
 // src/components/navigation/SidebarNav.jsx
 // Desktop navigation sidebar matching the Figma sanctuary layout
-// Text-first minimalist navigation (icons paused for clean visual harmony)
+// Text-first minimalist navigation with personalized companion avatar on "My Sanctuary"
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { colors } from '../../theme/colors';
+import { COMPANION_MAP } from '../../constants/companions';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Home' },
@@ -19,7 +20,13 @@ const GROWTH_ITEMS = [
   { id: 'sanctuary', label: 'My Sanctuary' },
 ];
 
-export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
+export const SidebarNav = ({
+  activeRoute = 'home',
+  onNavigate,
+  companionId = 'noodle',
+}) => {
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+
   return (
     <View style={styles.sidebar}>
       {/* Brand Header */}
@@ -52,6 +59,8 @@ export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
         <Text style={styles.sectionHeader}>GROWTH & SPACES</Text>
         {GROWTH_ITEMS.map((item) => {
           const isActive = activeRoute === item.id;
+          const isSanctuary = item.id === 'sanctuary';
+
           return (
             <TouchableOpacity
               key={item.id}
@@ -59,6 +68,15 @@ export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
               onPress={() => onNavigate?.(item.id)}
               activeOpacity={0.8}
             >
+              {isSanctuary && (
+                <View style={styles.mascotIconWrap}>
+                  <Image
+                    source={companion.image}
+                    style={styles.mascotIconImg}
+                    resizeMode="cover"
+                  />
+                </View>
+              )}
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {item.label}
               </Text>
@@ -108,10 +126,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
-    justifyContent: 'center',
   },
   navItemActive: {
     backgroundColor: '#EAE3F7',
@@ -125,6 +145,24 @@ const styles = StyleSheet.create({
   navLabelActive: {
     fontWeight: '800',
     color: colors.textPrimary,
+  },
+  mascotIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    overflow: 'hidden',
+    backgroundColor: '#FAF5EE',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  mascotIconImg: {
+    width: '100%',
+    height: '100%',
   },
   footer: {
     marginTop: 'auto',

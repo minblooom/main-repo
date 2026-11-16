@@ -23,8 +23,6 @@ import { ReadyToBloomScreen }    from '../screens/onboarding/ReadyToBloomScreen'
 // Main App & Sanctuary Destinations
 import { HomeScreen }            from '../screens/home/HomeScreen';
 import { JournalScreen }         from '../screens/journal/JournalScreen';
-import { TuliaBreathScreen }     from '../screens/calm/TuliaBreathScreen';
-import { ChillScreen }           from '../screens/chill/ChillScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,8 +54,6 @@ export const AppNavigator = () => {
         {/* ── Main Sanctuary ────────────────────────── */}
         <Stack.Screen name="Home"            component={HomeScreen} />
         <Stack.Screen name="Journal"         component={JournalScreen} />
-        <Stack.Screen name="Breath"          component={TuliaBreathScreen} />
-        <Stack.Screen name="Soundscapes"     component={ChillScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
