@@ -1,11 +1,12 @@
 // src/screens/onboarding/AgeSelectScreen.jsx
 // "What season are you in?" — Figma screen 06
-// Age group self-selection for content tailoring
+// Direct age input + tailored age brackets for teenagers and twenties
 
 import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -17,20 +18,49 @@ import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
 
 const AGE_GROUPS = [
-  { id: '13-17', label: '13–17', desc: 'Finding you, you.' },
-  { id: '18-24', label: '18–24', desc: 'Campus kinda energy.' },
-  { id: '25-34', label: '25–34', desc: 'Life on your terms.' },
-  { id: '35+',   label: '35+',   desc: 'From here on, your way.' },
+  { id: '13-17', min: 13, max: 17, defaultVal: '16', label: '13–17', desc: 'Finding who you are' },
+  { id: '18-21', min: 18, max: 21, defaultVal: '20', label: '18–21', desc: 'Early campus & independence' },
+  { id: '22-25', min: 22, max: 25, defaultVal: '23', label: '22–25', desc: 'Navigating work, study & change' },
+  { id: '26-29+', min: 26, max: 99, defaultVal: '27', label: '26–29+', desc: 'Building life on your own terms' },
 ];
 
 export const AgeSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [ageGroup, setAgeGroup] = useState('18-24');
+
+  const [typedAge, setTypedAge] = useState('22');
+  const [selectedGroup, setSelectedGroup] = useState('22-25');
+
+  const handleAgeChange = (text) => {
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
+    setTypedAge(cleaned);
+
+    const num = parseInt(cleaned, 10);
+    if (!isNaN(num)) {
+      const match = AGE_GROUPS.find((g) => num >= g.min && num <= g.max);
+      if (match) {
+        setSelectedGroup(match.id);
+      } else if (num >= 26) {
+        setSelectedGroup('26-29+');
+      } else if (num < 13 && num > 0) {
+        setSelectedGroup('13-17');
+      }
+    }
+  };
+
+  const handleSelectGroup = (group) => {
+    setSelectedGroup(group.id);
+    setTypedAge(group.defaultVal);
+  };
 
   const handleContinue = () => {
     if (!navigation) return;
-    navigation.navigate('FocusAreas', { ...(route?.params ?? {}), ageGroup });
+    const finalAge = typedAge || '22';
+    navigation.navigate('FocusAreas', {
+      ...(route?.params ?? {}),
+      age: finalAge,
+      ageGroup: selectedGroup,
+    });
   };
 
   return (
@@ -38,6 +68,7 @@ export const AgeSelectScreen = ({ navigation, route }) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[s.scrollContainer, isWide && s.scrollContainerWide]}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
           <OnboardingHeader navigation={navigation} />
@@ -57,33 +88,53 @@ export const AgeSelectScreen = ({ navigation, route }) => {
               <Text style={s.stepTag}>STEP 4 OF 7 · YOUR SEASON</Text>
               <Text style={s.title}>What season are you in?</Text>
               <Text style={s.subtitle}>
-                Your age helps us suggest relevant support and peer circles. MindBloom is for ages 13 and over.
+                Your age helps us suggest relevant support and peer circles. MindBloom is tailored for youth and twenties.
               </Text>
 
-              {AGE_GROUPS.map((g) => (
-                <TouchableOpacity
-                  key={g.id}
-                  style={[styles.row, ageGroup === g.id && styles.rowSelected]}
-                  onPress={() => setAgeGroup(g.id)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.rowLeft}>
-                    <Text
-                      style={[
-                        styles.rowLabel,
-                        ageGroup === g.id && styles.rowLabelSelected,
-                      ]}
+              {/* Direct Age Input Box */}
+              <View style={styles.inputCard}>
+                <Text style={styles.inputCardLabel}>Your age</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.ageNumberInput}
+                    value={typedAge}
+                    onChangeText={handleAgeChange}
+                    keyboardType="numeric"
+                    maxLength={2}
+                    placeholder="22"
+                    placeholderTextColor="#A799B7"
+                  />
+                  <Text style={styles.yearsSuffix}>years</Text>
+                </View>
+              </View>
+
+              <Text style={styles.orGroupLabel}>Or choose your age group:</Text>
+
+              {/* Age Bracket Options */}
+              <View style={styles.bracketGroup}>
+                {AGE_GROUPS.map((g) => {
+                  const isSelected = selectedGroup === g.id;
+                  return (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={[styles.row, isSelected && styles.rowSelected]}
+                      onPress={() => handleSelectGroup(g)}
+                      activeOpacity={0.85}
                     >
-                      {g.label}
-                    </Text>
-                    <Text style={styles.rowDesc}>{g.desc}</Text>
-                  </View>
-                  {ageGroup === g.id && <Text style={styles.rowCheck}>✓</Text>}
-                </TouchableOpacity>
-              ))}
+                      <View style={styles.rowLeft}>
+                        <Text style={[styles.rowLabel, isSelected && styles.rowLabelSelected]}>
+                          {g.label}
+                        </Text>
+                        <Text style={styles.rowDesc}>{g.desc}</Text>
+                      </View>
+                      {isSelected && <Text style={styles.rowCheck}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               <Text style={styles.hint}>
-                No details needed. Just enough to make this relevant to you.
+                No birthday needed. Just enough to make this relevant to you.
               </Text>
 
               <TouchableOpacity style={s.primaryBtn} onPress={handleContinue} activeOpacity={0.88}>
@@ -98,6 +149,54 @@ export const AgeSelectScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  inputCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputCardLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6E5D87',
+    marginBottom: 4,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  ageNumberInput: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#2E1E46',
+    minWidth: 44,
+    paddingVertical: 0,
+    letterSpacing: -0.5,
+  },
+  yearsSuffix: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#8B6DA8',
+  },
+  orGroupLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6E5D87',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  bracketGroup: {
+    gap: 10,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,7 +220,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowLabel: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#1A1A1A',
   },
