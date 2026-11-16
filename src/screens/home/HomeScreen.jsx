@@ -24,12 +24,13 @@ import { GreetingSection } from './components/GreetingSection';
 import { MoodCheckIn } from './components/MoodCheckIn';
 import { HeroBanners } from './components/HeroBanners';
 import { MomentsSection } from './components/MomentsSection';
+import { JournalContent } from '../journal/JournalScreen';
 
 export const HomeScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(route?.params?.tab || 'home');
   const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
   const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
 
@@ -50,9 +51,10 @@ export const HomeScreen = ({ navigation, route }) => {
   }, [route?.params]);
 
   const handleNavigate = (routeId) => {
-    setActiveTab(routeId);
-    if (routeId === 'journal') {
-      navigation?.navigate?.('Journal');
+    if (routeId === 'home') {
+      setActiveTab('home');
+    } else if (routeId === 'journal') {
+      setActiveTab('journal');
     } else if (routeId === 'breath') {
       Alert.alert('Tulia Breath', 'A 2-minute reset. Inhale gently, exhale slowly.');
     } else if (routeId === 'soundscapes') {
@@ -89,34 +91,44 @@ export const HomeScreen = ({ navigation, route }) => {
               isWide && styles.scrollContainerWide,
             ]}
           >
-            <View style={[styles.contentMaxWrapper, isWide && styles.contentMaxWrapperWide]}>
-              {/* Header with Breadcrumb & Weather */}
-              <HomeHeader
+            {activeTab === 'journal' ? (
+              <JournalContent
                 companionId={companionId}
-                onProfilePress={() => handleNavigate('sanctuary')}
-              />
-
-              {/* Welcoming Greeting */}
-              <GreetingSection userName="soso" />
-
-              {/* Gentle Mood Check-in */}
-              <MoodCheckIn />
-
-              {/* Hero Twin Banners: Aurora & Companion Mascot + Tulia Breath */}
-              <HeroBanners
-                isWide={isWide}
-                companionId={companionId}
-                onAuroraPress={() => handleNavigate('aurora')}
-                onBreathPress={() => handleNavigate('breath')}
-              />
-
-              {/* "A Moment for You" 3 Activities */}
-              <MomentsSection
-                isWide={isWide}
                 userFocusAreas={userFocusAreas}
-                onSelectMoment={(id) => handleNavigate(id)}
+                onNavigateHome={() => setActiveTab('home')}
+                onNavigateSanctuary={() => handleNavigate('sanctuary')}
+                isWide={isWide}
               />
-            </View>
+            ) : (
+              <View style={[styles.contentMaxWrapper, isWide && styles.contentMaxWrapperWide]}>
+                {/* Header with Breadcrumb & Weather */}
+                <HomeHeader
+                  companionId={companionId}
+                  onProfilePress={() => handleNavigate('sanctuary')}
+                />
+
+                {/* Welcoming Greeting */}
+                <GreetingSection userName="soso" />
+
+                {/* Gentle Mood Check-in */}
+                <MoodCheckIn />
+
+                {/* Hero Twin Banners: Aurora & Companion Mascot + Tulia Breath */}
+                <HeroBanners
+                  isWide={isWide}
+                  companionId={companionId}
+                  onAuroraPress={() => handleNavigate('aurora')}
+                  onBreathPress={() => handleNavigate('breath')}
+                />
+
+                {/* "A Moment for You" 3 Activities */}
+                <MomentsSection
+                  isWide={isWide}
+                  userFocusAreas={userFocusAreas}
+                  onSelectMoment={(id) => handleNavigate(id)}
+                />
+              </View>
+            )}
           </ScrollView>
 
           {/* Mobile Bottom Navigation Bar */}

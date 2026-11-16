@@ -2,7 +2,7 @@
 // MindBloom Journal Sanctuary matching the Figma design
 // Full separation of concerns, reactive prompt sparks, live archive search, and entry persistence
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -102,29 +102,13 @@ const INITIAL_ENTRIES = [
   },
 ];
 
-export const JournalScreen = ({ navigation, route }) => {
-  const { isDesktop, isTablet } = useResponsiveLayout();
-  const isWide = isDesktop || isTablet;
-
-  const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
-  const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const saved = await onboardingStorage.getPreferences();
-        if (saved) {
-          if (saved.companion && !route?.params?.companion) {
-            setCompanionId(saved.companion);
-          }
-          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
-            setUserFocusAreas(saved.focusAreas);
-          }
-        }
-      } catch {}
-    })();
-  }, [route?.params]);
-
+export const JournalContent = ({
+  companionId = 'noodle',
+  userFocusAreas = ['anxiety'],
+  onNavigateHome,
+  onNavigateSanctuary,
+  isWide = false,
+}) => {
   const activeSparks = FOCUS_SPARKS[userFocusAreas?.[0]] || FOCUS_SPARKS.default;
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
@@ -254,139 +238,87 @@ export const JournalScreen = ({ navigation, route }) => {
     );
   };
 
-  const handleNavigate = (routeId) => {
-    if (routeId === 'home') {
-      navigation?.navigate?.('Home');
-    } else if (routeId === 'journal') {
-      // already on journal
-    } else if (routeId === 'aurora') {
-      Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
-    } else if (routeId === 'soundscapes') {
-      Alert.alert('Chill & Soundscapes', 'Playing relaxing acoustic melodies and rain on tin roof.');
-    } else if (routeId === 'baraza') {
-      Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
-    } else if (routeId === 'acacia') {
-      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
-    } else if (routeId === 'sanctuary') {
-      Alert.alert('My Sanctuary', 'Your private wellness settings, streaks, and companion preferences.');
-    } else if (routeId === 'help') {
-      Alert.alert('Support & Crisis Resources', 'Need urgent help? Reach out to 1199 (Kenya) or local toll-free mental health support.');
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.rootContainer}>
-        {/* Desktop Sidebar Navigation with Support Cards */}
-        {isWide && (
-          <SidebarNav
-            activeRoute="journal"
-            onNavigate={handleNavigate}
-            companionId={companionId}
-            showSupportCards={true}
-          />
-        )}
+    <>
+      <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
+        {/* Header with Breadcrumbs & Weather (strictly zero county names) */}
+        <JournalHeader
+          companionId={companionId}
+          onPrivacyPress={handlePrivacyInfo}
+          onProfilePress={onNavigateSanctuary}
+          onHomePress={onNavigateHome}
+        />
 
-        {/* Main Content Area */}
-        <View style={styles.mainContent}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.scrollContainer,
-              isWide && styles.scrollContainerWide,
-            ]}
+        {/* Title & Subtitle with Privacy Button */}
+        <View style={styles.titleSection}>
+          <View style={styles.titleCol}>
+            <Text style={styles.pageTitle}>What's on your heart?</Text>
+            <Text style={styles.pageSubtitle}>
+              No word counts. No right answers. Just a moment for you.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.privacyBtn}
+            onPress={handlePrivacyInfo}
+            activeOpacity={0.8}
           >
-            <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
-              {/* Header with Breadcrumbs & Weather (strictly zero county names) */}
-              <JournalHeader
-                companionId={companionId}
-                onPrivacyPress={handlePrivacyInfo}
-                onProfilePress={() => handleNavigate('sanctuary')}
-                onHomePress={() => handleNavigate('home')}
-              />
+            <Text style={styles.privacyBtnText}>Privacy settings 🔒</Text>
+          </TouchableOpacity>
+        </View>
 
-              {/* Title & Subtitle with Privacy Button */}
-              <View style={styles.titleSection}>
-                <View style={styles.titleCol}>
-                  <Text style={styles.pageTitle}>What's on your heart?</Text>
-                  <Text style={styles.pageSubtitle}>
-                    No word counts. No right answers. Just a moment for you.
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.privacyBtn}
-                  onPress={handlePrivacyInfo}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.privacyBtnText}>Privacy settings 🔒</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* 2-Column Responsive Layout */}
-              <View style={[styles.columnsRow, isWide && styles.columnsRowWide]}>
-                {/* Left Column: Clearly Defined Writing Editor */}
-                <View style={styles.editorCol}>
-                  <JournalEditor
-                    dateString="MONDAY, 16 NOVEMBER"
-                    title={title}
-                    onChangeTitle={(t) => {
-                      setTitle(t);
-                      setDraftState('Unsaved draft');
-                    }}
-                    body={body}
-                    onChangeBody={(b) => {
-                      setBody(b);
-                      setDraftState('Unsaved draft');
-                    }}
-                    selectedFeeling={feeling}
-                    onSelectFeeling={setFeeling}
-                    prompt={activeSparks[sparkIndex % activeSparks.length]}
-                    isPromptVisible={isSparkVisible}
-                    onUsePrompt={handleUsePrompt}
-                    onNextPrompt={handleNextSpark}
-                    onHidePrompt={() => setIsSparkVisible(false)}
-                    onShowPrompt={() => setIsSparkVisible(true)}
-                    onSave={handleSaveEntry}
-                    onNewEntry={handleNewEntry}
-                    draftState={draftState}
-                    isEditingExisting={Boolean(editingEntryId)}
-                  />
-
-                  {/* Gentle Footer Tagline */}
-                  <View style={styles.editorFooterRow}>
-                    <Text style={styles.footerWordsPace}>Your words. Your pace.</Text>
-                    <TouchableOpacity
-                      onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.footerHelpline}>Need urgent support?</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Right Column: Archive & Inspiration Card */}
-                <View style={[styles.archiveCol, isWide && styles.archiveColWide]}>
-                  <JournalArchive
-                    entries={entries}
-                    onSelectEntry={handleOpenEntry}
-                    onViewAll={() => setAllEntriesVisible(true)}
-                  />
-
-                  <JournalInspirationCard companionName={companion.name} />
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Mobile Bottom Navigation Bar */}
-          {!isWide && (
-            <BottomNavBar
-              activeRoute="journal"
-              onNavigate={handleNavigate}
-              companionId={companionId}
+        {/* 2-Column Responsive Layout */}
+        <View style={[styles.columnsRow, isWide && styles.columnsRowWide]}>
+          {/* Left Column: Clearly Defined Writing Editor */}
+          <View style={styles.editorCol}>
+            <JournalEditor
+              dateString="MONDAY, 16 NOVEMBER"
+              title={title}
+              onChangeTitle={(t) => {
+                setTitle(t);
+                setDraftState('Unsaved draft');
+              }}
+              body={body}
+              onChangeBody={(b) => {
+                setBody(b);
+                setDraftState('Unsaved draft');
+              }}
+              selectedFeeling={feeling}
+              onSelectFeeling={setFeeling}
+              prompt={activeSparks[sparkIndex % activeSparks.length]}
+              isPromptVisible={isSparkVisible}
+              onUsePrompt={handleUsePrompt}
+              onNextPrompt={handleNextSpark}
+              onHidePrompt={() => setIsSparkVisible(false)}
+              onShowPrompt={() => setIsSparkVisible(true)}
+              onSave={handleSaveEntry}
+              onNewEntry={handleNewEntry}
+              draftState={draftState}
+              isEditingExisting={Boolean(editingEntryId)}
             />
-          )}
+
+            {/* Gentle Footer Tagline */}
+            <View style={styles.editorFooterRow}>
+              <Text style={styles.footerWordsPace}>Your words. Your pace.</Text>
+              <TouchableOpacity
+                onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.footerHelpline}>Need urgent support?</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Right Column: Archive & Inspiration Card */}
+          <View style={[styles.archiveCol, isWide && styles.archiveColWide]}>
+            <JournalArchive
+              entries={entries}
+              onSelectEntry={handleOpenEntry}
+              onViewAll={() => setAllEntriesVisible(true)}
+            />
+
+            <JournalInspirationCard companionName={companion.name} />
+          </View>
         </View>
       </View>
 
@@ -407,6 +339,79 @@ export const JournalScreen = ({ navigation, route }) => {
         onSelectEntry={handleLoadIntoEditor}
         onDeleteEntry={handleDeleteEntry}
       />
+    </>
+  );
+};
+
+export const JournalScreen = ({ navigation, route }) => {
+  const { isDesktop, isTablet } = useResponsiveLayout();
+  const isWide = isDesktop || isTablet;
+
+  const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
+  const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await onboardingStorage.getPreferences();
+        if (saved) {
+          if (saved.companion && !route?.params?.companion) {
+            setCompanionId(saved.companion);
+          }
+          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
+            setUserFocusAreas(saved.focusAreas);
+          }
+        }
+      } catch {}
+    })();
+  }, [route?.params]);
+
+  const handleNavigate = (routeId) => {
+    if (routeId === 'home') {
+      navigation?.navigate?.('Home');
+    } else if (routeId === 'sanctuary') {
+      Alert.alert('My Sanctuary', 'Your private wellness settings, streaks, and companion preferences.');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.rootContainer}>
+        {isWide && (
+          <SidebarNav
+            activeRoute="journal"
+            onNavigate={handleNavigate}
+            companionId={companionId}
+            showSupportCards={true}
+          />
+        )}
+
+        <View style={styles.mainContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.scrollContainer,
+              isWide && styles.scrollContainerWide,
+            ]}
+          >
+            <JournalContent
+              companionId={companionId}
+              userFocusAreas={userFocusAreas}
+              onNavigateHome={() => handleNavigate('home')}
+              onNavigateSanctuary={() => handleNavigate('sanctuary')}
+              isWide={isWide}
+            />
+          </ScrollView>
+
+          {!isWide && (
+            <BottomNavBar
+              activeRoute="journal"
+              onNavigate={handleNavigate}
+              companionId={companionId}
+            />
+          )}
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
