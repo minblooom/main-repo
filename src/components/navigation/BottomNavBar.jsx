@@ -8,11 +8,11 @@ import { colors } from '../../theme/colors';
 import { COMPANION_MAP } from '../../constants/companions';
 
 const BOTTOM_TABS = [
-  { id: 'home', label: 'Home' },
-  { id: 'aurora', label: 'Aurora' },
-  { id: 'journal', label: 'Journal' },
-  { id: 'baraza', label: 'Baraza' },
-  { id: 'sanctuary', label: 'Sanctuary' },
+  { id: 'home',       label: 'Home' },
+  { id: 'journal',    label: 'Journal' },
+  { id: 'aurora',     label: 'Aurora' },
+  { id: 'soundscapes', label: 'Chill' },
+  { id: 'sanctuary',  label: 'Profile' },
 ];
 
 export const BottomNavBar = ({

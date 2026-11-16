@@ -66,7 +66,7 @@ export const HomeScreen = ({ navigation, route }) => {
     } else if (routeId === 'acacia') {
       Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
-      Alert.alert('My Sanctuary', 'Your private wellness settings, streaks, and companion preferences.');
+      Alert.alert('My Profile', 'Your mood palette, comfort settings, growing spaces, and companion. Coming soon.');
     }
   };
 

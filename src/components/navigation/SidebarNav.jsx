@@ -9,16 +9,16 @@ import { colors } from '../../theme/colors';
 import { COMPANION_MAP } from '../../constants/companions';
 
 const NAV_ITEMS = [
-  { id: 'home', label: 'Home' },
-  { id: 'aurora', label: 'Aurora Companion' },
-  { id: 'journal', label: 'Journal' },
+  { id: 'home',        label: 'Home' },
+  { id: 'journal',     label: 'Journal' },
+  { id: 'aurora',      label: 'Aurora AI' },
   { id: 'soundscapes', label: 'Chill & Soundscapes' },
-  { id: 'baraza', label: 'Community Baraza' },
+  { id: 'baraza',      label: 'Community Baraza' },
 ];
 
 const GROWTH_ITEMS = [
-  { id: 'acacia', label: 'The Acacia Tree' },
-  { id: 'sanctuary', label: 'My Sanctuary' },
+  { id: 'acacia',    label: 'The Acacia Tree' },
+  { id: 'sanctuary', label: 'My Profile' },
 ];
 
 export const SidebarNav = ({
