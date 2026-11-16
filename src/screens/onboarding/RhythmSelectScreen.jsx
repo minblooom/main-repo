@@ -16,6 +16,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { colors } from '../../theme/colors';
 
 const RHYTHMS = [
   { id: '2',  mins: '2',  label: 'A tiny reset',         desc: 'For the days that are already a lot.' },
@@ -102,7 +103,7 @@ export const RhythmSelectScreen = ({ navigation, route }) => {
                 <Switch
                   value={nudges}
                   onValueChange={setNudges}
-                  trackColor={{ false: '#DDD', true: '#492542' }}
+                  trackColor={{ false: '#DDD', true: colors.brand }}
                   thumbColor="#fff"
                 />
               </View>
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 16,
     gap: 14,
     borderWidth: 2,
@@ -149,9 +150,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+    marginBottom: 8,
   },
   rowSelected: {
-    borderColor: '#492542',
+    borderColor: colors.brand,
     backgroundColor: '#F0EAFA',
   },
   minsWrap: {
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   minsSelected: {
-    color: '#492542',
+    color: colors.brand,
   },
   minsLabel: {
     fontSize: 8,
@@ -181,16 +183,16 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   rowLabelSelected: {
-    color: '#492542',
+    color: colors.brand,
   },
   rowDesc: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#777',
     marginTop: 2,
   },
   rowCheck: {
     fontSize: 15,
-    color: '#492542',
+    color: colors.brand,
     fontWeight: '800',
   },
   nudgeRow: {
@@ -198,11 +200,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.07)',
+    marginVertical: 4,
   },
   nudgeText: {
     flex: 1,
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   nudgeDesc: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: '#888',
     marginTop: 2,
   },

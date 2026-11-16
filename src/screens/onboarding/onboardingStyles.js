@@ -1,5 +1,5 @@
 // src/screens/onboarding/onboardingStyles.js
-// Shared stylesheet for all onboarding screens
+// Shared stylesheet for all onboarding screens, guaranteeing visual harmony with Signup/Login
 
 import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
@@ -11,11 +11,8 @@ export const onboardingStyles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 48,
-  },
-  scrollContainerWide: {
-    paddingHorizontal: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   pageWrapper: {
     width: '100%',
@@ -29,7 +26,7 @@ export const onboardingStyles = StyleSheet.create({
   },
   mainLayout: {
     flexDirection: 'column',
-    gap: 20,
+    gap: 24,
   },
   mainLayoutWide: {
     flexDirection: 'row',
@@ -38,42 +35,44 @@ export const onboardingStyles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    gap: 12,
+    paddingVertical: 6,
   },
   contentContainerWide: {
-    flex: 1,
+    maxWidth: 520,
+    paddingHorizontal: 10,
   },
   stepTag: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#8B6DA8',
-    letterSpacing: 1,
-    marginBottom: 4,
+    color: colors.textSecondary,
+    letterSpacing: 0.8,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 13.5,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 19,
+    marginBottom: 16,
   },
   primaryBtn: {
     backgroundColor: colors.brand,
     borderRadius: 18,
-    paddingVertical: 15,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: colors.brand,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 10,
-    elevation: 4,
-    marginTop: 8,
+    elevation: 3,
+    marginTop: 10,
   },
   primaryBtnDisabled: {
     backgroundColor: '#C4A8C8',
@@ -88,7 +87,7 @@ export const onboardingStyles = StyleSheet.create({
   },
   skipBtn: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   skipBtnText: {
     fontSize: 12,

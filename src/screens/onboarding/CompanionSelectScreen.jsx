@@ -18,6 +18,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { COMPANIONS } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
+import { colors } from '../../theme/colors';
 
 export const CompanionSelectScreen = ({ navigation, route }) => {
   const { width, isDesktop, isTablet } = useResponsiveLayout();
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardSelected: {
-    borderColor: '#492542',
+    borderColor: colors.brand,
     shadowOpacity: 0.14,
     shadowRadius: 14,
     elevation: 5,
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#492542',
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -251,9 +252,9 @@ const styles = StyleSheet.create({
     borderRadius: 39,
     overflow: 'hidden',
     marginBottom: 10,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: '#FAF5EE',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.8)',
+    borderColor: '#FFFFFF',
   },
   img: {
     width: '100%',
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cardNameSelected: {
-    color: '#492542',
+    color: colors.brand,
   },
   cardTrait: {
     fontSize: 10.5,

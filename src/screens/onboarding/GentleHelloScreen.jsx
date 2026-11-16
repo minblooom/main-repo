@@ -1,6 +1,6 @@
 // src/screens/onboarding/GentleHelloScreen.jsx
 // "Before we bloom..." — Figma screen 03
-// Safety disclaimer + consent before onboarding continues
+// Harmonized layout: cohesive trust card, clean hotline banner, visible CTA
 
 import React, { useState } from 'react';
 import {
@@ -15,13 +15,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
-
-const HOTLINES = [
-  { country: 'Kenya', line: '1199 · Befrienders +254 722 03 07' },
-  { country: 'Tanzania', line: '+255 800 750 075' },
-  { country: 'Ethiopia', line: '199' },
-  { country: 'Rwanda', line: 'Posner ID: +250 788 123 123' },
-];
+import { colors } from '../../theme/colors';
 
 export const GentleHelloScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -61,38 +55,43 @@ export const GentleHelloScreen = ({ navigation }) => {
                 A few things to help this feel like a space you can trust.
               </Text>
 
-              <View style={styles.infoCard}>
-                <Text style={styles.infoTitle}>A little support, not a diagnosis</Text>
-                <Text style={styles.infoBody}>
-                  MindBloom offers wellness tools and community peer support — not clinical advice, therapy or medical treatment.
-                </Text>
-              </View>
-
-              <View style={styles.infoCard}>
-                <Text style={styles.infoTitle}>Your privacy matters</Text>
-                <Text style={styles.infoBody}>
-                  We collect only what is needed to personalise your space. We never sell your personal information — ever, full stop.
-                </Text>
-              </View>
-
-              <View style={styles.infoCard}>
-                <Text style={styles.infoTitle}>For people aged 13 and over</Text>
-                <Text style={styles.infoBody}>
-                  Made for youth, campus students and adults. We'll tailor the experience to your stage of life.
-                </Text>
-              </View>
-
-              <View style={[styles.infoCard, styles.infoCardAccent]}>
-                <Text style={styles.infoTitle}>Need immediate support?</Text>
-                {HOTLINES.map((h) => (
-                  <Text key={h.country} style={styles.hotlineRow}>
-                    <Text style={styles.hotlineCountry}>{h.country} </Text>
-                    <Text style={styles.hotlineLine}>{h.line}</Text>
+              {/* Unified Trust Card */}
+              <View style={styles.trustCard}>
+                <View style={styles.trustItem}>
+                  <Text style={styles.trustTitle}>A little support, not a diagnosis</Text>
+                  <Text style={styles.trustBody}>
+                    MindBloom provides wellness tools and peer support — not clinical advice or medical therapy.
                   </Text>
-                ))}
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.trustItem}>
+                  <Text style={styles.trustTitle}>Your privacy matters</Text>
+                  <Text style={styles.trustBody}>
+                    We only collect what is needed to personalize your space. We never sell your reflections or data.
+                  </Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.trustItem}>
+                  <Text style={styles.trustTitle}>For people aged 13 and over</Text>
+                  <Text style={styles.trustBody}>
+                    Tailored for youth, campus students, and twenties to meet you where you are in life.
+                  </Text>
+                </View>
               </View>
 
-              {/* Consent checkbox */}
+              {/* Concise Helpline Banner */}
+              <View style={styles.hotlineBanner}>
+                <Text style={styles.hotlineTitle}>Need immediate support?</Text>
+                <Text style={styles.hotlineText}>
+                  Kenya Red Cross: <Text style={styles.hotlineBold}>1199</Text> · Befrienders: <Text style={styles.hotlineBold}>+254 722 178 177</Text>
+                </Text>
+              </View>
+
+              {/* Consent Checkbox */}
               <TouchableOpacity
                 style={styles.checkRow}
                 onPress={() => setAgreed(!agreed)}
@@ -108,7 +107,7 @@ export const GentleHelloScreen = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
 
-              {/* CTA */}
+              {/* Action Button */}
               <TouchableOpacity
                 style={[s.primaryBtn, !agreed && s.primaryBtnDisabled]}
                 onPress={handleContinue}
@@ -118,14 +117,10 @@ export const GentleHelloScreen = ({ navigation }) => {
                 <Text style={s.primaryBtnText}>Agree to continue →</Text>
               </TouchableOpacity>
 
-              <View style={styles.termsRow}>
-                <TouchableOpacity>
-                  <Text style={styles.termsLink}>Read Terms of Service</Text>
-                </TouchableOpacity>
-                <Text style={styles.termsSep}> · </Text>
-                <TouchableOpacity>
-                  <Text style={styles.termsLink}>Read Privacy Policy</Text>
-                </TouchableOpacity>
+              <View style={styles.termsFooter}>
+                <Text style={styles.termsText}>
+                  Read Terms of Service · Read Privacy Policy
+                </Text>
               </View>
             </View>
           </View>
@@ -136,89 +131,102 @@ export const GentleHelloScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  infoCard: {
+  trustCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    gap: 4,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 10,
   },
-  infoCardAccent: {
-    backgroundColor: '#F3EFFD',
-    borderColor: '#DFD5F0',
+  trustItem: {
+    gap: 3,
   },
-  infoTitle: {
+  trustTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: colors.textPrimary,
   },
-  infoBody: {
+  trustBody: {
     fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  hotlineBanner: {
+    backgroundColor: '#F3EFFD',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#DFD5F0',
+    marginTop: 2,
+  },
+  hotlineTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: colors.brand,
+    marginBottom: 2,
+  },
+  hotlineText: {
+    fontSize: 11,
     color: '#555',
-    lineHeight: 17,
   },
-  hotlineRow: {
-    marginTop: 4,
-  },
-  hotlineCountry: {
-    fontSize: 12,
+  hotlineBold: {
     fontWeight: '700',
-    color: '#492542',
-  },
-  hotlineLine: {
-    fontSize: 12,
-    color: '#555',
+    color: colors.textPrimary,
   },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    marginTop: 2,
   },
   checkbox: {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#492542',
+    borderColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
   },
   checkboxChecked: {
-    backgroundColor: '#492542',
+    backgroundColor: colors.brand,
   },
   checkmark: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   checkLabel: {
     flex: 1,
-    fontSize: 12.5,
-    color: '#444',
-    lineHeight: 18,
+    fontSize: 12,
+    color: '#555',
+    lineHeight: 17,
   },
   link: {
-    color: '#492542',
+    color: colors.brand,
     textDecorationLine: 'underline',
     fontWeight: '700',
   },
-  termsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  termsFooter: {
     alignItems: 'center',
-    paddingTop: 4,
+    paddingTop: 8,
   },
-  termsLink: {
-    fontSize: 11,
-    color: '#8B6DA8',
-    textDecorationLine: 'underline',
-  },
-  termsSep: {
-    fontSize: 11,
+  termsText: {
+    fontSize: 10.5,
     color: '#AAA',
   },
 });

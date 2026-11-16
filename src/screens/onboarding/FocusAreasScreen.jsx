@@ -1,7 +1,6 @@
 // src/screens/onboarding/FocusAreasScreen.jsx
 // "What needs a little room?" — Figma screen 07
 // Mental health focus area multi-select (pick up to 3)
-// English-only sub-labels — clear, thoughtful, and human
 
 import React, { useState } from 'react';
 import {
@@ -16,6 +15,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { colors } from '../../theme/colors';
 
 const FOCUS_AREAS = [
   { id: 'anxiety',       label: 'Anxiety & Overwhelm',       desc: 'Mentally exhausting' },
@@ -161,6 +161,7 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: '#8B6DA8',
+    marginBottom: 6,
   },
   grid: {
     flexDirection: 'row',
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   chip: {
     backgroundColor: '#fff',
     borderRadius: 14,
-    padding: 12,
+    padding: 11,
     borderWidth: 2,
     borderColor: 'transparent',
     shadowColor: '#000',
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   },
   chipSelected: {
     backgroundColor: '#F0EAFA',
-    borderColor: '#492542',
+    borderColor: colors.brand,
   },
   chipDisabled: {
     opacity: 0.4,
@@ -202,17 +203,17 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   chipLabelSelected: {
-    color: '#492542',
+    color: colors.brand,
   },
   chipCheck: {
     fontSize: 12,
-    color: '#492542',
+    color: colors.brand,
     fontWeight: '800',
     marginLeft: 4,
   },
   chipDesc: {
     fontSize: 10.5,
     color: '#888',
-    marginTop: 3,
+    marginTop: 2,
   },
 });

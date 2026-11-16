@@ -1,5 +1,6 @@
 // src/screens/onboarding/components/OnboardingHeroCard.jsx
 // Left companion hero card with animated Sloth mascot and quote bubble
+// Identical footprint and visual geometry to the Signup hero card in Screenshot 2
 
 import React, { useRef, useEffect } from 'react';
 import {
@@ -82,18 +83,19 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: colors.lavenderSheetBorder,
-    justifyContent: 'space-between',
-    gap: 14,
   },
   cardWide: {
-    width: 320,
-    minHeight: 460,
+    flex: 1,
+    maxWidth: 420,
+    minHeight: 520,
+    justifyContent: 'space-between',
   },
   tag: {
     fontSize: 9.5,
     fontWeight: '800',
     color: colors.textSecondary,
     letterSpacing: 0.8,
+    marginBottom: 8,
   },
   heading: {
     fontSize: 26,
@@ -101,17 +103,18 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 33,
     letterSpacing: -0.4,
+    marginBottom: 16,
   },
   mascotWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginVertical: 12,
+    marginVertical: 14,
   },
   mascotCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 144,
+    height: 144,
+    borderRadius: 72,
     backgroundColor: '#FAF5EE',
     alignItems: 'center',
     justifyContent: 'center',
@@ -125,14 +128,14 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   mascotImage: {
-    width: 140,
-    height: 165,
+    width: 144,
+    height: 170,
     marginTop: -8,
   },
   sparkleLeft: {
     position: 'absolute',
     top: -2,
-    left: '18%',
+    left: '20%',
     fontSize: 16,
     color: '#E8B678',
     opacity: 0.9,
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
   sparkleRight: {
     position: 'absolute',
     bottom: 2,
-    right: '18%',
+    right: '20%',
     fontSize: 15,
     color: '#EFA491',
     opacity: 0.9,

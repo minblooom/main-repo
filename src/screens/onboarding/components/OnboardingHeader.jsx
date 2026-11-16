@@ -1,11 +1,13 @@
 // src/screens/onboarding/components/OnboardingHeader.jsx
-// Standard header for onboarding steps
+// Unified header for all onboarding screens, matching the Signup header in Screenshot 2
 
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors } from '../../../theme/colors';
 
-export const OnboardingHeader = ({ navigation, showBack = true, onBack, rightElement }) => {
+export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
+  const [language, setLanguage] = useState('EN');
+
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -14,44 +16,98 @@ export const OnboardingHeader = ({ navigation, showBack = true, onBack, rightEle
     }
   };
 
+  const handleSupportPress = () => {
+    Alert.alert(
+      'Urgent Support',
+      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.',
+      [{ text: 'Understood', style: 'default' }]
+    );
+  };
+
   return (
-    <View style={styles.header}>
+    <View style={styles.topHeader}>
       <Text style={styles.brandTitle}>mindbloom</Text>
-      <View style={styles.rightGroup}>
-        {rightElement}
+
+      <View style={styles.headerRightLinks}>
         {showBack && (
-          <TouchableOpacity onPress={handleBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          style={styles.langBtn}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.langText}>
+            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
+            {' | '}
+            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSupportPress} activeOpacity={0.7}>
+          <Text style={styles.urgentLink}>Need urgent support?</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
+  topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    paddingBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 4,
     width: '100%',
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.brand,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
-  rightGroup: {
+  headerRightLinks: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
   },
+  backBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
   backText: {
-    fontSize: 13,
-    color: '#8B6DA8',
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  langBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  langText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  langActive: {
+    color: colors.textPrimary,
+    fontWeight: '800',
+  },
+  langInactive: {
+    color: colors.textMuted,
+  },
+  urgentLink: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    textDecorationLine: 'underline',
   },
 });

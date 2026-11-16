@@ -1,6 +1,6 @@
 // src/screens/onboarding/LocalSetupScreen.jsx
 // "A little closer to home." — Figma screen 04
-// Country + language picker for localised support
+// Harmonized layout: localized country & language selection
 
 import React, { useState } from 'react';
 import {
@@ -15,6 +15,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { colors } from '../../theme/colors';
 
 const COUNTRIES = [
   { id: 'ke', flag: '🇰🇪', name: 'Kenya', langs: 'Sheng, Kiswahili & English' },
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
     gap: 12,
@@ -164,54 +165,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0EAFA',
   },
   flag: {
-    fontSize: 20,
+    fontSize: 18,
   },
   rowText: {
     flex: 1,
   },
   rowName: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     color: '#1A1A1A',
   },
   rowNameSelected: {
-    color: '#492542',
+    color: colors.brand,
   },
   rowLangs: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#888',
     marginTop: 1,
   },
   rowCheck: {
-    fontSize: 15,
-    color: '#492542',
+    fontSize: 14,
+    color: colors.brand,
     fontWeight: '800',
   },
   langLabel: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#1A1A1A',
-    marginTop: 4,
+    color: '#6E5D87',
+    marginTop: 6,
+    marginBottom: 4,
   },
   langRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   langChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   langChipSelected: {
-    backgroundColor: '#492542',
-    borderColor: '#492542',
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
   },
   langChipText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#555',
   },
@@ -219,9 +221,9 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   hint: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#AAA',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
 });
