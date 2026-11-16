@@ -5,8 +5,9 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Auth
+// Auth & Welcome
 import { SplashScreen }          from '../screens/auth/SplashScreen';
+import { WelcomeScreen }         from '../screens/auth/WelcomeScreen';
 import { SignupScreen }          from '../screens/auth/SignupScreen';
 import { LoginScreen }           from '../screens/auth/LoginScreen';
 
@@ -34,8 +35,9 @@ export const AppNavigator = () => {
           animation: 'fade',
         }}
       >
-        {/* ── Auth ──────────────────────────────────── */}
+        {/* ── Landing & Auth ────────────────────────── */}
         <Stack.Screen name="Splash"          component={SplashScreen} />
+        <Stack.Screen name="Welcome"         component={WelcomeScreen} />
         <Stack.Screen name="Signup"          component={SignupScreen} />
         <Stack.Screen name="Login"           component={LoginScreen} />
 

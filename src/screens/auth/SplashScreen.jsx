@@ -1,6 +1,6 @@
 // src/screens/auth/SplashScreen.jsx
-// Exact implementation of the Figma splash screen for MindBloom
-// Responsive across Mobile, Tablet, and Desktop screens
+// Exact implementation of Figma splash screen for MindBloom
+// Responsive: 2-column on desktop/tablet, bottom sheet on mobile
 
 import React, { useEffect, useRef } from 'react';
 import {
@@ -17,7 +17,8 @@ import { colors } from '../../theme/colors';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export const SplashScreen = ({ onFinish, navigation }) => {
-  const { width, height, isMobile, isTablet, isDesktop, containerMaxWidth } = useResponsiveLayout();
+  const { height, isDesktop, isTablet, containerMaxWidth } = useResponsiveLayout();
+  const isWide = isDesktop || isTablet;
 
   // Floating gentle breath animation for the hero arch
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -36,7 +37,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     }).start();
 
     // Gentle breathing loop
-    Animated.loop(
+    const breathLoop = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(floatAnim, {
@@ -63,9 +64,10 @@ export const SplashScreen = ({ onFinish, navigation }) => {
           }),
         ]),
       ])
-    ).start();
+    );
+    breathLoop.start();
 
-    // Progress bar fill to 100%
+    // Progress bar fill to 100% (2.8 seconds)
     Animated.timing(progressAnim, {
       toValue: 1,
       duration: 2800,
@@ -75,19 +77,21 @@ export const SplashScreen = ({ onFinish, navigation }) => {
         handleProceed();
       }
     });
+
+    return () => breathLoop.stop();
   }, []);
 
   const handleProceed = () => {
     if (onFinish) {
       onFinish();
     } else if (navigation) {
-      navigation.navigate('Signup');
+      // Navigate to Welcome screen
+      navigation.navigate('Welcome');
     }
   };
 
-  // Responsive dimensions for the hero arch
-  const archWidth = Math.min(containerMaxWidth * 0.72, 280);
-  const archHeight = Math.min(height * 0.44, 380);
+  const archWidth = isWide ? 260 : Math.min(containerMaxWidth * 0.72, 280);
+  const archHeight = isWide ? 340 : Math.min(height * 0.44, 380);
 
   const progressInterpolate = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -97,87 +101,81 @@ export const SplashScreen = ({ onFinish, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Animated.View style={[styles.mainWrapper, { opacity: fadeAnim }]}>
-        <View style={[styles.responsiveContainer, { maxWidth: containerMaxWidth }]}>
+        <View style={[styles.pageWrapper, isWide && styles.pageWrapperWide]}>
+          {/* ── 2-COLUMN LAYOUT ON DESKTOP / STACK ON MOBILE ──────────────── */}
+          <View style={[styles.contentLayout, isWide && styles.contentLayoutWide]}>
+            {/* ── LEFT SECTION: BRAND + ARCHED FLORAL HERO ─────────────────── */}
+            <View style={[styles.leftSection, isWide && styles.leftSectionWide]}>
+              <View style={[styles.brandContainer, isWide && styles.brandContainerWide]}>
+                <Text style={styles.brandTitle}>mindbloom</Text>
+              </View>
 
-          {/* ── 1. TOP CREAM SECTION ────────────────────────────────────────── */}
-          <View style={styles.topSection}>
-            {/* Mindbloom Brand Wordmark */}
-            <View style={styles.brandContainer}>
-              <Text style={styles.brandTitle}>mindbloom</Text>
-            </View>
-
-            {/* Arched Hero Card with Floral Silhouette */}
-            <Animated.View
-              style={[
-                styles.heroArchWrapper,
-                {
-                  transform: [
-                    { translateY: floatAnim },
-                    { scale: pulseScale },
-                  ],
-                },
-              ]}
-            >
-              {/* Outer Decorative Floating Dots (From Figma Design) */}
-              <View style={[styles.dot, styles.dotUpperLeft]} />
-              <View style={[styles.dot, styles.dotUpperRight]} />
-              <View style={[styles.dot, styles.dotLowerRight]} />
-              <View style={[styles.dot, styles.dotLowerLeft]} />
-
-              {/* Matting Frame */}
-              <View
+              <Animated.View
                 style={[
-                  styles.archMattingFrame,
+                  styles.heroArchWrapper,
                   {
-                    width: archWidth,
-                    height: archHeight,
+                    transform: [
+                      { translateY: floatAnim },
+                      { scale: pulseScale },
+                    ],
                   },
                 ]}
               >
-                {/* Hero Floral Image */}
-                <Image
-                  source={require('../../../assets/images/splashscreen.jpg')}
-                  style={styles.heroImage}
-                  resizeMode="cover"
-                />
-              </View>
-            </Animated.View>
-          </View>
+                {/* Decorative floating dots */}
+                <View style={[styles.dot, styles.dotUpperLeft]} />
+                <View style={[styles.dot, styles.dotUpperRight]} />
+                <View style={[styles.dot, styles.dotLowerRight]} />
+                <View style={[styles.dot, styles.dotLowerLeft]} />
 
-          {/* ── 2. BOTTOM SOFT LAVENDER SHEET ──────────────────────────────── */}
-          <TouchableOpacity
-            style={styles.bottomSheet}
-            onPress={handleProceed}
-            activeOpacity={0.96}
-          >
-            {/* Primary Headline */}
-            <Text style={styles.headline}>
-              A little habit.{'\n'}A more confident you.
-            </Text>
+                {/* Arched Matting Frame */}
+                <View
+                  style={[
+                    styles.archMattingFrame,
+                    { width: archWidth, height: archHeight },
+                  ]}
+                >
+                  <Image
+                    source={require('../../../assets/images/splashscreen.jpg')}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              </Animated.View>
 
-            {/* Subheading */}
-            <Text style={styles.subhead}>
-              Build confidence and healthy mental habits,{'\n'}one small step at a time.
-            </Text>
-
-            {/* Status Text */}
-            <Text style={styles.statusLabel}>
-              Getting ready to bloom...
-            </Text>
-
-            {/* Animated Progress Bar */}
-            <View style={styles.progressTrack}>
-              <Animated.View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: progressInterpolate,
-                  },
-                ]}
-              />
+              <Text style={styles.leftTagline}>Your space. Your pace.</Text>
             </View>
-          </TouchableOpacity>
 
+            {/* ── RIGHT SECTION: LAVENDER CARD WITH PROGRESS BAR ──────────── */}
+            <TouchableOpacity
+              style={[styles.lavenderCard, isWide && styles.lavenderCardWide]}
+              onPress={handleProceed}
+              activeOpacity={0.96}
+            >
+              <Text style={styles.cardTag}>WELCOME TO MINDBLOOM</Text>
+
+              <Text style={styles.headline}>
+                {'A little habit.\nA more confident\nyou.'}
+              </Text>
+
+              <Text style={styles.subhead}>
+                Build confidence and healthy mental habits,{'\n'}one small step at a time.
+              </Text>
+
+              <View style={styles.progressContainer}>
+                <Text style={styles.statusLabel}>
+                  Getting ready to bloom...
+                </Text>
+                <View style={styles.progressTrack}>
+                  <Animated.View
+                    style={[
+                      styles.progressFill,
+                      { width: progressInterpolate },
+                    ]}
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     </SafeAreaView>
@@ -195,33 +193,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
-  responsiveContainer: {
+  pageWrapper: {
     flex: 1,
     width: '100%',
+    maxWidth: 1040,
     backgroundColor: colors.splashBg,
     justifyContent: 'space-between',
     alignSelf: 'center',
-    // Soft shadow on desktop centered canvas
-    ...Platform.select({
-      web: {
-        boxShadow: '0 8px 32px rgba(46, 30, 70, 0.08)',
-      },
-      default: {},
-    }),
+  },
+  pageWrapperWide: {
+    paddingHorizontal: 40,
+    paddingVertical: 24,
+    justifyContent: 'center',
+  },
+  contentLayout: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'space-between',
+  },
+  contentLayoutWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 40,
   },
 
-  // Top Section
-  topSection: {
+  // Left Section
+  leftSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: Platform.OS === 'android' ? 16 : 8,
     paddingHorizontal: 20,
   },
+  leftSectionWide: {
+    alignItems: 'flex-start',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
     marginTop: 6,
+  },
+  brandContainerWide: {
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
   brandTitle: {
     fontSize: 28,
@@ -229,13 +246,12 @@ const styles = StyleSheet.create({
     color: colors.brand,
     letterSpacing: -0.6,
   },
-
-  // Hero Arch
   heroArchWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     marginVertical: 10,
+    alignSelf: 'center',
   },
   archMattingFrame: {
     borderRadius: 140,
@@ -250,7 +266,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#492542',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 20,
     elevation: 6,
   },
@@ -258,93 +274,120 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 132,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  leftTagline: {
+    fontSize: 11.5,
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    marginTop: 10,
+    alignSelf: 'center',
   },
 
-  // Decorative Floating Dots (from screenshot)
+  // Decorative dots
   dot: {
     position: 'absolute',
-    borderRadius: 10,
-    zIndex: 10,
+    borderRadius: 50,
   },
   dotUpperLeft: {
-    width: 10,
-    height: 10,
+    width: 6,
+    height: 6,
     backgroundColor: colors.dotPeach,
-    top: '14%',
-    left: -18,
+    top: 30,
+    left: -20,
   },
   dotUpperRight: {
     width: 8,
     height: 8,
     backgroundColor: colors.dotGold,
-    top: '6%',
-    right: -14,
+    top: 60,
+    right: -24,
   },
   dotLowerRight: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     backgroundColor: colors.dotPlum,
-    bottom: '22%',
+    bottom: 50,
     right: -20,
   },
   dotLowerLeft: {
-    width: 6,
-    height: 6,
+    width: 7,
+    height: 7,
     backgroundColor: colors.dotPeach,
-    bottom: '12%',
-    left: -12,
+    bottom: 90,
+    left: -24,
   },
 
-  // Bottom Soft Lavender Sheet
-  bottomSheet: {
+  // Right Lavender Card / Bottom Sheet
+  lavenderCard: {
     backgroundColor: colors.lavenderSheet,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingHorizontal: 28,
-    paddingTop: 32,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 32,
+    paddingTop: 28,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    borderWidth: 1,
+    borderColor: colors.lavenderSheetBorder,
+    borderBottomWidth: 0,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.lavenderSheetBorder,
+  },
+  lavenderCardWide: {
+    flex: 1,
+    maxWidth: 460,
+    borderRadius: 32,
+    borderBottomWidth: 1,
+    paddingVertical: 44,
+    paddingHorizontal: 36,
+    alignItems: 'flex-start',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  cardTag: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.textSecondary,
+    letterSpacing: 0.8,
+    marginBottom: 12,
   },
   headline: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.textPrimary,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-    lineHeight: 31,
+    lineHeight: 33,
+    letterSpacing: -0.4,
+    marginBottom: 10,
   },
   subhead: {
     fontSize: 13,
-    fontWeight: '500',
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 18,
-    maxWidth: 320,
+    lineHeight: 19,
+    marginBottom: 28,
+  },
+  progressContainer: {
+    width: '100%',
+    marginTop: 'auto',
   },
   statusLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 22,
+    letterSpacing: 0.2,
     marginBottom: 8,
-    letterSpacing: 0.1,
   },
   progressTrack: {
-    width: 140,
-    height: 4,
-    borderRadius: 2,
+    width: '100%',
+    height: 5,
     backgroundColor: colors.progressTrack,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
     backgroundColor: colors.progressFill,
+    borderRadius: 3,
   },
 });
