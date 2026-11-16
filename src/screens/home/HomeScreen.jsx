@@ -24,7 +24,7 @@ import { MoodCheckIn } from './components/MoodCheckIn';
 import { HeroBanners } from './components/HeroBanners';
 import { MomentsSection } from './components/MomentsSection';
 
-export const HomeScreen = ({ navigation }) => {
+export const HomeScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
@@ -32,14 +32,16 @@ export const HomeScreen = ({ navigation }) => {
 
   const handleNavigate = (routeId) => {
     setActiveTab(routeId);
-    if (routeId === 'aurora') {
-      Alert.alert('Aurora AI Companion', 'Aurora and Noodle are ready to listen. Start anywhere.');
+    if (routeId === 'journal') {
+      navigation?.navigate?.('Journal');
     } else if (routeId === 'breath') {
-      Alert.alert('Tulia Breath', 'A 2-minute reset. Inhale gently, exhale slowly.');
+      navigation?.navigate?.('Breath');
+    } else if (routeId === 'soundscapes') {
+      navigation?.navigate?.('Soundscapes');
+    } else if (routeId === 'aurora') {
+      Alert.alert('Aurora AI Companion', 'Aurora and Noodle are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza') {
       Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
-    } else if (routeId === 'soundscapes') {
-      Alert.alert('Chill & Soundscapes', 'Playing relaxing acoustic melodies and rain on tin roof.');
     } else if (routeId === 'acacia') {
       Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
@@ -87,6 +89,7 @@ export const HomeScreen = ({ navigation }) => {
               {/* "A Moment for You" 3 Activities */}
               <MomentsSection
                 isWide={isWide}
+                userFocusAreas={route?.params?.focusAreas || ['anxiety']}
                 onSelectMoment={(id) => handleNavigate(id)}
               />
             </View>

@@ -75,9 +75,6 @@ export const HeroBanners = ({ isWide = false, onAuroraPress, onBreathPress }) =>
               resizeMode="cover"
             />
           </View>
-          {/* Subtle flower accents */}
-          <Text style={styles.flowerTop}>🌸</Text>
-          <Text style={styles.flowerBottom}>✨</Text>
         </Animated.View>
       </View>
 
@@ -101,8 +98,8 @@ export const HeroBanners = ({ isWide = false, onAuroraPress, onBreathPress }) =>
             <Text style={styles.innerBreathTitle}>Tulia breath</Text>
             <Text style={styles.innerBreathDesc}>A gentle grounding reset</Text>
           </View>
-          <View style={styles.breathIconWrap}>
-            <Text style={styles.breathIcon}>🍃</Text>
+          <View style={styles.breathBadgeWrap}>
+            <Text style={styles.breathBadgeText}>2 MIN</Text>
           </View>
         </View>
 
@@ -225,18 +222,6 @@ const styles = StyleSheet.create({
     height: 135,
     marginTop: -8,
   },
-  flowerTop: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    fontSize: 16,
-  },
-  flowerBottom: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    fontSize: 16,
-  },
 
   // Breath Card Styles
   breathCard: {
@@ -282,16 +267,19 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#666',
   },
-  breathIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  breathBadgeWrap: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     backgroundColor: '#EBF7EE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  breathIcon: {
-    fontSize: 16,
+  breathBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#346B46',
+    letterSpacing: 0.5,
   },
   breathActionBtn: {
     backgroundColor: '#FFFFFF',

@@ -21,7 +21,7 @@ import { onboardingStyles as s } from './onboardingStyles';
 
 const FOCUS_LABEL_MAP = {
   anxiety: 'Anxiety & Overwhelm',
-  burnout: 'Nairobi Hustle Burnout',
+  burnout: 'Daily Hustle Burnout',
   low_mood: 'Low Mood',
   sleep: 'Sleep & Rest',
   body: 'Body Peace',
@@ -41,7 +41,7 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
   const isWide = isDesktop || isTablet;
 
   const params = route?.params ?? {};
-  const companion = COMPANION_MAP[params.companion] || COMPANION_MAP.noodle;
+  const companion = COMPANION_MAP.noodle;
   const focusAreas = (params.focusAreas ?? []).map((id) => FOCUS_LABEL_MAP[id] ?? id);
   const rhythm = params.rhythm ?? '2';
 

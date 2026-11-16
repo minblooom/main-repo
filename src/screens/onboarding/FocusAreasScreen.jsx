@@ -19,7 +19,7 @@ import { colors } from '../../theme/colors';
 
 const FOCUS_AREAS = [
   { id: 'anxiety',       label: 'Anxiety & Overwhelm',       desc: 'Mentally exhausting' },
-  { id: 'burnout',       label: 'Nairobi Hustle Burnout',     desc: 'Too much, all at once' },
+  { id: 'burnout',       label: 'Daily Hustle Burnout',       desc: 'Too much, all at once' },
   { id: 'low_mood',      label: 'Low Mood & Exhaustion',      desc: 'Vacant on the inside' },
   { id: 'sleep',         label: 'Sleep & Night Calm',         desc: 'Rest that actually restores' },
   { id: 'body',          label: 'Body Peace & Respect',       desc: 'A gentler relationship with self' },

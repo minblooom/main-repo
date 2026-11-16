@@ -1,16 +1,17 @@
 // src/components/navigation/BottomNavBar.jsx
 // Mobile bottom navigation bar matching the Figma mobile sanctuary
+// Clean text-first pill navigation (icons paused for clean visual harmony)
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const BOTTOM_TABS = [
-  { id: 'home', label: 'Home', icon: '🏠' },
-  { id: 'aurora', label: 'Aurora', icon: '✨' },
-  { id: 'breath', label: 'Tulia', icon: '🍃' },
-  { id: 'baraza', label: 'Baraza', icon: '💬' },
-  { id: 'sanctuary', label: 'Sanctuary', icon: '🌸' },
+  { id: 'home', label: 'Home' },
+  { id: 'aurora', label: 'Aurora' },
+  { id: 'journal', label: 'Journal' },
+  { id: 'soundscapes', label: 'Chill' },
+  { id: 'baraza', label: 'Baraza' },
 ];
 
 export const BottomNavBar = ({ activeRoute = 'home', onNavigate }) => {
@@ -21,13 +22,10 @@ export const BottomNavBar = ({ activeRoute = 'home', onNavigate }) => {
         return (
           <TouchableOpacity
             key={tab.id}
-            style={styles.tabItem}
+            style={[styles.tabItem, isActive && styles.tabItemActive]}
             onPress={() => onNavigate?.(tab.id)}
             activeOpacity={0.8}
           >
-            <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-            </View>
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
               {tab.label}
             </Text>
@@ -42,12 +40,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: 'rgba(73, 37, 66, 0.08)',
-    paddingVertical: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingBottom: Platform.OS === 'ios' ? 26 : 12,
     shadowColor: '#492542',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.05,
@@ -55,24 +54,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   tabItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    flex: 1,
   },
-  iconWrap: {
-    paddingVertical: 4,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-  },
-  iconWrapActive: {
+  tabItemActive: {
     backgroundColor: '#EAE3F7',
   },
-  tabIcon: {
-    fontSize: 18,
-  },
   tabLabel: {
-    fontSize: 10.5,
+    fontSize: 12,
     fontWeight: '600',
     color: '#8B6DA8',
   },

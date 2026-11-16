@@ -2,7 +2,7 @@
 // Sanctuary top header with breadcrumb, peaceful weather widget (no county names), language toggle, and profile
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { colors } from '../../../theme/colors';
 
 export const HomeHeader = () => {
@@ -48,9 +48,13 @@ export const HomeHeader = () => {
           <Text style={styles.iconEmoji}>🔔</Text>
         </TouchableOpacity>
 
-        {/* Profile Avatar */}
+        {/* Profile Avatar with Sloth */}
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarEmoji}>🌸</Text>
+          <Image
+            source={require('../../../../assets/images/sloth.jpg')}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
         </View>
       </View>
     </View>
@@ -130,8 +134,10 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  avatarEmoji: {
-    fontSize: 15,
+  avatarImage: {
+    width: 32,
+    height: 36,
   },
 });

@@ -1,21 +1,22 @@
 // src/components/navigation/SidebarNav.jsx
 // Desktop navigation sidebar matching the Figma sanctuary layout
+// Text-first minimalist navigation (icons paused for clean visual harmony)
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const NAV_ITEMS = [
-  { id: 'home', label: 'Home', icon: '🏠', active: true },
-  { id: 'aurora', label: 'Aurora Companion', icon: '✨' },
-  { id: 'breath', label: 'Tulia Breath', icon: '🍃' },
-  { id: 'soundscapes', label: 'Chill & Soundscapes', icon: '🎧' },
-  { id: 'baraza', label: 'Community Baraza', icon: '💬' },
+  { id: 'home', label: 'Home' },
+  { id: 'aurora', label: 'Aurora Companion' },
+  { id: 'journal', label: 'Journal' },
+  { id: 'soundscapes', label: 'Chill & Soundscapes' },
+  { id: 'baraza', label: 'Community Baraza' },
 ];
 
 const GROWTH_ITEMS = [
-  { id: 'acacia', label: 'The Acacia Tree', icon: '🌳' },
-  { id: 'sanctuary', label: 'My Sanctuary', icon: '🌸' },
+  { id: 'acacia', label: 'The Acacia Tree' },
+  { id: 'sanctuary', label: 'My Sanctuary' },
 ];
 
 export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
@@ -38,7 +39,6 @@ export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
               onPress={() => onNavigate?.(item.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.navIcon}>{item.icon}</Text>
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {item.label}
               </Text>
@@ -59,7 +59,6 @@ export const SidebarNav = ({ activeRoute = 'home', onNavigate }) => {
               onPress={() => onNavigate?.(item.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.navIcon}>{item.icon}</Text>
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {item.label}
               </Text>
@@ -82,13 +81,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF5EE',
     borderRightWidth: 1,
     borderRightColor: 'rgba(73, 37, 66, 0.08)',
-    paddingVertical: 24,
+    paddingVertical: 28,
     paddingHorizontal: 16,
     justifyContent: 'flex-start',
   },
   brandContainer: {
-    paddingHorizontal: 8,
-    marginBottom: 28,
+    paddingHorizontal: 10,
+    marginBottom: 32,
   },
   brandTitle: {
     fontSize: 24,
@@ -97,35 +96,31 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 26,
     gap: 4,
   },
   sectionHeader: {
     fontSize: 9.5,
     fontWeight: '800',
     color: '#8B6DA8',
-    letterSpacing: 0.8,
+    letterSpacing: 0.9,
     paddingHorizontal: 12,
     marginBottom: 8,
   },
   navItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 14,
+    justifyContent: 'center',
   },
   navItemActive: {
     backgroundColor: '#EAE3F7',
-  },
-  navIcon: {
-    fontSize: 16,
   },
   navLabel: {
     fontSize: 13.5,
     fontWeight: '600',
     color: '#6E5D87',
+    letterSpacing: -0.1,
   },
   navLabelActive: {
     fontWeight: '800',

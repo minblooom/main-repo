@@ -1,62 +1,145 @@
 // src/screens/home/components/MomentsSection.jsx
-// "A moment for you" section featuring 3 curated low-pressure activities:
-// Soundtrack, Pocket Journal, and The Acacia Worry Tree (Strictly zero county names)
+// "A moment for you" section featuring:
+// 1. Podcast of the day (dynamically curated by user's focus, rotates daily, routes to Chill & Soundscapes)
+// 2. Pocket Journal (low pressure, routes to Journal)
+// 3. The Acacia Worry Tree (mindful play, routes to Acacia)
+// Strictly zero county names and clean icon-free typography
 
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 
-const MOMENT_CARDS = [
-  {
-    id: 'soundtrack',
-    category: 'LISTEN · 5 MIN',
-    icon: '🎧',
-    title: 'A softer soundtrack',
-    desc: 'Let the world turn down a little.',
-    cta: 'Find your calm →',
-    bg: '#EDF5EE',
-    border: '#D8ECDA',
-    textDark: '#2C5A38',
-  },
-  {
-    id: 'journal',
-    category: 'JOURNAL · 3 MIN',
-    icon: '📖',
-    title: "What's on your mind?",
-    desc: 'A few words. Just for you.',
-    cta: 'Open your journal →',
-    bg: '#FFF5E8',
-    border: '#FFE6C9',
-    textDark: '#8A531C',
-  },
-  {
-    id: 'worry_tree',
-    category: 'PLAY · AT YOUR PACE',
-    icon: '🌳',
-    title: 'The acacia worry tree',
-    desc: 'Set a worry down. Make room to grow.',
-    cta: 'Play a little →',
-    bg: '#F0EAFA',
-    border: '#DFD5F0',
-    textDark: colors.brand,
-  },
-];
+// Daily rotating podcasts curated by wellness focus area
+const PODCAST_CATALOG = {
+  anxiety: [
+    {
+      title: 'Calming the Overwhelmed Mind',
+      desc: 'Gentle grounding when thoughts are racing too fast.',
+    },
+    {
+      title: 'Unwinding the Nervous System',
+      desc: 'A soft 10-minute pause to reset tension.',
+    },
+    {
+      title: 'Soft Space in a Loud World',
+      desc: 'Permission to slow down and breathe without apology.',
+    },
+  ],
+  burnout: [
+    {
+      title: 'Rest Is Not a Reward',
+      desc: 'Unlearning the guilt of quiet, restful hours.',
+    },
+    {
+      title: 'Unplugging from the Hustle',
+      desc: 'Healthy boundary lines that protect your peace.',
+    },
+    {
+      title: 'Pacing Your Energy',
+      desc: 'Moving through your day without running on empty.',
+    },
+  ],
+  sleep: [
+    {
+      title: 'Night Calm & Gentle Slumber',
+      desc: 'Letting the day fade away so tomorrow can breathe.',
+    },
+    {
+      title: 'Quieting Bedtime Chatter',
+      desc: 'Soothing guided words for restful night calm.',
+    },
+    {
+      title: 'Soft Rain & Safe Harbor',
+      desc: 'Ambient soundscape and mindful wind-down.',
+    },
+  ],
+  low_mood: [
+    {
+      title: 'Gentle Steps on Heavy Days',
+      desc: 'Showing up for yourself when energy is quiet.',
+    },
+    {
+      title: 'You Don’t Have to Force Joy',
+      desc: 'Embracing where you are today with tenderness.',
+    },
+  ],
+  body: [
+    {
+      title: 'Making Peace with Yourself',
+      desc: 'A gentler, kinder relationship with your body.',
+    },
+  ],
+  strong_one: [
+    {
+      title: 'When You’re Always the Strong One',
+      desc: 'A safe haven where you don’t have to carry it all.',
+    },
+  ],
+  default: [
+    {
+      title: 'Breathing Room for Your Mind',
+      desc: 'A daily 10-minute sanctuary to reset your pace.',
+    },
+    {
+      title: 'Polepole: Moving at Your Rhythm',
+      desc: 'Slowing down without feeling like you are falling behind.',
+    },
+    {
+      title: 'Finding Stillness in the Noise',
+      desc: 'Curated audio to bring peace to your day.',
+    },
+  ],
+};
 
-export const MomentsSection = ({ isWide = false, onSelectMoment }) => {
-  const handleCardPress = (id) => {
-    if (onSelectMoment) {
-      onSelectMoment(id);
-      return;
-    }
+export const MomentsSection = ({
+  isWide = false,
+  userFocusAreas = ['anxiety'],
+  onSelectMoment,
+}) => {
+  // Select daily rotating podcast based on primary focus area and day of year
+  const dailyPodcast = useMemo(() => {
+    const primaryKey = userFocusAreas && userFocusAreas.length > 0
+      ? userFocusAreas[0]
+      : 'default';
+    const playlist = PODCAST_CATALOG[primaryKey] || PODCAST_CATALOG.default;
+    // Rotate deterministically every day
+    const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+    const item = playlist[dayIndex % playlist.length];
+    return item;
+  }, [userFocusAreas]);
 
-    if (id === 'soundtrack') {
-      Alert.alert('Softer Soundtrack', 'Playing ambient rain on tin roof and gentle acoustic acoustic melody. Breathe easy.');
-    } else if (id === 'journal') {
-      Alert.alert('Pocket Journal', 'A safe, private space for your thoughts. Zero judgment, no word count targets.');
-    } else if (id === 'worry_tree') {
-      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf, let it rest on the branches or gently drift away with the wind.');
-    }
-  };
+  const cards = [
+    {
+      id: 'soundscapes',
+      category: "TODAY'S PODCAST · 10 MIN",
+      title: dailyPodcast.title,
+      desc: dailyPodcast.desc,
+      cta: 'Listen on Chill & Soundscapes →',
+      bg: '#EDF5EE',
+      border: '#D8ECDA',
+      textDark: '#2C5A38',
+    },
+    {
+      id: 'journal',
+      category: 'POCKET JOURNAL · 3 MIN',
+      title: "What's on your mind?",
+      desc: 'A few words. Just for you. Zero pressure.',
+      cta: 'Open your journal →',
+      bg: '#FFF5E8',
+      border: '#FFE6C9',
+      textDark: '#8A531C',
+    },
+    {
+      id: 'acacia',
+      category: 'MINDFUL PLAY · AT YOUR PACE',
+      title: 'The acacia worry tree',
+      desc: 'Set a worry down. Make room to grow.',
+      cta: 'Play a little →',
+      bg: '#F0EAFA',
+      border: '#DFD5F0',
+      textDark: colors.brand,
+    },
+  ];
 
   return (
     <View style={styles.section}>
@@ -68,24 +151,23 @@ export const MomentsSection = ({ isWide = false, onSelectMoment }) => {
         </Text>
       </View>
 
-      {/* 3 Horizontal/Grid Cards */}
+      {/* 3 Activities */}
       <View style={[styles.cardRow, isWide && styles.cardRowWide]}>
-        {MOMENT_CARDS.map((card) => (
+        {cards.map((card) => (
           <TouchableOpacity
             key={card.id}
             style={[
               styles.card,
               { backgroundColor: card.bg, borderColor: card.border },
             ]}
-            onPress={() => handleCardPress(card.id)}
+            onPress={() => onSelectMoment?.(card.id)}
             activeOpacity={0.88}
           >
-            {/* Top Tag & Icon */}
+            {/* Top Tag */}
             <View style={styles.cardTop}>
               <Text style={[styles.cardTag, { color: card.textDark }]}>
                 {card.category}
               </Text>
-              <Text style={styles.cardIcon}>{card.icon}</Text>
             </View>
 
             {/* Title & Description */}
@@ -155,9 +237,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.7,
   },
-  cardIcon: {
-    fontSize: 18,
-  },
   cardBody: {
     gap: 4,
     marginBottom: 16,
@@ -166,11 +245,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#1A1A1A',
+    lineHeight: 22,
   },
   cardDesc: {
     fontSize: 12,
     color: '#666',
-    lineHeight: 16,
+    lineHeight: 17,
   },
   cardCta: {
     fontSize: 12.5,
