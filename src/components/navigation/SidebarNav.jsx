@@ -1,6 +1,7 @@
 // src/components/navigation/SidebarNav.jsx
 // Desktop navigation sidebar matching the Figma sanctuary layout
 // Text-first minimalist navigation with personalized companion avatar on "My Sanctuary"
+// and optional gentle sanctuary sidebar cards
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
@@ -24,6 +25,7 @@ export const SidebarNav = ({
   activeRoute = 'home',
   onNavigate,
   companionId = 'noodle',
+  showSupportCards = false,
 }) => {
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
@@ -85,6 +87,35 @@ export const SidebarNav = ({
         })}
       </View>
 
+      {/* Optional Gentle Supportive Cards */}
+      {showSupportCards && (
+        <View style={styles.supportCardsSection}>
+          <View style={styles.supportCardMint}>
+            <Text style={styles.supportCardTitle}>A little is enough</Text>
+            <Text style={styles.supportCardQuote}>
+              "You don't have to bloom all at once."
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.supportCardPeach}
+            onPress={() => onNavigate?.('acacia')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.supportCardTitle}>A moment of calm</Text>
+            <Text style={styles.supportCardLinkText}>Rest in the garden →</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.helpLinkBtn}
+            onPress={() => onNavigate?.('help')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.helpLinkText}>Help & support</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Footer Muted Tagline */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Polepole · your pace</Text>
@@ -105,7 +136,7 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     paddingHorizontal: 10,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   brandTitle: {
     fontSize: 24,
@@ -114,7 +145,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   section: {
-    marginBottom: 26,
+    marginBottom: 22,
     gap: 4,
   },
   sectionHeader: {
@@ -163,6 +194,52 @@ const styles = StyleSheet.create({
   mascotIconImg: {
     width: '100%',
     height: '100%',
+  },
+  supportCardsSection: {
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  supportCardMint: {
+    backgroundColor: '#EDF5EE',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#D8ECDA',
+    gap: 3,
+  },
+  supportCardPeach: {
+    backgroundColor: '#FFF5E8',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FFE6C9',
+    gap: 3,
+  },
+  supportCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  supportCardQuote: {
+    fontSize: 10.5,
+    fontStyle: 'italic',
+    color: '#497354',
+    lineHeight: 14,
+  },
+  supportCardLinkText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#8A531C',
+  },
+  helpLinkBtn: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  helpLinkText: {
+    fontSize: 11,
+    color: '#8B6DA8',
+    fontWeight: '600',
   },
   footer: {
     marginTop: 'auto',

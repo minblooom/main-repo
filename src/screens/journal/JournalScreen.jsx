@@ -1,130 +1,298 @@
 // src/screens/journal/JournalScreen.jsx
-// MindBloom Private Journal Sanctuary
-// Low-pressure, unhurried writing space with gentle prompts and zero judgment
+// MindBloom Journal Sanctuary matching the Figma design
+// Full separation of concerns, reactive prompt sparks, live archive search, and entry persistence
 
 import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  StyleSheet,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors } from '../../theme/colors';
 
-const PROMPTS = [
+// Modular Navigation
+import { SidebarNav } from '../../components/navigation/SidebarNav';
+import { BottomNavBar } from '../../components/navigation/BottomNavBar';
+
+// Modular Journal Components
+import { JournalHeader } from './components/JournalHeader';
+import { JournalEditor } from './components/JournalEditor';
+import { JournalArchive } from './components/JournalArchive';
+import { JournalInspirationCard } from './components/JournalInspirationCard';
+import { JournalEntryModal } from './components/JournalEntryModal';
+
+const SPARKS = [
   'What is one small thing that felt gentle today?',
   'What is a thought or weight you want to set down?',
   'How did your body feel when you woke up this morning?',
   'A kind word you wish someone would tell you right now.',
+  'What brought a quiet smile to your face recently?',
 ];
 
-export const JournalScreen = ({ navigation }) => {
+const INITIAL_ENTRIES = [
+  {
+    id: 'entry-1',
+    dayNumber: '14',
+    badgeBg: '#EDF5EE',
+    badgeColor: '#2C5A38',
+    title: 'A breath of fresh air',
+    feelingLabel: 'A little lighter',
+    body: 'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn’t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.',
+    dateString: 'SATURDAY, 14 NOVEMBER',
+  },
+  {
+    id: 'entry-2',
+    dayNumber: '12',
+    badgeBg: '#FFF5E8',
+    badgeColor: '#8A531C',
+    title: 'Letting today be enough',
+    feelingLabel: 'Somewhere in between',
+    body: 'Work was heavy, but I chose not to carry work thoughts into dinner. Small boundaries, slow progress.',
+    dateString: 'THURSDAY, 12 NOVEMBER',
+  },
+  {
+    id: 'entry-3',
+    dayNumber: '09',
+    badgeBg: '#F0EAFA',
+    badgeColor: colors.brand,
+    title: 'The little things',
+    feelingLabel: 'A little lighter',
+    body: 'A warm cup of tea and five minutes of absolute silence before the rush of the world began.',
+    dateString: 'MONDAY, 09 NOVEMBER',
+  },
+];
+
+export const JournalScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const [activePromptIndex, setActivePromptIndex] = useState(0);
-  const [entryText, setEntryText] = useState('');
-  const [savedCount, setSavedCount] = useState(0);
+  const companionId = route?.params?.companion || 'noodle';
 
-  const nextPrompt = () => {
-    setActivePromptIndex((prev) => (prev + 1) % PROMPTS.length);
+  // State Management
+  const [entries, setEntries] = useState(INITIAL_ENTRIES);
+  const [sparkIndex, setSparkIndex] = useState(0);
+  const [isSparkVisible, setIsSparkVisible] = useState(true);
+
+  // Active Draft
+  const [title, setTitle] = useState('A small, softer moment');
+  const [body, setBody] = useState(
+    'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.'
+  );
+  const [feeling, setFeeling] = useState('lighter');
+  const [draftState, setDraftState] = useState('Unsaved draft');
+
+  // Modal inspection
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Handlers
+  const handleNextSpark = () => {
+    setSparkIndex((prev) => (prev + 1) % SPARKS.length);
   };
 
-  const handleSave = () => {
-    if (!entryText.trim()) {
-      Alert.alert('Empty Page', 'Take your time. Even a single word is enough.');
+  const handleUsePrompt = (promptText) => {
+    if (!title.trim() || title === 'A small, softer moment') {
+      setTitle(promptText);
+    } else {
+      setBody((prev) => (prev ? `${prev}\n\nPrompt: "${promptText}"\n` : `Prompt: "${promptText}"\n`));
+    }
+    setDraftState('Draft updated');
+  };
+
+  const handleSaveEntry = () => {
+    if (!title.trim() && !body.trim()) {
+      Alert.alert('Empty Reflection', 'Take your time. Even a single gentle word is enough.');
       return;
     }
-    setSavedCount((c) => c + 1);
-    Alert.alert('Saved to Your Sanctuary', 'Your words are safely resting in your private journal.');
-    setEntryText('');
+
+    const feelingMap = {
+      heavy: { label: 'A little heavy', bg: '#F2EDFA', color: '#6E5D87' },
+      between: { label: 'Somewhere in between', bg: '#FFF5E8', color: '#8A531C' },
+      lighter: { label: 'A little lighter', bg: '#EDF5EE', color: '#2C5A38' },
+    };
+
+    const feelingInfo = feelingMap[feeling] || feelingMap.lighter;
+    const now = new Date();
+    const dayStr = String(now.getDate()).padStart(2, '0');
+
+    const newEntry = {
+      id: `entry-${Date.now()}`,
+      dayNumber: dayStr,
+      badgeBg: feelingInfo.bg,
+      badgeColor: feelingInfo.color,
+      title: title.trim() || 'A quiet thought',
+      feelingLabel: feelingInfo.label,
+      body: body.trim(),
+      dateString: 'TODAY, 16 NOVEMBER',
+    };
+
+    setEntries((prev) => [newEntry, ...prev]);
+    setDraftState('Saved · Just now');
+    Alert.alert(
+      'Saved in Your Sanctuary',
+      'Your words have been gently tucked into your private journal.'
+    );
+  };
+
+  const handleOpenEntry = (entry) => {
+    setSelectedEntry(entry);
+    setModalVisible(true);
+  };
+
+  const handleLoadIntoEditor = (entry) => {
+    setTitle(entry.title || '');
+    setBody(entry.body || '');
+    setDraftState('Editing saved moment');
+  };
+
+  const handlePrivacyInfo = () => {
+    Alert.alert(
+      'Your Private Sanctuary 🔒',
+      'Everything you write stays privately in your sanctuary. Zero tracking, zero ads, zero judgment.'
+    );
+  };
+
+  const handleNavigate = (routeId) => {
+    if (routeId === 'home') {
+      navigation?.navigate?.('Home');
+    } else if (routeId === 'journal') {
+      // already on journal
+    } else if (routeId === 'aurora') {
+      Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
+    } else if (routeId === 'soundscapes') {
+      Alert.alert('Chill & Soundscapes', 'Playing relaxing acoustic melodies and rain on tin roof.');
+    } else if (routeId === 'baraza') {
+      Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
+    } else if (routeId === 'acacia') {
+      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
+    } else if (routeId === 'sanctuary') {
+      Alert.alert('My Sanctuary', 'Your private wellness settings, streaks, and companion preferences.');
+    } else if (routeId === 'help') {
+      Alert.alert('Support & Crisis Resources', 'Need urgent help? Reach out to 1199 (Kenya) or local toll-free mental health support.');
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollContainer,
-            isWide && styles.scrollContainerWide,
-          ]}
-        >
-          <View style={[styles.wrapper, isWide && styles.wrapperWide]}>
-            {/* Top Navigation Bar */}
-            <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.backBtn}
-                onPress={() => navigation?.goBack?.() || navigation?.navigate?.('Home')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.backBtnText}>← Sanctuary Home</Text>
-              </TouchableOpacity>
-              <Text style={styles.tagPill}>PRIVATE · ZERO PRESSURE</Text>
-            </View>
+      <View style={styles.rootContainer}>
+        {/* Desktop Sidebar Navigation with Support Cards */}
+        {isWide && (
+          <SidebarNav
+            activeRoute="journal"
+            onNavigate={handleNavigate}
+            companionId={companionId}
+            showSupportCards={true}
+          />
+        )}
 
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>What's on your heart?</Text>
-              <Text style={styles.subhead}>
-                No word counts. No performance. Write as little or as much as feels right.
-              </Text>
-            </View>
+        {/* Main Content Area */}
+        <View style={styles.mainContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.scrollContainer,
+              isWide && styles.scrollContainerWide,
+            ]}
+          >
+            <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
+              {/* Header with Breadcrumbs & Weather (strictly zero county names) */}
+              <JournalHeader onPrivacyPress={handlePrivacyInfo} />
 
-            {/* Gentle Prompt Card */}
-            <View style={styles.promptCard}>
-              <View style={styles.promptHeader}>
-                <Text style={styles.promptTag}>GENTLE SPARK</Text>
-                <TouchableOpacity onPress={nextPrompt} activeOpacity={0.7}>
-                  <Text style={styles.shufflePromptText}>Another spark ↻</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.promptText}>"{PROMPTS[activePromptIndex]}"</Text>
-            </View>
+              {/* Title & Subtitle with Privacy Button */}
+              <View style={styles.titleSection}>
+                <View style={styles.titleCol}>
+                  <Text style={styles.pageTitle}>What's on your heart?</Text>
+                  <Text style={styles.pageSubtitle}>
+                    No word counts. No right answers. Just a moment for you.
+                  </Text>
+                </View>
 
-            {/* Journal Writing Area */}
-            <View style={styles.editorCard}>
-              <TextInput
-                style={styles.editorInput}
-                placeholder="Start typing here whenever you feel ready... Polepole."
-                placeholderTextColor="#A89BB5"
-                multiline
-                textAlignVertical="top"
-                value={entryText}
-                onChangeText={setEntryText}
-              />
-              <View style={styles.editorFooter}>
-                <Text style={styles.wordCount}>
-                  {entryText.trim() ? `${entryText.trim().split(/\s+/).length} words` : 'Blank page'}
-                </Text>
                 <TouchableOpacity
-                  style={[styles.saveBtn, !entryText.trim() && styles.saveBtnDisabled]}
-                  onPress={handleSave}
-                  disabled={!entryText.trim()}
-                  activeOpacity={0.88}
+                  style={styles.privacyBtn}
+                  onPress={handlePrivacyInfo}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.saveBtnText}>Save entry →</Text>
+                  <Text style={styles.privacyBtnText}>Privacy settings 🔒</Text>
                 </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Supportive Tagline */}
-            <Text style={styles.footerNote}>
-              Entries remain strictly on your device. Noodle is holding space for you.
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              {/* 2-Column Responsive Layout */}
+              <View style={[styles.columnsRow, isWide && styles.columnsRowWide]}>
+                {/* Left Column: Writing Editor */}
+                <View style={styles.editorCol}>
+                  <JournalEditor
+                    dateString="MONDAY, 16 NOVEMBER"
+                    title={title}
+                    onChangeTitle={(t) => {
+                      setTitle(t);
+                      setDraftState('Unsaved draft');
+                    }}
+                    body={body}
+                    onChangeBody={(b) => {
+                      setBody(b);
+                      setDraftState('Unsaved draft');
+                    }}
+                    selectedFeeling={feeling}
+                    onSelectFeeling={setFeeling}
+                    prompt={SPARKS[sparkIndex]}
+                    isPromptVisible={isSparkVisible}
+                    onUsePrompt={handleUsePrompt}
+                    onNextPrompt={handleNextSpark}
+                    onHidePrompt={() => setIsSparkVisible(false)}
+                    onShowPrompt={() => setIsSparkVisible(true)}
+                    onSave={handleSaveEntry}
+                    draftState={draftState}
+                  />
+
+                  {/* Gentle Footer Tagline */}
+                  <View style={styles.editorFooterRow}>
+                    <Text style={styles.footerWordsPace}>Your words. Your pace.</Text>
+                    <TouchableOpacity
+                      onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.footerHelpline}>Need urgent support?</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Right Column: Archive & Inspiration Card */}
+                <View style={[styles.archiveCol, isWide && styles.archiveColWide]}>
+                  <JournalArchive
+                    entries={entries}
+                    onSelectEntry={handleOpenEntry}
+                    onViewAll={() => Alert.alert('All Entries', `You have ${entries.length} saved moments in your journal.`)}
+                  />
+
+                  <JournalInspirationCard />
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Mobile Bottom Navigation Bar */}
+          {!isWide && (
+            <BottomNavBar
+              activeRoute="journal"
+              onNavigate={handleNavigate}
+              companionId={companionId}
+            />
+          )}
+        </View>
+      </View>
+
+      {/* Entry Inspection Modal */}
+      <JournalEntryModal
+        visible={modalVisible}
+        entry={selectedEntry}
+        onClose={() => setModalVisible(false)}
+        onLoadIntoEditor={handleLoadIntoEditor}
+      />
     </SafeAreaView>
   );
 };
@@ -134,147 +302,111 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF5EE',
   },
+  rootContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#FAF5EE',
+  },
+  mainContent: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 28,
+  },
+  scrollContainerWide: {
+    paddingHorizontal: 36,
     paddingTop: 16,
     paddingBottom: 40,
   },
-  scrollContainerWide: {
-    paddingHorizontal: 48,
-    paddingTop: 28,
-  },
-  wrapper: {
+  contentWrapper: {
     width: '100%',
-    maxWidth: 820,
+    maxWidth: 1040,
     alignSelf: 'center',
-    gap: 20,
+    gap: 16,
   },
-  wrapperWide: {
-    paddingVertical: 10,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  backBtn: {
+  contentWrapperWide: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
   },
-  backBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.brand,
+  titleSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 6,
   },
-  tagPill: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#8B6DA8',
-    letterSpacing: 0.8,
+  titleCol: {
+    gap: 4,
+    flex: 1,
+    minWidth: 260,
   },
-  header: {
-    gap: 6,
-  },
-  title: {
-    fontSize: 28,
+  pageTitle: {
+    fontSize: 26,
     fontWeight: '800',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
-  subhead: {
-    fontSize: 14,
+  pageSubtitle: {
+    fontSize: 13,
     color: colors.textSecondary,
-    lineHeight: 20,
   },
-  promptCard: {
-    backgroundColor: '#FFF5E8',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#FFE6C9',
-    gap: 8,
-  },
-  promptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  promptTag: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#8A531C',
-    letterSpacing: 0.8,
-  },
-  shufflePromptText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8A531C',
-  },
-  promptText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#3B2312',
-    lineHeight: 22,
-    fontStyle: 'italic',
-  },
-  editorCard: {
+  privacyBtn: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(73, 37, 66, 0.08)',
-    minHeight: 280,
-    justifyContent: 'space-between',
     shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  editorInput: {
-    fontSize: 15,
-    color: '#2E1E3B',
-    lineHeight: 24,
-    minHeight: 200,
+  privacyBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#6E5D87',
   },
-  editorFooter: {
+  columnsRow: {
+    flexDirection: 'column',
+    gap: 18,
+  },
+  columnsRowWide: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  editorCol: {
+    flex: 1.5,
+    gap: 12,
+  },
+  archiveCol: {
+    flex: 1,
+    gap: 16,
+  },
+  archiveColWide: {
+    maxWidth: 340,
+  },
+  editorFooterRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginTop: 4,
   },
-  wordCount: {
-    fontSize: 12,
+  footerWordsPace: {
+    fontSize: 11.5,
     color: '#8B6DA8',
-    fontWeight: '600',
-  },
-  saveBtn: {
-    backgroundColor: colors.brand,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  saveBtnDisabled: {
-    opacity: 0.4,
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  footerNote: {
-    fontSize: 12,
-    color: '#8B6DA8',
-    textAlign: 'center',
     fontStyle: 'italic',
-    marginTop: 8,
+  },
+  footerHelpline: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#8B6DA8',
   },
 });
