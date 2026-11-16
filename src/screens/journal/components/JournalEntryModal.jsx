@@ -6,6 +6,7 @@ import {
   View,
   Text,
   Modal,
+  Alert,
   TouchableOpacity,
   StyleSheet,
   ScrollView,

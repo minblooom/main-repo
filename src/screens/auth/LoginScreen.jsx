@@ -19,7 +19,7 @@ import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export const LoginScreen = ({ navigation }) => {
-  const { isMobile, isTablet, isDesktop } = useResponsiveLayout();
+  const { isTablet, isDesktop } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
   const [language, setLanguage] = useState('EN');
