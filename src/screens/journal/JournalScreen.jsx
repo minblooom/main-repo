@@ -302,6 +302,7 @@ export const JournalScreen = ({ navigation, route }) => {
                 companionId={companionId}
                 onPrivacyPress={handlePrivacyInfo}
                 onProfilePress={() => handleNavigate('sanctuary')}
+                onHomePress={() => handleNavigate('home')}
               />
 
               {/* Title & Subtitle with Privacy Button */}

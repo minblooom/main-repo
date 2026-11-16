@@ -6,7 +6,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-na
 import { colors } from '../../../theme/colors';
 import { COMPANION_MAP } from '../../../constants/companions';
 
-export const JournalHeader = ({ companionId = 'noodle', onPrivacyPress, onProfilePress }) => {
+export const JournalHeader = ({
+  companionId = 'noodle',
+  onPrivacyPress,
+  onProfilePress,
+  onHomePress,
+}) => {
   const [language, setLanguage] = useState('EN');
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
@@ -28,9 +33,15 @@ export const JournalHeader = ({ companionId = 'noodle', onPrivacyPress, onProfil
   return (
     <View style={styles.container}>
       {/* Breadcrumb / Location Indicator */}
-      <View style={styles.breadcrumb}>
-        <Text style={styles.breadcrumbText}>My sanctuary  /  Journal</Text>
-      </View>
+      <TouchableOpacity
+        style={styles.breadcrumb}
+        onPress={onHomePress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.breadcrumbText}>
+          <Text style={styles.breadcrumbLink}>My sanctuary</Text>  /  Journal
+        </Text>
+      </TouchableOpacity>
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
@@ -96,6 +107,10 @@ const styles = StyleSheet.create({
     color: '#8B6DA8',
     fontWeight: '600',
     letterSpacing: 0.2,
+  },
+  breadcrumbLink: {
+    color: colors.brand,
+    fontWeight: '700',
   },
   controlsRow: {
     flexDirection: 'row',
