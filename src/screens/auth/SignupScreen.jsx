@@ -60,7 +60,7 @@ export const SignupScreen = ({ navigation }) => {
     const name = nickname.trim() || 'Amani';
     // Navigate to companion selection onboarding
     if (navigation) {
-      navigation.navigate('CompanionSelect');
+      navigation.navigate('GentleHello');
     } else {
       Alert.alert('Space Created', `Karibu sana, ${name}! Your peaceful sanctuary is ready.`);
     }
