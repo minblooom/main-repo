@@ -2,7 +2,7 @@
 // MindBloom Sanctuary Home Screen matching the Figma design
 // Responsive: Desktop sidebar on wide screens, bottom navigation bar on mobile
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors } from '../../theme/colors';
+import { onboardingStorage } from '../../services/onboardingStorage';
 
 // Modular Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
@@ -28,8 +29,25 @@ export const HomeScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const companionId = route?.params?.companion || 'noodle';
   const [activeTab, setActiveTab] = useState('home');
+  const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
+  const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await onboardingStorage.getPreferences();
+        if (saved) {
+          if (saved.companion && !route?.params?.companion) {
+            setCompanionId(saved.companion);
+          }
+          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
+            setUserFocusAreas(saved.focusAreas);
+          }
+        }
+      } catch {}
+    })();
+  }, [route?.params]);
 
   const handleNavigate = (routeId) => {
     setActiveTab(routeId);
@@ -91,7 +109,7 @@ export const HomeScreen = ({ navigation, route }) => {
               {/* "A Moment for You" 3 Activities */}
               <MomentsSection
                 isWide={isWide}
-                userFocusAreas={route?.params?.focusAreas || ['anxiety']}
+                userFocusAreas={userFocusAreas}
                 onSelectMoment={(id) => handleNavigate(id)}
               />
             </View>

@@ -39,7 +39,7 @@ const MAX_SELECT = 3;
 export const FocusAreasScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState(route?.params?.focusAreas || []);
 
   const toggle = (id) => {
     setSelected((prev) => {

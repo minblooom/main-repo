@@ -26,6 +26,7 @@ import { JournalArchive } from './components/JournalArchive';
 import { JournalInspirationCard } from './components/JournalInspirationCard';
 import { JournalEntryModal } from './components/JournalEntryModal';
 import { AllEntriesModal } from './components/AllEntriesModal';
+import { onboardingStorage } from '../../services/onboardingStorage';
 
 const SPARKS = [
   'What is one small thing that felt gentle today?',
@@ -72,7 +73,18 @@ export const JournalScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const companionId = route?.params?.companion || 'noodle';
+  const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await onboardingStorage.getPreferences();
+        if (saved?.companion && !route?.params?.companion) {
+          setCompanionId(saved.companion);
+        }
+      } catch {}
+    })();
+  }, [route?.params]);
 
   // State Management
   const [entries, setEntries] = useState(INITIAL_ENTRIES);

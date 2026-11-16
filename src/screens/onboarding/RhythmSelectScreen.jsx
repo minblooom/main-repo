@@ -27,8 +27,8 @@ const RHYTHMS = [
 export const RhythmSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [rhythm, setRhythm] = useState('2');
-  const [nudges, setNudges] = useState(false);
+  const [rhythm, setRhythm] = useState(route?.params?.rhythm || '2');
+  const [nudges, setNudges] = useState(Boolean(route?.params?.nudges));
 
   const selected = RHYTHMS.find((r) => r.id === rhythm);
 

@@ -18,6 +18,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { COMPANION_MAP } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
+import { onboardingStorage } from '../../services/onboardingStorage';
 
 const FOCUS_LABEL_MAP = {
   anxiety: 'Anxiety & Overwhelm',
@@ -82,10 +83,38 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
     return () => loop.stop();
   }, []);
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
+    try {
+      await onboardingStorage.setOnboardingCompleted(true);
+      await onboardingStorage.savePreferences({
+        companion: params.companion || 'noodle',
+        focusAreas: params.focusAreas || [],
+        rhythm: params.rhythm || '2',
+        nudges: Boolean(params.nudges),
+        country: params.country || 'ke',
+        language: params.language || 'English',
+        age: params.age || '22',
+        ageGroup: params.ageGroup || '22-25',
+        completedAt: new Date().toISOString(),
+      });
+    } catch {
+      // Memory fallback active
+    }
+
     if (navigation) {
-      // If Home screen route exists in navigator, navigate; else fallback gracefully
-      navigation.navigate('Home');
+      if (typeof navigation.replace === 'function') {
+        navigation.replace('Home', {
+          companion: params.companion || 'noodle',
+          focusAreas: params.focusAreas || [],
+          rhythm: params.rhythm || '2',
+        });
+      } else {
+        navigation.navigate('Home', {
+          companion: params.companion || 'noodle',
+          focusAreas: params.focusAreas || [],
+          rhythm: params.rhythm || '2',
+        });
+      }
     }
   };
 

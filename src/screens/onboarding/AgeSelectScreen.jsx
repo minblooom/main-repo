@@ -28,8 +28,8 @@ export const AgeSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const [typedAge, setTypedAge] = useState('22');
-  const [selectedGroup, setSelectedGroup] = useState('22-25');
+  const [typedAge, setTypedAge] = useState(route?.params?.age || '22');
+  const [selectedGroup, setSelectedGroup] = useState(route?.params?.ageGroup || '22-25');
 
   const handleAgeChange = (text) => {
     const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);

@@ -27,16 +27,20 @@ const COUNTRIES = [
 
 const LANGUAGES = ['English', 'Kiswahili', 'Sheng'];
 
-export const LocalSetupScreen = ({ navigation }) => {
+export const LocalSetupScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [country, setCountry] = useState('ke');
-  const [language, setLanguage] = useState('English');
+  const [country, setCountry] = useState(route?.params?.country || 'ke');
+  const [language, setLanguage] = useState(route?.params?.language || 'English');
   const [elsewhere, setElsewhere] = useState(false);
 
   const handleContinue = () => {
     if (!navigation) return;
-    navigation.navigate('CompanionSelect', { country, language });
+    navigation.navigate('CompanionSelect', {
+      ...(route?.params ?? {}),
+      country,
+      language,
+    });
   };
 
   return (

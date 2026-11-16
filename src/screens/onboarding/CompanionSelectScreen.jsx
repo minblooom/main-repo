@@ -23,7 +23,7 @@ import { colors } from '../../theme/colors';
 export const CompanionSelectScreen = ({ navigation, route }) => {
   const { width, isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [selected, setSelected] = useState('noodle');
+  const [selected, setSelected] = useState(route?.params?.companion || 'noodle');
 
   const bounceAnims = useRef(COMPANIONS.map(() => new Animated.Value(1))).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;

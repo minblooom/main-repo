@@ -56,9 +56,16 @@ export const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = () => {
-    const user = identifier.trim() || 'Friend';
-    // Navigate to main app home — will be wired when Home screen is built
-    Alert.alert('Welcome Back', `Good to see you, ${user}. Pick up wherever you are today.`);
+    const user = identifier.trim() || 'soso';
+    if (navigation) {
+      if (typeof navigation.replace === 'function') {
+        navigation.replace('Home');
+      } else {
+        navigation.navigate('Home');
+      }
+    } else {
+      Alert.alert('Welcome Back', `Good to see you, ${user}. Pick up wherever you are today.`);
+    }
   };
 
   const handleForgotPassword = () => {
