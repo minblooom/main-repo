@@ -30,7 +30,7 @@ export const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Splash"
+        initialRouteName="Journal"
         screenOptions={{
           headerShown: false,
           animation: 'fade',
