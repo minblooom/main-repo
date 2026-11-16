@@ -15,14 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { onboardingStorage } from '../../services/onboardingStorage';
 
 export const SplashScreen = ({ onFinish, navigation }) => {
   const { height, isDesktop, isTablet, containerMaxWidth } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-
-  const targetScreenRef = useRef('Welcome');
-  const savedPrefsRef = useRef(null);
 
   // Floating gentle breath animation for the hero arch
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -33,22 +29,6 @@ export const SplashScreen = ({ onFinish, navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Check onboarding completion status asynchronously
-    (async () => {
-      try {
-        const isDone = await onboardingStorage.isOnboardingCompleted();
-        if (isDone) {
-          const prefs = await onboardingStorage.getPreferences();
-          targetScreenRef.current = 'Home';
-          savedPrefsRef.current = prefs;
-        } else {
-          targetScreenRef.current = 'Welcome';
-        }
-      } catch {
-        targetScreenRef.current = 'Welcome';
-      }
-    })();
-
     // Fade in whole view
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -103,17 +83,9 @@ export const SplashScreen = ({ onFinish, navigation }) => {
 
   const handleProceed = () => {
     if (onFinish) {
-      onFinish(targetScreenRef.current, savedPrefsRef.current);
+      onFinish();
     } else if (navigation) {
-      if (targetScreenRef.current === 'Home') {
-        if (typeof navigation.replace === 'function') {
-          navigation.replace('Home', savedPrefsRef.current || {});
-        } else {
-          navigation.navigate('Home', savedPrefsRef.current || {});
-        }
-      } else {
-        navigation.navigate('Welcome');
-      }
+      navigation.navigate('Welcome');
     }
   };
 
