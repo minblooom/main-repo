@@ -4,9 +4,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { colors } from '../../../theme/colors';
+import { COMPANION_MAP } from '../../../constants/companions';
 
-export const HomeHeader = () => {
+export const HomeHeader = ({ companionId = 'noodle', onProfilePress }) => {
   const [language, setLanguage] = useState('EN');
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'No unread alerts. Your space is calm and peaceful.');
@@ -48,14 +50,18 @@ export const HomeHeader = () => {
           <Text style={styles.iconEmoji}>🔔</Text>
         </TouchableOpacity>
 
-        {/* Profile Avatar with Sloth */}
-        <View style={styles.avatarCircle}>
+        {/* Profile Avatar with Chosen Companion */}
+        <TouchableOpacity
+          style={styles.avatarCircle}
+          onPress={onProfilePress}
+          activeOpacity={0.8}
+        >
           <Image
-            source={require('../../../../assets/images/sloth.jpg')}
+            source={companion.image}
             style={styles.avatarImage}
             resizeMode="cover"
           />
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );

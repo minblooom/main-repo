@@ -42,7 +42,7 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
   const isWide = isDesktop || isTablet;
 
   const params = route?.params ?? {};
-  const companion = COMPANION_MAP.noodle;
+  const companion = COMPANION_MAP[params.companion] || COMPANION_MAP.noodle;
   const focusAreas = (params.focusAreas ?? []).map((id) => FOCUS_LABEL_MAP[id] ?? id);
   const rhythm = params.rhythm ?? '2';
 

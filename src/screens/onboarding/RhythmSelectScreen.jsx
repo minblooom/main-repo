@@ -17,6 +17,7 @@ import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
 import { colors } from '../../theme/colors';
+import { COMPANION_MAP } from '../../constants/companions';
 
 const RHYTHMS = [
   { id: '2',  mins: '2',  label: 'A tiny reset',         desc: 'For the days that are already a lot.' },
@@ -30,6 +31,7 @@ export const RhythmSelectScreen = ({ navigation, route }) => {
   const [rhythm, setRhythm] = useState(route?.params?.rhythm || '2');
   const [nudges, setNudges] = useState(Boolean(route?.params?.nudges));
 
+  const companion = COMPANION_MAP[route?.params?.companion] || COMPANION_MAP.noodle;
   const selected = RHYTHMS.find((r) => r.id === rhythm);
 
   const handleContinue = () => {
@@ -52,7 +54,8 @@ export const RhythmSelectScreen = ({ navigation, route }) => {
               tag="LITTLE STEPS, REAL YOU."
               heading={'Tiny counts.\nEven today.'}
               quote='"No streaks to protect. No falling behind."'
-              author="Noodle · here for the small steps"
+              author={companion.author}
+              image={companion.image}
               isWide={isWide}
             />
 

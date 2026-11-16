@@ -4,9 +4,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { colors } from '../../../theme/colors';
+import { COMPANION_MAP } from '../../../constants/companions';
 
-export const JournalHeader = ({ onPrivacyPress }) => {
+export const JournalHeader = ({ companionId = 'noodle', onPrivacyPress, onProfilePress }) => {
   const [language, setLanguage] = useState('EN');
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
@@ -60,13 +62,17 @@ export const JournalHeader = ({ onPrivacyPress }) => {
         </TouchableOpacity>
 
         {/* Profile Companion Avatar */}
-        <View style={styles.avatarCircle}>
+        <TouchableOpacity
+          style={styles.avatarCircle}
+          onPress={onProfilePress}
+          activeOpacity={0.8}
+        >
           <Image
-            source={require('../../../../assets/images/sloth.jpg')}
+            source={companion.image}
             style={styles.avatarImage}
             resizeMode="cover"
           />
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );

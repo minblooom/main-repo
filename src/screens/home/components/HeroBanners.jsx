@@ -12,8 +12,15 @@ import {
   Platform,
 } from 'react-native';
 import { colors } from '../../../theme/colors';
+import { COMPANION_MAP } from '../../../constants/companions';
 
-export const HeroBanners = ({ isWide = false, onAuroraPress, onBreathPress }) => {
+export const HeroBanners = ({
+  isWide = false,
+  companionId = 'noodle',
+  onAuroraPress,
+  onBreathPress,
+}) => {
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -68,9 +75,9 @@ export const HeroBanners = ({ isWide = false, onAuroraPress, onBreathPress }) =>
             { transform: [{ translateY: floatAnim }] },
           ]}
         >
-          <View style={styles.mascotCircle}>
+          <View style={[styles.mascotCircle, { backgroundColor: companion.accent || '#FAF5EE' }]}>
             <Image
-              source={require('../../../../assets/images/sloth.jpg')}
+              source={companion.image}
               style={styles.mascotImage}
               resizeMode="cover"
             />

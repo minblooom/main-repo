@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 
-export const JournalInspirationCard = () => {
+export const JournalInspirationCard = ({ companionName = 'Noodle' }) => {
   return (
     <View style={styles.card}>
       <Text style={styles.icon}>✨</Text>
@@ -13,7 +13,7 @@ export const JournalInspirationCard = () => {
         Some days, one line is a whole beginning.
       </Text>
       <Text style={styles.subtext}>
-        Polepole. Your journal can wait until you feel ready.
+        Polepole. {companionName} and your journal can wait until you feel ready.
       </Text>
     </View>
   );

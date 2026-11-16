@@ -91,7 +91,10 @@ export const HomeScreen = ({ navigation, route }) => {
           >
             <View style={[styles.contentMaxWrapper, isWide && styles.contentMaxWrapperWide]}>
               {/* Header with Breadcrumb & Weather */}
-              <HomeHeader />
+              <HomeHeader
+                companionId={companionId}
+                onProfilePress={() => handleNavigate('sanctuary')}
+              />
 
               {/* Welcoming Greeting */}
               <GreetingSection userName="soso" />
@@ -99,9 +102,10 @@ export const HomeScreen = ({ navigation, route }) => {
               {/* Gentle Mood Check-in */}
               <MoodCheckIn />
 
-              {/* Hero Twin Banners: Aurora & Sloth Mascot + Tulia Breath */}
+              {/* Hero Twin Banners: Aurora & Companion Mascot + Tulia Breath */}
               <HeroBanners
                 isWide={isWide}
+                companionId={companionId}
                 onAuroraPress={() => handleNavigate('aurora')}
                 onBreathPress={() => handleNavigate('breath')}
               />

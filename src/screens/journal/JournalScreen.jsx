@@ -27,14 +27,47 @@ import { JournalInspirationCard } from './components/JournalInspirationCard';
 import { JournalEntryModal } from './components/JournalEntryModal';
 import { AllEntriesModal } from './components/AllEntriesModal';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { COMPANION_MAP } from '../../constants/companions';
 
-const SPARKS = [
-  'What is one small thing that felt gentle today?',
-  'What is a thought or weight you want to set down?',
-  'How did your body feel when you woke up this morning?',
-  'A kind word you wish someone would tell you right now.',
-  'What brought a quiet smile to your face recently?',
-];
+const FOCUS_SPARKS = {
+  anxiety: [
+    'What is one thing that felt gentle or safe today?',
+    'What made you feel tight in your chest today?',
+    'A thought you can tell yourself: "I am safe in this quiet moment."',
+    'What is one expectation you can take off your shoulders right now?',
+  ],
+  burnout: [
+    'What can you put down or let go of today?',
+    'What would true rest feel like right now without guilt?',
+    'Where did you spend emotional energy today that you want back?',
+    'What is one boundary that kept you a little more at peace?',
+  ],
+  sleep: [
+    'What thoughts are asking for your attention tonight?',
+    'Permission to put the day to sleep. What can wait until tomorrow?',
+    'What is one peaceful sensation you noticed today?',
+  ],
+  low_mood: [
+    'What is one tiny, gentle thing you did for yourself today?',
+    'How would you comfort a friend feeling the way you feel right now?',
+    'It is okay not to feel sunny. What does your heart need right now?',
+  ],
+  body: [
+    'How did your body carry you through today?',
+    'What is one way you can offer your body kindness and softness right now?',
+  ],
+  strong_one: [
+    'You do not have to hold everything alone. What can you share or set down?',
+    'Who was there for you when you needed holding up?',
+  ],
+  default: [
+    'What is one small thing that felt gentle today?',
+    'What is a thought or weight you want to set down?',
+    'How did your body feel when you woke up this morning?',
+    'A kind word you wish someone would tell you right now.',
+    'What brought a quiet smile to your face recently?',
+  ],
+};
 
 const INITIAL_ENTRIES = [
   {
@@ -74,17 +107,26 @@ export const JournalScreen = ({ navigation, route }) => {
   const isWide = isDesktop || isTablet;
 
   const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
+  const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
 
   useEffect(() => {
     (async () => {
       try {
         const saved = await onboardingStorage.getPreferences();
-        if (saved?.companion && !route?.params?.companion) {
-          setCompanionId(saved.companion);
+        if (saved) {
+          if (saved.companion && !route?.params?.companion) {
+            setCompanionId(saved.companion);
+          }
+          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
+            setUserFocusAreas(saved.focusAreas);
+          }
         }
       } catch {}
     })();
   }, [route?.params]);
+
+  const activeSparks = FOCUS_SPARKS[userFocusAreas?.[0]] || FOCUS_SPARKS.default;
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
   // State Management
   const [entries, setEntries] = useState(INITIAL_ENTRIES);
@@ -107,7 +149,7 @@ export const JournalScreen = ({ navigation, route }) => {
 
   // Handlers
   const handleNextSpark = () => {
-    setSparkIndex((prev) => (prev + 1) % SPARKS.length);
+    setSparkIndex((prev) => (prev + 1) % activeSparks.length);
   };
 
   const handleUsePrompt = (promptText) => {
@@ -256,7 +298,11 @@ export const JournalScreen = ({ navigation, route }) => {
           >
             <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
               {/* Header with Breadcrumbs & Weather (strictly zero county names) */}
-              <JournalHeader onPrivacyPress={handlePrivacyInfo} />
+              <JournalHeader
+                companionId={companionId}
+                onPrivacyPress={handlePrivacyInfo}
+                onProfilePress={() => handleNavigate('sanctuary')}
+              />
 
               {/* Title & Subtitle with Privacy Button */}
               <View style={styles.titleSection}>
@@ -294,7 +340,7 @@ export const JournalScreen = ({ navigation, route }) => {
                     }}
                     selectedFeeling={feeling}
                     onSelectFeeling={setFeeling}
-                    prompt={SPARKS[sparkIndex]}
+                    prompt={activeSparks[sparkIndex % activeSparks.length]}
                     isPromptVisible={isSparkVisible}
                     onUsePrompt={handleUsePrompt}
                     onNextPrompt={handleNextSpark}
@@ -326,7 +372,7 @@ export const JournalScreen = ({ navigation, route }) => {
                     onViewAll={() => setAllEntriesVisible(true)}
                   />
 
-                  <JournalInspirationCard />
+                  <JournalInspirationCard companionName={companion.name} />
                 </View>
               </View>
             </View>

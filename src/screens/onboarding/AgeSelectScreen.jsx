@@ -16,6 +16,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { COMPANION_MAP } from '../../constants/companions';
 
 const AGE_GROUPS = [
   { id: '13-17', min: 13, max: 17, defaultVal: '16', label: '13–17', desc: 'Finding who you are' },
@@ -27,6 +28,8 @@ const AGE_GROUPS = [
 export const AgeSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+
+  const companion = COMPANION_MAP[route?.params?.companion] || COMPANION_MAP.noodle;
 
   const [typedAge, setTypedAge] = useState(route?.params?.age || '22');
   const [selectedGroup, setSelectedGroup] = useState(route?.params?.ageGroup || '22-25');
@@ -78,8 +81,9 @@ export const AgeSelectScreen = ({ navigation, route }) => {
             <OnboardingHeroCard
               tag="LITTLE STEPS, REAL YOU."
               heading={"Growing isn't\na race."}
-              quote='"There’s no timeline for figuring life out."'
-              author="Noodle · here for the small steps"
+              quote={companion.quote}
+              author={companion.author}
+              image={companion.image}
               isWide={isWide}
             />
 

@@ -16,6 +16,7 @@ import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
 import { colors } from '../../theme/colors';
+import { COMPANION_MAP } from '../../constants/companions';
 
 const FOCUS_AREAS = [
   { id: 'anxiety',       label: 'Anxiety & Overwhelm',       desc: 'Mentally exhausting' },
@@ -39,6 +40,8 @@ const MAX_SELECT = 3;
 export const FocusAreasScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+
+  const companion = COMPANION_MAP[route?.params?.companion] || COMPANION_MAP.noodle;
   const [selected, setSelected] = useState(route?.params?.focusAreas || []);
 
   const toggle = (id) => {
@@ -83,7 +86,8 @@ export const FocusAreasScreen = ({ navigation, route }) => {
               tag="LITTLE STEPS, REAL YOU."
               heading={'All of you\nis welcome\nhere.'}
               quote='"You don’t need the perfect words."'
-              author="Noodle · here for the small steps"
+              author={companion.author}
+              image={companion.image}
               isWide={isWide}
             />
 
