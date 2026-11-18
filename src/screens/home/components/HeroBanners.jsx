@@ -1,18 +1,15 @@
 // src/screens/home/components/HeroBanners.jsx
-// Side-by-side hero cards: Aurora AI Companion (with Sloth mascot) & Tulia Breath reset
+// Side-by-side hero cards: Aurora AI Companion (with Dynamic Animated Companion) & Tulia Breath reset
 
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
-  Animated,
-  Platform,
 } from 'react-native';
 import { colors } from '../../../theme/colors';
-import { COMPANION_MAP } from '../../../constants/companions';
+import { AnimatedCompanion } from '../../../../src/components/companion/AnimatedCompanion';
 
 export const HeroBanners = ({
   isWide = false,
@@ -20,31 +17,9 @@ export const HeroBanners = ({
   onAuroraPress,
   onBreathPress,
 }) => {
-  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
-  const floatAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: -5,
-          duration: 2400,
-          useNativeDriver: Platform.OS !== 'web',
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 2400,
-          useNativeDriver: Platform.OS !== 'web',
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
   return (
     <View style={[styles.container, isWide && styles.containerWide]}>
-      {/* ── CARD 1: AURORA COMPANION (Lavender with Sloth Mascot) ───── */}
+      {/* ── CARD 1: AURORA COMPANION (Lavender with Animated Companion) ── */}
       <View style={[styles.card, styles.auroraCard]}>
         <View style={styles.cardContent}>
           <View style={styles.tagPill}>
@@ -68,21 +43,15 @@ export const HeroBanners = ({
           </TouchableOpacity>
         </View>
 
-        {/* Sloth Mascot Container */}
-        <Animated.View
-          style={[
-            styles.mascotContainer,
-            { transform: [{ translateY: floatAnim }] },
-          ]}
-        >
-          <View style={[styles.mascotCircle, { backgroundColor: companion.accent || '#FAF5EE' }]}>
-            <Image
-              source={companion.image}
-              style={styles.mascotImage}
-              resizeMode="cover"
-            />
-          </View>
-        </Animated.View>
+        {/* Dynamic Living Animated Companion */}
+        <View style={styles.mascotContainer}>
+          <AnimatedCompanion
+            companionId={companionId}
+            size={112}
+            state="idle"
+            interactive={true}
+          />
+        </View>
       </View>
 
       {/* ── CARD 2: TULIA BREATH (Mint Green Reset) ────────────────── */}
@@ -203,31 +172,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Sloth Mascot on Aurora Card
+  // Companion Container
   mascotContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     marginLeft: 4,
-  },
-  mascotCircle: {
-    width: 115,
-    height: 115,
-    borderRadius: 58,
-    backgroundColor: '#FAF5EE',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    overflow: 'hidden',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  mascotImage: {
-    width: 115,
-    height: 135,
-    marginTop: -8,
   },
 
   // Breath Card Styles
