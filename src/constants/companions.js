@@ -9,6 +9,7 @@ export const COMPANIONS = [
     trait: 'Calm & steady',
     swTrait: 'Tulivu na imara',
     image: require('../../assets/images/sloth.jpg'),
+    cutoutImage: require('../../assets/images/sloth_cutout.png'),
     accent: '#E8DEFF',
   },
   {
@@ -18,6 +19,7 @@ export const COMPANIONS = [
     trait: 'Curious & bright',
     swTrait: 'Mdadisi na angavu',
     image: require('../../assets/images/fox.jpg'),
+    cutoutImage: require('../../assets/images/fox_cutout.png'),
     accent: '#FFE8D6',
   },
   {
@@ -27,6 +29,7 @@ export const COMPANIONS = [
     trait: 'Brave & warm',
     swTrait: 'Jasiri na mwenye upendo',
     image: require('../../assets/images/lion.jpg'),
+    cutoutImage: require('../../assets/images/lion_cutout.png'),
     accent: '#FFF3D6',
   },
   {
@@ -36,6 +39,7 @@ export const COMPANIONS = [
     trait: 'Wise & grounded',
     swTrait: 'Mwenye hekima na utulivu',
     image: require('../../assets/images/turtle.jpg'),
+    cutoutImage: require('../../assets/images/turtle_cutout.png'),
     accent: '#D6EFDE',
   },
 ];

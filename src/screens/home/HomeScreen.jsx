@@ -81,9 +81,10 @@ export const HomeScreen = ({ navigation, route }) => {
               {/* Gentle Mood Check-in */}
               <MoodCheckIn />
 
-              {/* Hero Twin Banners: Aurora & Sloth Mascot + Tulia Breath */}
+              {/* Hero Twin Banners: Aurora & Animated Companion Mascot + Tulia Breath */}
               <HeroBanners
                 isWide={isWide}
+                companionId={companionId}
                 onAuroraPress={() => handleNavigate('aurora')}
                 onBreathPress={() => handleNavigate('breath')}
               />
