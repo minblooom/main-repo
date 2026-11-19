@@ -29,6 +29,7 @@ export const AnimatedCompanion = ({
   state = 'idle', // 'idle' | 'breathe' | 'happy' | 'sleep'
   interactive = true,
   showSpeechBubble = false,
+  showAura = true,
   useCutout = true,
   customQuote,
   onPress,
@@ -215,7 +216,7 @@ export const AnimatedCompanion = ({
   });
 
   const auraSize = size * 1.32;
-  const imageSize = size * 1.08;
+  const imageSize = size * 0.86;
 
   return (
     <View style={styles.container}>
@@ -245,19 +246,22 @@ export const AnimatedCompanion = ({
         style={styles.touchable}
       >
         {/* Breathing Aura Glow */}
-        <Animated.View
-          style={[
-            styles.auraHalo,
-            {
-              width: auraSize,
-              height: auraSize,
-              borderRadius: auraSize / 2,
-              backgroundColor: companion.accent || '#E8DEFF',
-              opacity: auraAnim,
-              transform: [{ scale: breathAnim }],
-            },
-          ]}
-        />
+        {showAura && (
+          <Animated.View
+            style={[
+              styles.auraHalo,
+              {
+                width: auraSize,
+                height: auraSize,
+                borderRadius: auraSize / 2,
+                backgroundColor: companion.accent || '#E8DEFF',
+                opacity: auraAnim,
+                transform: [{ scale: breathAnim }],
+                ...(Platform.OS === 'web' ? { filter: 'blur(16px)' } : {}),
+              },
+            ]}
+          />
+        )}
 
         {/* Mascot Frame with Combined Breath & Tap Spring */}
         <Animated.View
@@ -267,6 +271,7 @@ export const AnimatedCompanion = ({
               width: size,
               height: size,
               borderRadius: size / 2,
+              backgroundColor: companion.accent || '#FAF5EE',
               transform: [
                 { translateY: floatAnim },
                 { scale: Animated.multiply(breathAnim, tapScale) },
@@ -279,7 +284,7 @@ export const AnimatedCompanion = ({
             source={imageSource}
             style={[
               styles.mascotImg,
-              { width: imageSize, height: imageSize * 1.15 },
+              { width: imageSize, height: imageSize },
             ]}
             resizeMode="contain"
           />
@@ -313,7 +318,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignSelf: 'center',
     zIndex: 1,
-    filter: Platform.OS === 'web' ? 'blur(16px)' : undefined,
   },
   mascotCircle: {
     backgroundColor: '#FAF5EE',
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   mascotImg: {
-    marginTop: -4,
+    alignSelf: 'center',
   },
   tapIndicator: {
     position: 'absolute',

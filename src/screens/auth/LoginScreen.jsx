@@ -1,6 +1,4 @@
-// src/screens/auth/LoginScreen.jsx
-// "Welcome back" — sign-in form screen
-// Figma: "02 – Welcome back" (Desktop + Mobile)
+
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -26,6 +24,8 @@ export const LoginScreen = ({ navigation }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
 
   // Gentle float animation for the sloth mascot
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -55,16 +55,46 @@ export const LoginScreen = ({ navigation }) => {
     );
   };
 
+  const validateLogin = (idVal, passVal) => {
+    const errs = {};
+    const id = (idVal !== undefined ? idVal : identifier).trim();
+    const p = passVal !== undefined ? passVal : password;
+
+    if (!id) {
+      errs.identifier = 'Please enter your email, phone or nickname.';
+    } else if (id.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(id)) {
+        errs.identifier = 'Please enter a valid email address.';
+      }
+    } else if (id.length < 2) {
+      errs.identifier = 'Nickname or username must be at least 2 characters.';
+    }
+
+    if (!p) {
+      errs.password = 'Please enter your password.';
+    } else if (p.length < 6) {
+      errs.password = 'Password must be at least 6 characters.';
+    }
+
+    return errs;
+  };
+
   const handleLogin = () => {
-    const user = identifier.trim() || 'soso';
+    setSubmitted(true);
+    const errs = validateLogin();
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      return;
+    }
+
     if (navigation) {
       if (typeof navigation.replace === 'function') {
         navigation.replace('Home');
       } else {
         navigation.navigate('Home');
       }
-    } else {
-      Alert.alert('Welcome Back', `Good to see you, ${user}. Pick up wherever you are today.`);
     }
   };
 
@@ -87,7 +117,7 @@ export const LoginScreen = ({ navigation }) => {
       >
         <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
 
-          {/* ── HEADER ─────────────────────────────────── */}
+          {/* -- HEADER ----------------------------------- */}
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
@@ -108,10 +138,10 @@ export const LoginScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ── MAIN CONTENT ───────────────────────────── */}
+          {/* -- MAIN CONTENT ----------------------------- */}
           <View style={[s.mainLayout, isWide && s.mainLayoutWide]}>
 
-            {/* ── LEFT: COMPANION HERO CARD ─────────────── */}
+            {/* -- LEFT: COMPANION HERO CARD --------------- */}
             <View style={[s.companionCard, isWide && s.companionCardWide]}>
               <Text style={s.tagText}>KARIBU TENA · WELCOME BACK</Text>
 
@@ -127,9 +157,9 @@ export const LoginScreen = ({ navigation }) => {
               >
                 <View style={s.mascotCircle}>
                   <Image
-                    source={require('../../../assets/images/sloth.jpg')}
+                    source={require('../../../assets/images/sloth_cutout.png')}
                     style={s.mascotImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
                 <Text style={s.sparkleTopLeft}>✦</Text>
@@ -144,7 +174,7 @@ export const LoginScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {/* ── RIGHT: LOGIN FORM ─────────────────────── */}
+            {/* -- RIGHT: LOGIN FORM ----------------------- */}
             <View style={[s.formContainer, isWide && s.formContainerWide]}>
               <Text style={s.formTitle}>Good to see you.</Text>
               <Text style={s.formSubhead}>Pick up wherever you are today.</Text>
@@ -167,26 +197,39 @@ export const LoginScreen = ({ navigation }) => {
               <View style={s.fieldsBlock}>
 
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Email, phone or nickname</Text>
+                  <Text style={s.fieldLabel}>Email, phone or nickname *</Text>
                   <TextInput
-                    style={s.textInput}
+                    style={[s.textInput, (submitted && errors.identifier) && s.inputError]}
                     value={identifier}
-                    onChangeText={setIdentifier}
-                    placeholder="wanjiku@email.com"
+                    onChangeText={(text) => {
+                      setIdentifier(text);
+                      if (submitted) {
+                        setErrors(validateLogin(text, undefined));
+                      }
+                    }}
+                    placeholder="wanjiku@email.com or nickname"
                     placeholderTextColor="#76648E"
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
                   />
+                  {submitted && errors.identifier ? (
+                    <Text style={s.errorText}>{errors.identifier}</Text>
+                  ) : null}
                 </View>
 
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Your password</Text>
-                  <View style={s.passwordInputWrapper}>
+                  <Text style={s.fieldLabel}>Your password *</Text>
+                  <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
                       style={s.passwordInput}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (submitted) {
+                          setErrors(validateLogin(undefined, text));
+                        }
+                      }}
                       placeholder="••••••••••••"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showPassword}
@@ -198,6 +241,9 @@ export const LoginScreen = ({ navigation }) => {
                       <Text style={s.showBtnText}>{showPassword ? 'Hide' : 'Show'}</Text>
                     </TouchableOpacity>
                   </View>
+                  {submitted && errors.password ? (
+                    <Text style={s.errorText}>{errors.password}</Text>
+                  ) : null}
                   <TouchableOpacity
                     onPress={handleForgotPassword}
                     style={s.forgotBtn}

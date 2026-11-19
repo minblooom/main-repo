@@ -1,0 +1,119 @@
+// src/screens/profile/styles/VocabularyModal.styles.js
+import { StyleSheet, Platform } from 'react-native';
+import { colors } from '../../../theme/colors';
+
+export const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(26, 16, 36, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '85%',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 37, 66, 0.08)',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    gap: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  tag: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  subtitle: {
+    fontSize: 12.5,
+    marginBottom: 4,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FAF5EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtnText: {
+    fontSize: 14,
+    color: '#8B6DA8',
+    fontWeight: '700',
+  },
+  scroll: {
+    gap: 12,
+    paddingVertical: 4,
+  },
+  wordCard: {
+    backgroundColor: '#FAF7F2',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 37, 66, 0.06)',
+    gap: 4,
+  },
+  wordHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  wordTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#2E1E46',
+  },
+  wordTag: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#8B6DA8',
+    backgroundColor: '#EAE3F7',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  wordPronounce: {
+    fontSize: 11.5,
+    fontStyle: 'italic',
+    color: '#8B6DA8',
+  },
+  wordMeaning: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginTop: 2,
+  },
+  wordUsage: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
+  doneBtn: {
+    borderRadius: 14,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  doneBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});
