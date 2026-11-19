@@ -202,29 +202,42 @@ export const BlockPuzzleGame = ({
   isPaused = false,
   soundEnabled = true,
   onFinishGame,
+  savedState = null,
+  onSaveState,
 }) => {
 
   // ========================================
   // GAME STATE
   // ========================================
 
-  const [currentLevel, setCurrentLevel] = useState(1);
+  const [currentLevel, setCurrentLevel] = useState(() => savedState?.currentLevel || 1);
 
   const [board, setBoard] = useState(() =>
-    createInitialBoard(LEVEL_CONFIGS[0].obstacleCoords)
+    savedState?.board || createInitialBoard(LEVEL_CONFIGS[0].obstacleCoords)
   );
 
   const [trayPieces, setTrayPieces] = useState(() =>
-    getRandomShapes(LEVEL_CONFIGS[0].shapePool)
+    savedState?.trayPieces || getRandomShapes(LEVEL_CONFIGS[0].shapePool)
   );
 
   const [selectedPieceIndex, setSelectedPieceIndex] = useState(null);
 
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(() => savedState?.score || 0);
 
-  const [linesClearedTotal, setLinesClearedTotal] = useState(0);
+  const [linesClearedTotal, setLinesClearedTotal] = useState(() => savedState?.linesClearedTotal || 0);
 
   const [levelUpBanner, setLevelUpBanner] = useState(null);
+
+  // Automatically persist game progress so player can pick up where they paused
+  useEffect(() => {
+    onSaveState?.({
+      currentLevel,
+      board,
+      trayPieces,
+      score,
+      linesClearedTotal,
+    });
+  }, [currentLevel, board, trayPieces, score, linesClearedTotal]);
 
   // playing | level_transition | completed
   const [gameStatus, setGameStatus] = useState('playing');

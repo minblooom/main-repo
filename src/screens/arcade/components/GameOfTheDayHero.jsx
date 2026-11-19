@@ -135,7 +135,7 @@ export const GameOfTheDayHero = ({
           onPress={handlePlay}
           activeOpacity={0.88}
         >
-          <Text style={styles.playBtnText}>▶ Play Today's Game</Text>
+          <Text style={styles.playBtnText}>Play today's game</Text>
         </TouchableOpacity>
       </View>
 

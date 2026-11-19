@@ -3,7 +3,7 @@
 // and victory/completion celebration flows.
 // Hosts the verified top games catalog in a fully immersive themed arena.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ export const GameShell = ({
   game,
   companionId = 'taz',
   onExit,
+  shouldResume = false,
 }) => {
   const { theme } = useTheme();
 
@@ -38,6 +39,26 @@ export const GameShell = ({
   const [soundEnabled, setSoundEnabled] = useState(soundService.isSoundEnabled());
   const [victoryState, setVictoryState] = useState(null); // { summary, seeds }
   const [restartKey, setRestartKey] = useState(0);
+
+  const [savedState, setSavedState] = useState(null);
+  const [loadedState, setLoadedState] = useState(!shouldResume);
+
+  // Load saved state if resuming
+  useEffect(() => {
+    if (shouldResume && game?.id) {
+      (async () => {
+        try {
+          const state = await gameSessionManager.getGameState(game.id);
+          if (state) {
+            setSavedState(state);
+          }
+        } catch {}
+        setLoadedState(true);
+      })();
+    } else {
+      setLoadedState(true);
+    }
+  }, [shouldResume, game?.id]);
 
   const shellBg = game?.themeColor || '#1E1B4B';
 
@@ -50,11 +71,18 @@ export const GameShell = ({
     }
   };
 
+  const handleSaveState = (state) => {
+    if (game?.id) {
+      gameSessionManager.saveGameState(game.id, state);
+    }
+  };
+
   const handleFinishGame = async (result) => {
     soundService.playVictory();
     // Record game in recently played
     if (game?.id) {
       await gameSessionManager.recordGamePlayed(game.id);
+      await gameSessionManager.clearGameState(game.id);
       await markPlayedToday();
     }
     setVictoryState({
@@ -73,8 +101,12 @@ export const GameShell = ({
     setIsPaused(false);
   };
 
-  const handleRestart = () => {
+  const handleRestart = async () => {
     soundService.playClick();
+    if (game?.id) {
+      await gameSessionManager.clearGameState(game.id);
+    }
+    setSavedState(null);
     setVictoryState(null);
     setIsPaused(false);
     setRestartKey((k) => k + 1);
@@ -119,56 +151,68 @@ export const GameShell = ({
 
         {/* Gameplay Canvas Area */}
         <View style={styles.gameContent}>
-          {game.id === 'bubble_pop' && (
+          {loadedState && game.id === 'bubble_pop' && (
             <BubblePopGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}
 
-          {game.id === 'colour_crush' && (
+          {loadedState && game.id === 'colour_crush' && (
             <ColourCrushGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}
 
-          {game.id === 'canopy_runner' && (
+          {loadedState && game.id === 'canopy_runner' && (
             <CanopyRunnerGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}
 
-          {game.id === 'memory_match' && (
+          {loadedState && game.id === 'memory_match' && (
             <MemoryMatchGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}
 
-          {game.id === 'stack_attack' && (
+          {loadedState && game.id === 'stack_attack' && (
             <StackAttackGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}
 
-          {game.id === 'block_puzzle' && (
+          {loadedState && game.id === 'block_puzzle' && (
             <BlockPuzzleGame
               key={restartKey}
               isPaused={isPaused}
               soundEnabled={soundEnabled}
+              savedState={shouldResume ? savedState : null}
+              onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
             />
           )}

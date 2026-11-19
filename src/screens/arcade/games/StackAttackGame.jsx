@@ -41,12 +41,14 @@ export const StackAttackGame = ({
   isPaused = false,
   soundEnabled = true,
   onFinishGame,
+  savedState = null,
+  onSaveState,
 }) => {
-  const [currentLevel, setCurrentLevel] = useState(1);
+  const [currentLevel, setCurrentLevel] = useState(() => savedState?.currentLevel || 1);
   const cfg = REALMS[Math.min(currentLevel - 1, REALMS.length - 1)];
 
   // Stack of placed blocks: [ { width, left, color } ]
-  const [stack, setStack] = useState([
+  const [stack, setStack] = useState(() => savedState?.stack || [
     {
       width: INITIAL_BLOCK_WIDTH,
       left: (TOWER_CONTAINER_WIDTH - INITIAL_BLOCK_WIDTH) / 2,
@@ -57,9 +59,18 @@ export const StackAttackGame = ({
   // Current moving block
   const [movingLeft, setMovingLeft] = useState(0);
   const [movingDir, setMovingDir] = useState(1); // 1 = right, -1 = left
-  const [perfectCombo, setPerfectCombo] = useState(0);
+  const [perfectCombo, setPerfectCombo] = useState(() => savedState?.perfectCombo || 0);
   const [perfectBannerText, setPerfectBannerText] = useState('');
   const [levelUpBanner, setLevelUpBanner] = useState(null);
+
+  // Automatically persist game progress so player can pick up where they paused
+  useEffect(() => {
+    onSaveState?.({
+      currentLevel,
+      stack,
+      perfectCombo,
+    });
+  }, [currentLevel, stack, perfectCombo]);
 
   const topBlock = stack[stack.length - 1];
   const currentBlockWidth = topBlock ? topBlock.width : INITIAL_BLOCK_WIDTH;
