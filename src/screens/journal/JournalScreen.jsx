@@ -1,19 +1,20 @@
 // src/screens/journal/JournalScreen.jsx
 // MindBloom Journal Sanctuary matching the Figma design
-// Full separation of concerns, reactive prompt sparks, live archive search, and entry persistence
+// Full separation of concerns, reactive prompt sparks, live archive search, entry persistence,
+// and dynamic full-app theme awareness with clean English typography.
 
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-import { colors } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
+import { styles } from './styles/JournalScreen.styles';
 
 // Modular Navigation
 import { SidebarNav } from '../../components/navigation/SidebarNav';
@@ -26,6 +27,8 @@ import { JournalArchive } from './components/JournalArchive';
 import { JournalInspirationCard } from './components/JournalInspirationCard';
 import { JournalEntryModal } from './components/JournalEntryModal';
 import { AllEntriesModal } from './components/AllEntriesModal';
+import { JournalPrivacyModal } from './components/JournalPrivacyModal';
+import { LegalModal } from '../legal/LegalScreen';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { COMPANION_MAP } from '../../constants/companions';
 
@@ -58,57 +61,56 @@ const FOCUS_SPARKS = {
   ],
   strong_one: [
     'You do not have to hold everything alone. What can you share or set down?',
-    'Who was there for you when you needed holding up?',
   ],
   default: [
-    'What is one small thing that felt gentle today?',
-    'What is a thought or weight you want to set down?',
-    'How did your body feel when you woke up this morning?',
-    'A kind word you wish someone would tell you right now.',
-    'What brought a quiet smile to your face recently?',
+    'What is one thing you want to say out loud right now?',
+    'If today was a weather pattern, what did it feel like?',
+    'What is one little thing you did that you are grateful for?',
   ],
 };
 
 const INITIAL_ENTRIES = [
   {
     id: 'entry-1',
-    dayNumber: '14',
+    dayNumber: '16',
     badgeBg: '#EDF5EE',
     badgeColor: '#2C5A38',
-    title: 'A breath of fresh air',
+    title: 'A small, softer moment',
     feelingLabel: 'A little lighter',
-    body: 'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn’t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.',
-    dateString: 'SATURDAY, 14 NOVEMBER',
+    body: 'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.',
+    dateString: 'TODAY, 16 NOVEMBER',
   },
   {
     id: 'entry-2',
-    dayNumber: '12',
+    dayNumber: '14',
     badgeBg: '#FFF5E8',
     badgeColor: '#8A531C',
-    title: 'Letting today be enough',
+    title: 'Overthinking during lunch',
     feelingLabel: 'Somewhere in between',
-    body: 'Work was heavy, but I chose not to carry work thoughts into dinner. Small boundaries, slow progress.',
-    dateString: 'THURSDAY, 12 NOVEMBER',
+    body: 'Noticed my shoulders creeping up to my ears again. Took three deep breaths with Kovu and watched the trees move.',
+    dateString: 'SATURDAY, 14 NOVEMBER',
   },
   {
     id: 'entry-3',
     dayNumber: '09',
-    badgeBg: '#F0EAFA',
-    badgeColor: colors.brand,
-    title: 'The little things',
-    feelingLabel: 'A little lighter',
+    badgeBg: '#F2EDFA',
+    badgeColor: '#6E5D87',
+    title: 'Morning stillness',
+    feelingLabel: 'A little heavy',
     body: 'A warm cup of tea and five minutes of absolute silence before the rush of the world began.',
     dateString: 'MONDAY, 09 NOVEMBER',
   },
 ];
 
 export const JournalContent = ({
-  companionId = 'noodle',
+  companionId: initialCompanionId,
   userFocusAreas = ['anxiety'],
   onNavigateHome,
   onNavigateSanctuary,
   isWide = false,
 }) => {
+  const { theme, companionId: globalCompanionId } = useTheme();
+  const companionId = initialCompanionId || globalCompanionId || 'noodle';
   const activeSparks = FOCUS_SPARKS[userFocusAreas?.[0]] || FOCUS_SPARKS.default;
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
@@ -130,6 +132,8 @@ export const JournalContent = ({
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [singleModalVisible, setSingleModalVisible] = useState(false);
   const [allEntriesVisible, setAllEntriesVisible] = useState(false);
+  const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState(null);
 
   // Handlers
   const handleNextSpark = () => {
@@ -232,16 +236,13 @@ export const JournalContent = ({
   };
 
   const handlePrivacyInfo = () => {
-    Alert.alert(
-      'Your Private Sanctuary 🔒',
-      'Everything you write stays privately on this device. Zero tracking, zero ads, zero judgment.'
-    );
+    setPrivacyModalVisible(true);
   };
 
   return (
     <>
       <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
-        {/* Header with Breadcrumbs & Weather (strictly zero county names) */}
+        {/* Header with Breadcrumbs & Weather */}
         <JournalHeader
           companionId={companionId}
           onPrivacyPress={handlePrivacyInfo}
@@ -252,18 +253,18 @@ export const JournalContent = ({
         {/* Title & Subtitle with Privacy Button */}
         <View style={styles.titleSection}>
           <View style={styles.titleCol}>
-            <Text style={styles.pageTitle}>What's on your heart?</Text>
-            <Text style={styles.pageSubtitle}>
+            <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>What's on your heart?</Text>
+            <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>
               No word counts. No right answers. Just a moment for you.
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.privacyBtn}
+            style={[styles.privacyBtn, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}
             onPress={handlePrivacyInfo}
             activeOpacity={0.8}
           >
-            <Text style={styles.privacyBtnText}>Privacy settings 🔒</Text>
+            <Text style={[styles.privacyBtnText, { color: theme.textPrimary }]}>Privacy settings 🔒</Text>
           </TouchableOpacity>
         </View>
 
@@ -299,12 +300,12 @@ export const JournalContent = ({
 
             {/* Gentle Footer Tagline */}
             <View style={styles.editorFooterRow}>
-              <Text style={styles.footerWordsPace}>Your words. Your pace.</Text>
+              <Text style={[styles.footerWordsPace, { color: theme.textMuted }]}>Your words. Your pace.</Text>
               <TouchableOpacity
                 onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.footerHelpline}>Need urgent support?</Text>
+                <Text style={[styles.footerHelpline, { color: theme.textSecondary }]}>Need urgent support?</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -339,15 +340,30 @@ export const JournalContent = ({
         onSelectEntry={handleLoadIntoEditor}
         onDeleteEntry={handleDeleteEntry}
       />
+
+      {/* Dedicated Journal Privacy Settings Modal */}
+      <JournalPrivacyModal
+        visible={privacyModalVisible}
+        onClose={() => setPrivacyModalVisible(false)}
+        onOpenPrivacyPolicy={() => setLegalModalTab('privacy')}
+      />
+
+      {/* In-App Legal Modal Popup for Privacy Policy */}
+      <LegalModal
+        visible={!!legalModalTab}
+        initialTab={legalModalTab || 'privacy'}
+        onClose={() => setLegalModalTab(null)}
+      />
     </>
   );
 };
 
 export const JournalScreen = ({ navigation, route }) => {
+  const { theme, companionId: themeCompanionId } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const [companionId, setCompanionId] = useState(route?.params?.companion || 'noodle');
+  const companionId = themeCompanionId || route?.params?.companion || 'noodle';
   const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
 
   useEffect(() => {
@@ -370,13 +386,16 @@ export const JournalScreen = ({ navigation, route }) => {
     if (routeId === 'home') {
       navigation?.navigate?.('Home');
     } else if (routeId === 'sanctuary') {
-      Alert.alert('My Sanctuary', 'Your private wellness settings, streaks, and companion preferences.');
+      navigation?.navigate?.('Profile', {
+        companion: companionId,
+        focusAreas: userFocusAreas,
+      });
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.rootContainer}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
+      <View style={[styles.rootContainer, { backgroundColor: theme.bg }]}>
         {isWide && (
           <SidebarNav
             activeRoute="journal"
@@ -386,12 +405,13 @@ export const JournalScreen = ({ navigation, route }) => {
           />
         )}
 
-        <View style={styles.mainContent}>
+        <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.scrollContainer,
               isWide && styles.scrollContainerWide,
+              { backgroundColor: theme.bg },
             ]}
           >
             <JournalContent
@@ -415,117 +435,3 @@ export const JournalScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FAF5EE',
-  },
-  rootContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#FAF5EE',
-  },
-  mainContent: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 28,
-  },
-  scrollContainerWide: {
-    paddingHorizontal: 36,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  contentWrapper: {
-    width: '100%',
-    maxWidth: 1040,
-    alignSelf: 'center',
-    gap: 16,
-  },
-  contentWrapperWide: {
-    paddingVertical: 6,
-  },
-  titleSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 6,
-  },
-  titleCol: {
-    gap: 4,
-    flex: 1,
-    minWidth: 260,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  pageSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  privacyBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  privacyBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#6E5D87',
-  },
-  columnsRow: {
-    flexDirection: 'column',
-    gap: 18,
-  },
-  columnsRowWide: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  editorCol: {
-    flex: 1.5,
-    gap: 12,
-  },
-  archiveCol: {
-    flex: 1,
-    gap: 16,
-  },
-  archiveColWide: {
-    maxWidth: 340,
-  },
-  editorFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
-  footerWordsPace: {
-    fontSize: 11.5,
-    color: '#8B6DA8',
-    fontStyle: 'italic',
-  },
-  footerHelpline: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#8B6DA8',
-  },
-});

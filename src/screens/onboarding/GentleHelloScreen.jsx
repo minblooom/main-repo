@@ -1,13 +1,13 @@
 // src/screens/onboarding/GentleHelloScreen.jsx
 // "Before we bloom..." — Figma screen 03
-// Harmonized layout: cohesive trust card, clean hotline banner, visible CTA
+// Harmonized layout: cohesive trust card, clean hotline banner, visible CTA,
+// and in-app legal modal popup for Terms, Privacy Policy, and Mental Health Disclaimer.
 
 import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,12 +15,13 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
-import { colors } from '../../theme/colors';
+import { LegalModal } from '../legal/LegalScreen';
 
 export const GentleHelloScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
   const [agreed, setAgreed] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
 
   const handleContinue = () => {
     if (!agreed || !navigation) return;
@@ -57,30 +58,42 @@ export const GentleHelloScreen = ({ navigation }) => {
 
               {/* Unified Trust Card */}
               <View style={styles.trustCard}>
-                <View style={styles.trustItem}>
-                  <Text style={styles.trustTitle}>A little support, not a diagnosis</Text>
+                <TouchableOpacity
+                  style={styles.trustItem}
+                  onPress={() => setLegalModalTab('disclaimer')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.trustTitle}>A little support, not a diagnosis ↗</Text>
                   <Text style={styles.trustBody}>
-                    MindBloom provides wellness tools and peer support — not clinical advice or medical therapy.
+                    MindBloom provides wellness tools and peer support — not clinical advice or medical therapy. Tap to view full medical disclaimer.
                   </Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.divider} />
 
-                <View style={styles.trustItem}>
-                  <Text style={styles.trustTitle}>Your privacy matters</Text>
+                <TouchableOpacity
+                  style={styles.trustItem}
+                  onPress={() => setLegalModalTab('privacy')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.trustTitle}>Your privacy matters ↗</Text>
                   <Text style={styles.trustBody}>
-                    We only collect what is needed to personalize your space. We never sell your reflections or data.
+                    We only collect what is needed to personalize your space. We never sell your reflections or data. Tap to view privacy policy.
                   </Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.divider} />
 
-                <View style={styles.trustItem}>
-                  <Text style={styles.trustTitle}>For people aged 13 and over</Text>
+                <TouchableOpacity
+                  style={styles.trustItem}
+                  onPress={() => setLegalModalTab('terms')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.trustTitle}>For people aged 13 and over ↗</Text>
                   <Text style={styles.trustBody}>
-                    Tailored for youth, campus students, and twenties to meet you where you are in life.
+                    Tailored for youth, campus students, and twenties to meet you where you are in life. Tap to view terms of service.
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
               {/* Concise Helpline Banner */}
@@ -102,8 +115,24 @@ export const GentleHelloScreen = ({ navigation }) => {
                 </View>
                 <Text style={styles.checkLabel}>
                   I understand MindBloom is a wellness app, not a medical service. I agree to the{' '}
-                  <Text style={styles.link}>Terms of Service</Text> and{' '}
-                  <Text style={styles.link}>Privacy Policy</Text>.
+                  <Text
+                    style={styles.link}
+                    onPress={() => setLegalModalTab('terms')}
+                  >
+                    Terms of Service
+                  </Text>,{' '}
+                  <Text
+                    style={styles.link}
+                    onPress={() => setLegalModalTab('privacy')}
+                  >
+                    Privacy Policy
+                  </Text>, and{' '}
+                  <Text
+                    style={styles.link}
+                    onPress={() => setLegalModalTab('disclaimer')}
+                  >
+                    Mental Health Disclaimer
+                  </Text>.
                 </Text>
               </TouchableOpacity>
 
@@ -117,116 +146,33 @@ export const GentleHelloScreen = ({ navigation }) => {
                 <Text style={s.primaryBtnText}>Agree to continue →</Text>
               </TouchableOpacity>
 
+              {/* Tappable Legal Links in Footer */}
               <View style={styles.termsFooter}>
-                <Text style={styles.termsText}>
-                  Read Terms of Service · Read Privacy Policy
-                </Text>
+                <TouchableOpacity onPress={() => setLegalModalTab('terms')} activeOpacity={0.7}>
+                  <Text style={styles.termsText}>Terms of Service</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}> · </Text>
+                <TouchableOpacity onPress={() => setLegalModalTab('privacy')} activeOpacity={0.7}>
+                  <Text style={styles.termsText}>Privacy Policy</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}> · </Text>
+                <TouchableOpacity onPress={() => setLegalModalTab('disclaimer')} activeOpacity={0.7}>
+                  <Text style={styles.termsText}>Disclaimer</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
       </ScrollView>
+
+      {/* Reusable In-App Legal Modal Popup */}
+      <LegalModal
+        visible={!!legalModalTab}
+        initialTab={legalModalTab || 'terms'}
+        onClose={() => setLegalModalTab(null)}
+      />
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  trustCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 10,
-  },
-  trustItem: {
-    gap: 3,
-  },
-  trustTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  trustBody: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  hotlineBanner: {
-    backgroundColor: '#F3EFFD',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: '#DFD5F0',
-    marginTop: 2,
-  },
-  hotlineTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: colors.brand,
-    marginBottom: 2,
-  },
-  hotlineText: {
-    fontSize: 11,
-    color: '#555',
-  },
-  hotlineBold: {
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 6,
-    marginTop: 2,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-    flexShrink: 0,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.brand,
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  checkLabel: {
-    flex: 1,
-    fontSize: 12,
-    color: '#555',
-    lineHeight: 17,
-  },
-  link: {
-    color: colors.brand,
-    textDecorationLine: 'underline',
-    fontWeight: '700',
-  },
-  termsFooter: {
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  termsText: {
-    fontSize: 10.5,
-    color: '#AAA',
-  },
-});
+import { styles } from './styles/GentleHelloScreen.styles';

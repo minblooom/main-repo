@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 
 export const authStyles = StyleSheet.create({
-  // ─── Root ───────────────────────────────────────────────────────────
+  // --- Root -----------------------------------------------------------
   safeArea: {
     flex: 1,
     backgroundColor: colors.splashBg,
@@ -27,7 +27,7 @@ export const authStyles = StyleSheet.create({
     paddingVertical: 16,
   },
 
-  // ─── Top Header ─────────────────────────────────────────────────────
+  // --- Top Header -----------------------------------------------------
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -68,7 +68,7 @@ export const authStyles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  // ─── Two-column layout ──────────────────────────────────────────────
+  // --- Two-column layout ----------------------------------------------
   mainLayout: {
     flexDirection: 'column',
     gap: 24,
@@ -79,7 +79,7 @@ export const authStyles = StyleSheet.create({
     gap: 36,
   },
 
-  // ─── Left companion / hero card ─────────────────────────────────────
+  // --- Left companion / hero card -------------------------------------
   companionCard: {
     backgroundColor: colors.lavenderSheet,
     borderRadius: 28,
@@ -120,7 +120,7 @@ export const authStyles = StyleSheet.create({
     width: 144,
     height: 144,
     borderRadius: 72,
-    backgroundColor: '#FAF5EE',
+    backgroundColor: '#E8DEFF',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -133,9 +133,8 @@ export const authStyles = StyleSheet.create({
     elevation: 4,
   },
   mascotImage: {
-    width: 144,
-    height: 170,
-    marginTop: -8,
+    width: '86%',
+    height: '86%',
   },
   sparkleTopLeft: {
     position: 'absolute',
@@ -179,7 +178,7 @@ export const authStyles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // ─── Right form container ────────────────────────────────────────────
+  // --- Right form container --------------------------------------------
   formContainer: {
     flex: 1,
     paddingVertical: 6,
@@ -201,7 +200,7 @@ export const authStyles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // ─── Segmented pill tabs ─────────────────────────────────────────────
+  // --- Segmented pill tabs ---------------------------------------------
   segmentedTabsContainer: {
     flexDirection: 'row',
     backgroundColor: colors.lavenderSheet,
@@ -238,7 +237,7 @@ export const authStyles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
-  // ─── Form fields ──────────────────────────────────────────────────────
+  // --- Form fields ------------------------------------------------------
   fieldsBlock: {
     gap: 14,
   },
@@ -259,6 +258,16 @@ export const authStyles = StyleSheet.create({
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  inputError: {
+    borderColor: '#D9534F',
+    backgroundColor: '#FFF8F8',
+  },
+  errorText: {
+    fontSize: 11.5,
+    color: '#D9534F',
+    fontWeight: '600',
+    marginTop: 2,
   },
   passwordInputWrapper: {
     flexDirection: 'row',
@@ -300,7 +309,7 @@ export const authStyles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  // ─── Primary CTA button ───────────────────────────────────────────────
+  // --- Primary CTA button -----------------------------------------------
   primaryBtn: {
     backgroundColor: colors.brand,
     paddingVertical: 14,
@@ -321,7 +330,7 @@ export const authStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Switch link & terms ──────────────────────────────────────────────
+  // --- Switch link & terms ----------------------------------------------
   switchLinkWrapper: {
     alignItems: 'center',
     paddingVertical: 4,
@@ -341,8 +350,13 @@ export const authStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 15,
   },
+  termsLink: {
+    color: colors.brand,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
 
-  // ─── Footer slogan ────────────────────────────────────────────────────
+  // --- Footer slogan ----------------------------------------------------
   footerBrandRow: {
     marginTop: 24,
     alignItems: 'center',
