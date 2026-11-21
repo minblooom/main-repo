@@ -199,6 +199,7 @@ export const LoginScreen = ({ navigation }) => {
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>Email, phone or nickname *</Text>
                   <TextInput
+                    underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.identifier) && s.inputError]}
                     value={identifier}
                     onChangeText={(text) => {
@@ -222,6 +223,7 @@ export const LoginScreen = ({ navigation }) => {
                   <Text style={s.fieldLabel}>Your password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
+                    underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
                       onChangeText={(text) => {

@@ -2,7 +2,7 @@
 // Shared stylesheet for all authentication screens (Login + Signup)
 // Import this in LoginScreen.jsx and SignupScreen.jsx
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../../theme/colors';
 
 export const authStyles = StyleSheet.create({
@@ -258,6 +258,7 @@ export const authStyles = StyleSheet.create({
     color: colors.textPrimary,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.08)',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
   },
   inputError: {
     borderColor: '#D9534F',
@@ -284,6 +285,9 @@ export const authStyles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 13.5,
     color: colors.textPrimary,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
   },
   showBtn: {
     paddingVertical: 4,

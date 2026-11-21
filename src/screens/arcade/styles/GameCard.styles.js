@@ -1,5 +1,6 @@
 // src/screens/arcade/styles/GameCard.styles.js
 // Figma-matching game card: image top, warm cream body, play button.
+// Unified layout, high-contrast action buttons, and pixel-consistent heights.
 
 import { StyleSheet } from 'react-native';
 
@@ -13,10 +14,9 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 4,
-    marginBottom: 14,
+    width: '100%',
   },
   cardWide: {
-    // wide layout controlled by parent grid
     marginBottom: 0,
   },
 
@@ -25,77 +25,110 @@ export const styles = StyleSheet.create({
     width: '100%',
     height: 160,
     position: 'relative',
-    backgroundColor: '#E8E0F0', // placeholder tint while loading
+    backgroundColor: '#E8E0F0',
   },
   coverImage: {
     width: '100%',
     height: '100%',
   },
+
+  // Category pill (top-left)
   categoryPill: {
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: 'rgba(0,0,0,0.52)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.60)',
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 8,
     zIndex: 5,
   },
   categoryText: {
     color: '#FFFFFF',
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
-  favBtn: {
+
+  // Action buttons container (top-right)
+  topActionsWrap: {
     position: 'absolute',
-    top: 8,
+    top: 10,
     right: 10,
-    padding: 4,
-    zIndex: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 10,
   },
-  favIcon: {
-    fontSize: 18,
-  },
+
+  // High-contrast dismiss (X) button for "Pick up where you paused"
   removeBtn: {
-    position: 'absolute',
-    top: 8,
-    right: 40,
-    backgroundColor: 'rgba(0, 0, 0, 0.48)',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 5,
   },
   removeIcon: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 14,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+
+  // High-contrast favourite (heart) button
+  favBtn: {
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  favIcon: {
+    fontSize: 16,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 
   // --- Card body ---
   cardBody: {
     padding: 14,
-    gap: 6,
+    gap: 4,
   },
   title: {
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: -0.2,
+    lineHeight: 20,
+    height: 20,
   },
   sublabel: {
     fontSize: 11.5,
     fontWeight: '500',
+    lineHeight: 16,
+    height: 16,
     marginBottom: 6,
   },
   playBtn: {
     width: '100%',
-    paddingVertical: 10,
+    height: 38,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',

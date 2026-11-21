@@ -44,6 +44,7 @@ export const JournalArchive = ({
       <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
+                    underlineColorAndroid="transparent"
           style={styles.searchInput}
           placeholder="Find a moment..."
           placeholderTextColor="#A89BB5"

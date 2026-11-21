@@ -89,6 +89,7 @@ export const AllEntriesModal = ({
           <View style={styles.searchBar}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
+                    underlineColorAndroid="transparent"
               style={styles.searchInput}
               placeholder="Search across all your moments..."
               placeholderTextColor="#A89BB5"

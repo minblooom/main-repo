@@ -230,6 +230,7 @@ export const SignupScreen = ({ navigation }) => {
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>What should we call you? *</Text>
                   <TextInput
+                    underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.nickname) && s.inputError]}
                     value={nickname}
                     onChangeText={(text) => {
@@ -252,6 +253,7 @@ export const SignupScreen = ({ navigation }) => {
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>Email or phone *</Text>
                   <TextInput
+                    underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.contact) && s.inputError]}
                     value={contact}
                     onChangeText={(text) => {
@@ -276,6 +278,7 @@ export const SignupScreen = ({ navigation }) => {
                   <Text style={s.fieldLabel}>Create a password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
+                    underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
                       onChangeText={(text) => {
@@ -307,6 +310,7 @@ export const SignupScreen = ({ navigation }) => {
                   <Text style={s.fieldLabel}>Confirm password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.confirmPassword) && s.inputError]}>
                     <TextInput
+                    underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={confirmPassword}
                       onChangeText={(text) => {

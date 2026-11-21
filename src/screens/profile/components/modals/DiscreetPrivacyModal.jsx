@@ -194,6 +194,7 @@ export const DiscreetPrivacyModal = ({ visible, onClose }) => {
             {selectedPreset === 'custom' && (
               <View style={styles.customInputWrap}>
                 <TextInput
+                    underlineColorAndroid="transparent"
                   style={[
                     styles.customInput,
                     {
