@@ -1,4 +1,4 @@
-// src/screens/profile/components/modals/EditProfileModal.jsx
+﻿// src/screens/profile/components/modals/EditProfileModal.jsx
 // Modal allowing the user to update their nickname, personal bio, and primary wellness focus areas.
 
 import React, { useState } from 'react';
@@ -22,6 +22,12 @@ const AVAILABLE_FOCUS = [
   { id: 'identity', label: 'Identity & Belonging' },
 ];
 
+const GENDER_OPTIONS = [
+  { id: 'female', label: 'Female' },
+  { id: 'male', label: 'Male' },
+  { id: 'non_binary', label: 'Non-Binary' },
+  { id: 'prefer_not', label: 'Prefer not to say' },
+];
 export const EditProfileModal = ({
   visible,
   profile,
@@ -34,6 +40,7 @@ export const EditProfileModal = ({
   const [nickname, setNickname] = useState(profile?.nickname || 'soso');
   const [bio, setBio] = useState(profile?.bio || 'Growing & Fierce');
   const [location, setLocation] = useState(profile?.location || 'Kenya · East Africa');
+  const [gender, setGender] = useState(profile?.gender || 'prefer_not');
   const [selectedFocus, setSelectedFocus] = useState(profile?.focusAreas || ['anxiety']);
 
   const toggleFocus = (id) => {
@@ -54,6 +61,7 @@ export const EditProfileModal = ({
       nickname: nickname.trim() || 'soso',
       bio: bio.trim() || 'Growing & Fierce',
       location: location.trim() || 'Kenya · East Africa',
+      gender,
       focusAreas: selectedFocus,
     });
     onClose();
@@ -70,7 +78,7 @@ export const EditProfileModal = ({
               <Text style={[styles.title, { color: theme.textPrimary }]}>Edit profile</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Text style={styles.closeBtnText}>âœ•</Text>
             </TouchableOpacity>
           </View>
 
@@ -80,6 +88,7 @@ export const EditProfileModal = ({
               <Text style={[styles.label, { color: theme.textSecondary }]}>What should we call you?</Text>
               <View style={styles.inputBox}>
                 <TextInput
+                    underlineColorAndroid="transparent"
                   style={[styles.input, { color: theme.textPrimary }]}
                   value={nickname}
                   onChangeText={setNickname}
@@ -94,6 +103,7 @@ export const EditProfileModal = ({
               <Text style={[styles.label, { color: theme.textSecondary }]}>Personal energy / bio</Text>
               <View style={styles.inputBox}>
                 <TextInput
+                    underlineColorAndroid="transparent"
                   style={[styles.input, { color: theme.textPrimary }]}
                   value={bio}
                   onChangeText={setBio}
@@ -108,12 +118,44 @@ export const EditProfileModal = ({
               <Text style={[styles.label, { color: theme.textSecondary }]}>Region</Text>
               <View style={styles.inputBox}>
                 <TextInput
+                    underlineColorAndroid="transparent"
                   style={[styles.input, { color: theme.textPrimary }]}
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="Kenya · East Africa"
+                  placeholder="Kenya Â· East Africa"
                   placeholderTextColor="#A092B0"
                 />
+              </View>
+            </View>
+
+            {/* Gender Selection */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Gender Identity</Text>
+              <View style={styles.chipsWrap}>
+                {GENDER_OPTIONS.map((item) => {
+                  const isSelected = gender === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[
+                        styles.chip,
+                        isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                      ]}
+                      onPress={() => setGender(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: isSelected ? theme.accent : theme.textSecondary },
+                          isSelected && { fontWeight: '800' },
+                        ]}
+                      >
+                        {item.label} {isSelected ? '✓' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
@@ -142,7 +184,7 @@ export const EditProfileModal = ({
                           isSelected && { fontWeight: '800' },
                         ]}
                       >
-                        {item.label} {isSelected ? '✓' : ''}
+                        {item.label} {isSelected ? 'âœ“' : ''}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -171,3 +213,4 @@ export const EditProfileModal = ({
 };
 
 import { styles } from '../../styles/EditProfileModal.styles';
+

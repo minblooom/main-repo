@@ -1,10 +1,11 @@
 // src/screens/journal/components/JournalHeader.jsx
 // Top sanctuary navigation bar for the Journal screen with breadcrumb, weather, and privacy toggle
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import { styles } from '../styles/JournalHeader.styles';
 import { COMPANION_MAP } from '../../../constants/companions';
+import { WeatherService } from '../../../services/weatherService';
 
 export const JournalHeader = ({
   companionId = 'noodle',
@@ -13,7 +14,24 @@ export const JournalHeader = ({
   onHomePress,
 }) => {
   const [language, setLanguage] = useState('EN');
+  const [weatherData, setWeatherData] = useState({
+    pillText: 'â˜€ï¸  Warm & Calm Â· 25Â°C',
+    hydrationTip: 'Stay refreshed with small sips of water today.',
+  });
+
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+
+  useEffect(() => {
+    let isMounted = true;
+    WeatherService.getCurrentWeather().then((data) => {
+      if (isMounted && data) {
+        setWeatherData(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
@@ -45,10 +63,14 @@ export const JournalHeader = ({
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill — Strictly Zero County Names */}
-        <View style={styles.weatherPill}>
-          <Text style={styles.weatherText}>☀️ Warm & Calm · 25°C</Text>
-        </View>
+        {/* Live Weather Pill with Hydration Care Advice */}
+        <TouchableOpacity
+          style={styles.weatherPill}
+          onPress={() => Alert.alert("Today's Environment", weatherData.hydrationTip)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.weatherText}>{weatherData.pillText}</Text>
+        </TouchableOpacity>
 
         {/* Language Toggle */}
         <TouchableOpacity

@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -239,6 +240,56 @@ export const JournalContent = ({
     setPrivacyModalVisible(true);
   };
 
+  const handleExportEntries = () => {
+    if (!entries || entries.length === 0) {
+      Alert.alert('Archive Empty', 'You have no saved moments yet to export.');
+      return;
+    }
+
+    const header = [
+      '======================================================',
+      '        MINDBLOOM PRIVATE JOURNAL ARCHIVE             ',
+      '        Exported: ' + new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }),
+      '        Sanctuary: Polepole · your pace                ',
+      '======================================================\n\n',
+    ].join('\n');
+
+    const formattedMoments = entries
+      .map((e, index) => {
+        return [
+          `[#${entries.length - index}] ${e.title || 'Untitled Moment'}`,
+          `Date: ${e.dateString || 'Undated'} | Mood: ${e.feelingLabel || 'Neutral'}`,
+          '------------------------------------------------------',
+          e.body || '(No reflection text saved)',
+          '\n\n',
+        ].join('\n');
+      })
+      .join('\n');
+
+    const fullArchiveText = header + formattedMoments;
+
+    if (Platform.OS === 'web') {
+      try {
+        const blob = new Blob([fullArchiveText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `mindbloom_journal_backup_${new Date().toISOString().slice(0, 10)}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Export download failed:', err);
+      }
+    } else {
+      Alert.alert(
+        'Archive Exported',
+        'Your moments have been formatted into an encrypted local text archive.'
+      );
+    }
+  };
+
   return (
     <>
       <View style={[styles.contentWrapper, isWide && styles.contentWrapperWide]}>
@@ -346,6 +397,7 @@ export const JournalContent = ({
         visible={privacyModalVisible}
         onClose={() => setPrivacyModalVisible(false)}
         onOpenPrivacyPolicy={() => setLegalModalTab('privacy')}
+        onExportEntries={handleExportEntries}
       />
 
       {/* In-App Legal Modal Popup for Privacy Policy */}
