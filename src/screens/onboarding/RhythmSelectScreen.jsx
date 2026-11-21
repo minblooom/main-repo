@@ -19,8 +19,8 @@ import { colors } from '../../theme/colors';
 import { COMPANION_MAP } from '../../constants/companions';
 
 const RHYTHMS = [
-  { id: '2',  mins: '2',  label: 'A tiny reset',         desc: 'For the days that are already a lot.' },
-  { id: '5',  mins: '5',  label: 'A little breathing room', desc: 'A breath, a check-in, a brief reflection.' },
+  { id: '2', mins: '2', label: 'A tiny reset', desc: 'For the days that are already a lot.' },
+  { id: '5', mins: '5', label: 'A little breathing room', desc: 'A breath, a check-in, a brief reflection.' },
   { id: '10', mins: '10', label: 'A moment to settle in', desc: 'Time to explore what feels good.' },
 ];
 

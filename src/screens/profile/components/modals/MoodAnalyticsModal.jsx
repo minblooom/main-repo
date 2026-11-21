@@ -66,7 +66,7 @@ export const MoodAnalyticsModal = ({ visible, onClose, theme: propTheme }) => {
             setWeekDays(last7);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [visible]);
 

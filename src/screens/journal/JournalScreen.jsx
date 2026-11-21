@@ -179,14 +179,14 @@ export const JournalContent = ({
         prev.map((e) =>
           e.id === editingEntryId
             ? {
-                ...e,
-                title: title.trim() || 'A quiet thought',
-                body: body.trim(),
-                feelingLabel: feelingInfo.label,
-                badgeBg: feelingInfo.bg,
-                badgeColor: feelingInfo.color,
-                dateString: `UPDATED, ${dayStr} NOVEMBER`,
-              }
+              ...e,
+              title: title.trim() || 'A quiet thought',
+              body: body.trim(),
+              feelingLabel: feelingInfo.label,
+              badgeBg: feelingInfo.bg,
+              badgeColor: feelingInfo.color,
+              dateString: `UPDATED, ${dayStr} NOVEMBER`,
+            }
             : e
         )
       );
@@ -378,7 +378,7 @@ export const JournalScreen = ({ navigation, route }) => {
             setUserFocusAreas(saved.focusAreas);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [route?.params]);
 

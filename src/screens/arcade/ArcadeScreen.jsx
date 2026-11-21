@@ -3,7 +3,7 @@
 // Exports both ArcadeContent (embedded in HomeScreen tabs) and ArcadeScreen (standalone stack).
 // Styles extracted to src/screens/arcade/styles/ArcadeScreen.styles.js.
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,7 @@ import { RecentlyPlayedSection } from './components/RecentlyPlayedSection';
 import { FavouritesSection } from './components/FavouritesSection';
 
 // Game Engine & Modals
-import { GAMES_CATALOG, getGameById } from './engine/gameRegistry';
+import { GAMES_CATALOG } from './engine/gameRegistry';
 import { getGameOfTheDay } from './engine/dailyRotationService';
 import { gameSessionManager } from './engine/gameSessionManager';
 import { GamePreviewModal } from './components/modals/GamePreviewModal';
@@ -81,7 +81,7 @@ export const ArcadeContent = ({
 
         const favs = await gameSessionManager.getFavourites();
         setFavourites(favs);
-      } catch {}
+      } catch { }
     })();
   }, []);
 

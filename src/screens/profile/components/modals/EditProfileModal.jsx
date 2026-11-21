@@ -9,7 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
+  
 } from 'react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
 

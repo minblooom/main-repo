@@ -8,9 +8,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalArchive.styles';
 
 export const JournalArchive = ({
@@ -122,4 +121,4 @@ export const JournalArchive = ({
     </View>
   );
 };
-
+

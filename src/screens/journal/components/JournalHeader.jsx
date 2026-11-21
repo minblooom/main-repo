@@ -3,7 +3,6 @@
 
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalHeader.styles';
 import { COMPANION_MAP } from '../../../constants/companions';
 
@@ -89,4 +88,4 @@ export const JournalHeader = ({
     </View>
   );
 };
-
+

@@ -3,7 +3,7 @@
 // Clean English text and dynamic theme integration.
 
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
 export const SignOutSection = ({ onSignOut }) => {

@@ -53,6 +53,22 @@ export const CanopyRunnerGame = ({
   const [hearts, setHearts] = useState(() => savedState?.hearts || 3);
   const [levelUpBanner, setLevelUpBanner] = useState(null);
 
+  // Refs to hold latest values for use inside setInterval / event callbacks
+  // without causing stale closures
+  const gameOverRef = useRef(false);
+  const levelUpBannerRef = useRef(null);
+  const seedsRef = useRef(savedState?.seedsCollected || 0);
+  const distanceRef = useRef(savedState?.distance || 0);
+  const currentLevelRef = useRef(savedState?.currentLevel || 1);
+  const cfgRef = useRef(cfg);
+
+  // Keep refs in sync with state
+  useEffect(() => { levelUpBannerRef.current = levelUpBanner; }, [levelUpBanner]);
+  useEffect(() => { seedsRef.current = seedsCollected; }, [seedsCollected]);
+  useEffect(() => { distanceRef.current = distance; }, [distance]);
+  useEffect(() => { currentLevelRef.current = currentLevel; }, [currentLevel]);
+  useEffect(() => { cfgRef.current = cfg; }, [cfg]);
+
   // Automatically persist game progress so player can pick up where they paused
   useEffect(() => {
     onSaveState?.({
@@ -72,18 +88,23 @@ export const CanopyRunnerGame = ({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
     const nextCfg = LEVEL_CONFIGS[nextLvl - 1];
-    setLevelUpBanner({ level: nextLvl, name: nextCfg.name });
+    const banner = { level: nextLvl, name: nextCfg.name };
+    setLevelUpBanner(banner);
+    levelUpBannerRef.current = banner;
     setTimeout(() => {
       setCurrentLevel(nextLvl);
+      currentLevelRef.current = nextLvl;
+      cfgRef.current = nextCfg;
       setObstacles([]);
       setCollectibles([]);
       setLevelUpBanner(null);
+      levelUpBannerRef.current = null;
     }, 1800);
   };
 
   // Jump Action
   const handleJump = () => {
-    if (isPaused || !isGrounded || levelUpBanner) return;
+    if (isPaused || !isGrounded || levelUpBannerRef.current) return;
 
     if (soundEnabled) {
       soundService.playJump();
@@ -100,9 +121,12 @@ export const CanopyRunnerGame = ({
 
   // Main Physics and Scrolling Loop
   useEffect(() => {
-    if (isPaused || levelUpBanner) return;
+    if (isPaused || levelUpBannerRef.current) return;
 
     const interval = setInterval(() => {
+      // Guard: stop loop if game is over
+      if (gameOverRef.current) return;
+
       // 1. Update Player Gravity
       setPlayerY((curY) => {
         const nextY = curY + velocity;
@@ -120,16 +144,20 @@ export const CanopyRunnerGame = ({
       // 2. Advance Distance
       setDistance((d) => {
         const nextD = d + 1;
-        // Check level milestone
-        if (nextD >= cfg.targetDistance && !levelUpBanner) {
-          if (currentLevel < LEVEL_CONFIGS.length) {
-            advanceToNextLevel(currentLevel + 1);
+        distanceRef.current = nextD;
+        // Check level milestone — use refs to avoid stale closures
+        if (nextD >= cfgRef.current.targetDistance && !levelUpBannerRef.current) {
+          if (currentLevelRef.current < LEVEL_CONFIGS.length) {
+            advanceToNextLevel(currentLevelRef.current + 1);
           } else {
-            // Master victory
-            onFinishGame?.({
-              summary: `Savanna Champion! Dashed all the way through ${cfg.name} (${nextD}m) with ${seedsCollected} glowing seeds!`,
-              seeds: 35,
-            });
+            // Master victory — only trigger once
+            if (!gameOverRef.current) {
+              gameOverRef.current = true;
+              onFinishGame?.({
+                summary: `Savanna Champion! Dashed all the way through ${cfgRef.current.name} (${nextD}m) with ${seedsRef.current} glowing seeds!`,
+                seeds: 35,
+              });
+            }
           }
         }
         return nextD;
@@ -138,11 +166,11 @@ export const CanopyRunnerGame = ({
       // 3. Move and Spawn Obstacles (Logs & Rocks)
       setObstacles((prevObs) => {
         const nextObs = prevObs
-          .map((obs) => ({ ...obs, x: obs.x - cfg.speed }))
+          .map((obs) => ({ ...obs, x: obs.x - cfgRef.current.speed }))
           .filter((obs) => obs.x > -60);
 
         // Spawn new obstacle randomly based on level configuration
-        if (Math.random() < cfg.obstacleRate && (nextObs.length === 0 || nextObs[nextObs.length - 1].x < 240)) {
+        if (Math.random() < cfgRef.current.obstacleRate && (nextObs.length === 0 || nextObs[nextObs.length - 1].x < 240)) {
           nextObs.push({
             id: nextObsId.current++,
             x: 420,
@@ -156,7 +184,7 @@ export const CanopyRunnerGame = ({
       // 4. Move and Spawn Glowing Collectibles (Stars)
       setCollectibles((prevCol) => {
         const nextCol = prevCol
-          .map((c) => ({ ...c, x: c.x - cfg.speed }))
+          .map((c) => ({ ...c, x: c.x - cfgRef.current.speed }))
           .filter((c) => c.x > -40);
 
         if (Math.random() < 0.045 && (nextCol.length === 0 || nextCol[nextCol.length - 1].x < 260)) {
@@ -171,21 +199,30 @@ export const CanopyRunnerGame = ({
     }, 45);
 
     return () => clearInterval(interval);
-  }, [isPaused, isGrounded, velocity, cfg, currentLevel, levelUpBanner, seedsCollected, onFinishGame]);
+  }, [isPaused, velocity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Collision Detection Loop
   useEffect(() => {
-    if (isPaused || levelUpBanner) return;
+    if (isPaused || levelUpBanner || gameOverRef.current) return;
 
     const PLAYER_X = 60;
 
-    // Check collision with obstacles
-    obstacles.forEach((obs) => {
-      const xDist = Math.abs(obs.x - PLAYER_X);
-      const isHit = xDist < 30 && playerY < 32;
+    // Check collision with obstacles — use setObstacles to safely mark collided state
+    // instead of mutating obs.hasCollided directly (which would mutate React state)
+    setObstacles((prevObs) => {
+      let heartLost = false;
+      const updated = prevObs.map((obs) => {
+        const xDist = Math.abs(obs.x - PLAYER_X);
+        const isHit = xDist < 30 && playerY < 32;
 
-      if (isHit && !obs.hasCollided) {
-        obs.hasCollided = true;
+        if (isHit && !obs.hasCollided) {
+          heartLost = true;
+          return { ...obs, hasCollided: true };
+        }
+        return obs;
+      });
+
+      if (heartLost && !gameOverRef.current) {
         if (soundEnabled) {
           soundService.playMismatch();
         }
@@ -197,15 +234,18 @@ export const CanopyRunnerGame = ({
 
         setHearts((h) => {
           const nextH = h - 1;
-          if (nextH <= 0) {
+          if (nextH <= 0 && !gameOverRef.current) {
+            gameOverRef.current = true;
             onFinishGame?.({
-              summary: `Reached Level ${currentLevel} (${cfg.name}) with ${distance}m dashed and ${seedsCollected} seeds!`,
-              seeds: Math.min(25, 8 + Math.floor(distance / 50)),
+              summary: `Reached Level ${currentLevelRef.current} (${cfgRef.current.name}) with ${distanceRef.current}m dashed and ${seedsRef.current} seeds!`,
+              seeds: Math.min(25, 8 + Math.floor(distanceRef.current / 50)),
             });
           }
           return nextH;
         });
       }
+
+      return updated;
     });
 
     // Check collecting stars
@@ -219,13 +259,17 @@ export const CanopyRunnerGame = ({
           if (soundEnabled) {
             soundService.playPop(1.4);
           }
-          setSeedsCollected((s) => s + 1);
+          setSeedsCollected((s) => {
+            const next = s + 1;
+            seedsRef.current = next;
+            return next;
+          });
           return false;
         }
         return true;
       });
     });
-  }, [obstacles, collectibles, playerY, isPaused, distance, seedsCollected, soundEnabled, onFinishGame, currentLevel, cfg, levelUpBanner]);
+  }, [obstacles, collectibles, playerY, isPaused, soundEnabled, levelUpBanner]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={styles.container}>

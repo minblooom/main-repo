@@ -4,7 +4,7 @@
 // Perfect alignments trigger harmonic scale chimes and combo streaks!
 // Slabs that overhang are cleanly sliced off. Reach height milestones to advance across 4 sky realms.
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,

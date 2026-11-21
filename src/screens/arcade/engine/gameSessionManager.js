@@ -2,7 +2,7 @@
 // Centralized session, favorites, recent history, and game-state persistence manager for Bloom Arcade.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { GAMES_CATALOG, getGameById } from './gameRegistry';
+import {  getGameById } from './gameRegistry';
 
 const RECENT_KEY = '@mindbloom:arcade:recently_played';
 const FAVOURITES_KEY = '@mindbloom:arcade:favourites';

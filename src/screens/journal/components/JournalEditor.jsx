@@ -8,9 +8,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalEditor.styles';
 import { JournalSparkBanner } from './JournalSparkBanner';
 

@@ -68,7 +68,7 @@ export const DiscreetPrivacyModal = ({ visible, onClose }) => {
           if (parsed.selectedPreset) setSelectedPreset(parsed.selectedPreset);
           if (parsed.customName) setCustomName(parsed.customName);
         }
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -81,7 +81,7 @@ export const DiscreetPrivacyModal = ({ visible, onClose }) => {
           customName: customName.trim(),
         })
       );
-    } catch {}
+    } catch { }
 
     Alert.alert(
       'Privacy Shield Updated 🛡️',
