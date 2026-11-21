@@ -1,0 +1,17 @@
+{
+  "dart.analysisExcludedFolders": [
+    ".",
+    "C:\\Users\\Admin\\Downloads\\mental254\\frontend"
+  ],
+  "dart.enableSdkFormatter": false,
+  "files.associations": {
+    "*.js": "javascript",
+    "*.jsx": "javascriptreact",
+    "*.json": "json",
+    "*.ts": "typescript",
+    "*.tsx": "typescriptreact"
+  },
+  "eslint.workingDirectories": [
+    "."
+  ]
+}

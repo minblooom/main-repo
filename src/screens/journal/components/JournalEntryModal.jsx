@@ -6,19 +6,38 @@ import {
   View,
   Text,
   Modal,
+  Alert,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
-import { colors } from '../../../theme/colors';
+import { styles } from '../styles/JournalEntryModal.styles';
 
 export const JournalEntryModal = ({
   visible,
   entry,
   onClose,
   onLoadIntoEditor,
+  onDeleteEntry,
 }) => {
   if (!entry) return null;
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Moment',
+      `Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            onDeleteEntry?.(entry.id);
+            onClose();
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal
@@ -62,25 +81,36 @@ export const JournalEntryModal = ({
 
           {/* Modal Footer Actions */}
           <View style={styles.modalFooter}>
-            {onLoadIntoEditor && (
+            {onDeleteEntry && (
               <TouchableOpacity
-                style={styles.editBtn}
-                onPress={() => {
-                  onLoadIntoEditor(entry);
-                  onClose();
-                }}
-                activeOpacity={0.8}
+                style={styles.deleteBtn}
+                onPress={handleDelete}
+                activeOpacity={0.7}
               >
-                <Text style={styles.editBtnText}>Edit in journal</Text>
+                <Text style={styles.deleteBtnText}>Delete</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.doneBtn}
-              onPress={onClose}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.doneBtnText}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.rightActions}>
+              {onLoadIntoEditor && (
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => {
+                    onLoadIntoEditor(entry);
+                    onClose();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.editBtnText}>Edit in journal</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.doneBtn}
+                onPress={onClose}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.doneBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -88,111 +118,3 @@ export const JournalEntryModal = ({
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(46, 30, 59, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 540,
-    maxHeight: '80%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.1)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-    gap: 14,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  dateText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8B6DA8',
-    letterSpacing: 0.8,
-  },
-  titleText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FAF5EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontSize: 12,
-    color: '#8B6DA8',
-    fontWeight: '700',
-  },
-  feelingTagWrap: {
-    backgroundColor: '#F5FAF6',
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D4EBD9',
-  },
-  feelingTagText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#285437',
-  },
-  bodyScroll: {
-    maxHeight: 260,
-    marginVertical: 4,
-  },
-  bodyText: {
-    fontSize: 14.5,
-    color: '#2E1E3B',
-    lineHeight: 23,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(73, 37, 66, 0.06)',
-  },
-  editBtn: {
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: '#FAF5EE',
-  },
-  editBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: colors.brand,
-  },
-  doneBtn: {
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    backgroundColor: colors.brand,
-  },
-  doneBtnText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-});

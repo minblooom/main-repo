@@ -1,12 +1,37 @@
 // src/screens/journal/components/JournalHeader.jsx
 // Top sanctuary navigation bar for the Journal screen with breadcrumb, weather, and privacy toggle
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import { colors } from '../../../theme/colors';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import { styles } from '../styles/JournalHeader.styles';
+import { COMPANION_MAP } from '../../../constants/companions';
+import { WeatherService } from '../../../services/weatherService';
 
-export const JournalHeader = ({ onPrivacyPress }) => {
+export const JournalHeader = ({
+  companionId = 'noodle',
+  onPrivacyPress,
+  onProfilePress,
+  onHomePress,
+}) => {
   const [language, setLanguage] = useState('EN');
+  const [weatherData, setWeatherData] = useState({
+    pillText: 'â˜€ï¸  Warm & Calm Â· 25Â°C',
+    hydrationTip: 'Stay refreshed with small sips of water today.',
+  });
+
+  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+
+  useEffect(() => {
+    let isMounted = true;
+    WeatherService.getCurrentWeather().then((data) => {
+      if (isMounted && data) {
+        setWeatherData(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
@@ -26,16 +51,26 @@ export const JournalHeader = ({ onPrivacyPress }) => {
   return (
     <View style={styles.container}>
       {/* Breadcrumb / Location Indicator */}
-      <View style={styles.breadcrumb}>
-        <Text style={styles.breadcrumbText}>My sanctuary  /  Journal</Text>
-      </View>
+      <TouchableOpacity
+        style={styles.breadcrumb}
+        onPress={onHomePress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.breadcrumbText}>
+          <Text style={styles.breadcrumbLink}>My sanctuary</Text>  /  Journal
+        </Text>
+      </TouchableOpacity>
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill — Strictly Zero County Names */}
-        <View style={styles.weatherPill}>
-          <Text style={styles.weatherText}>☀️ Warm & Calm · 25°C</Text>
-        </View>
+        {/* Live Weather Pill with Hydration Care Advice */}
+        <TouchableOpacity
+          style={styles.weatherPill}
+          onPress={() => Alert.alert("Today's Environment", weatherData.hydrationTip)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.weatherText}>{weatherData.pillText}</Text>
+        </TouchableOpacity>
 
         {/* Language Toggle */}
         <TouchableOpacity
@@ -60,95 +95,19 @@ export const JournalHeader = ({ onPrivacyPress }) => {
         </TouchableOpacity>
 
         {/* Profile Companion Avatar */}
-        <View style={styles.avatarCircle}>
+        <TouchableOpacity
+          style={[styles.avatarCircle, { backgroundColor: companion.accent || '#EAE3F7' }]}
+          onPress={onProfilePress}
+          activeOpacity={0.8}
+        >
           <Image
-            source={require('../../../../assets/images/sloth.jpg')}
+            source={companion.cutoutImage || companion.image}
             style={styles.avatarImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  breadcrumb: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  breadcrumbText: {
-    fontSize: 12,
-    color: '#8B6DA8',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  weatherPill: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  weatherText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  langBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  langText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  langActive: {
-    color: colors.textPrimary,
-    fontWeight: '800',
-  },
-  langInactive: {
-    color: colors.textMuted,
-  },
-  iconBtn: {
-    padding: 6,
-  },
-  iconEmoji: {
-    fontSize: 16,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EAE3F7',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 32,
-    height: 36,
-  },
-});

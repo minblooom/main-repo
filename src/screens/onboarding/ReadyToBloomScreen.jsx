@@ -7,7 +7,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   Animated,
   Platform,
@@ -18,6 +17,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { COMPANION_MAP } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
+import { onboardingStorage } from '../../services/onboardingStorage';
 
 const FOCUS_LABEL_MAP = {
   anxiety: 'Anxiety & Overwhelm',
@@ -41,7 +41,7 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
   const isWide = isDesktop || isTablet;
 
   const params = route?.params ?? {};
-  const companion = COMPANION_MAP.noodle;
+  const companion = COMPANION_MAP[params.companion] || COMPANION_MAP.noodle;
   const focusAreas = (params.focusAreas ?? []).map((id) => FOCUS_LABEL_MAP[id] ?? id);
   const rhythm = params.rhythm ?? '2';
 
@@ -82,10 +82,38 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
     return () => loop.stop();
   }, []);
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
+    try {
+      await onboardingStorage.setOnboardingCompleted(true);
+      await onboardingStorage.savePreferences({
+        companion: params.companion || 'noodle',
+        focusAreas: params.focusAreas || [],
+        rhythm: params.rhythm || '2',
+        nudges: Boolean(params.nudges),
+        country: params.country || 'ke',
+        language: params.language || 'English',
+        age: params.age || '22',
+        ageGroup: params.ageGroup || '22-25',
+        completedAt: new Date().toISOString(),
+      });
+    } catch {
+      // Memory fallback active
+    }
+
     if (navigation) {
-      // If Home screen route exists in navigator, navigate; else fallback gracefully
-      navigation.navigate('Home');
+      if (typeof navigation.replace === 'function') {
+        navigation.replace('Home', {
+          companion: params.companion || 'noodle',
+          focusAreas: params.focusAreas || [],
+          rhythm: params.rhythm || '2',
+        });
+      } else {
+        navigation.navigate('Home', {
+          companion: params.companion || 'noodle',
+          focusAreas: params.focusAreas || [],
+          rhythm: params.rhythm || '2',
+        });
+      }
     }
   };
 
@@ -117,10 +145,14 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
               <Animated.View
                 style={[
                   styles.heroImgWrap,
-                  { transform: [{ translateY: floatAnim }] },
+                  { backgroundColor: companion.accent || '#E8DEFF', transform: [{ translateY: floatAnim }] },
                 ]}
               >
-                <Image source={companion.image} style={styles.heroImg} resizeMode="cover" />
+                <Image
+                  source={companion.cutoutImage || companion.image}
+                  style={styles.heroImg}
+                  resizeMode="contain"
+                />
               </Animated.View>
             </Animated.View>
 
@@ -144,9 +176,8 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
                 <Text style={styles.kitCardTitle}>A little more ease.</Text>
                 <Text style={styles.kitCardDesc}>
                   {focusAreas.length > 0
-                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${
-                        focusAreas.length > 2 ? ' & more.' : '.'
-                      }`
+                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${focusAreas.length > 2 ? ' & more.' : '.'
+                    }`
                     : "We'll personalise as you go."}
                 </Text>
               </View>
@@ -174,114 +205,4 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  heroBanner: {
-    backgroundColor: '#EAE3F7',
-    borderRadius: 28,
-    padding: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#DFD5F0',
-  },
-  heroBannerWide: {
-    paddingHorizontal: 36,
-  },
-  heroText: {
-    flex: 1,
-    paddingRight: 16,
-  },
-  heroTag: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#8B6DA8',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  heroTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#2E1E46',
-    lineHeight: 38,
-    marginBottom: 8,
-  },
-  heroSub: {
-    fontSize: 13,
-    color: '#6E5D87',
-    lineHeight: 19,
-  },
-  heroImgWrap: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    overflow: 'hidden',
-    backgroundColor: '#FCE8D8',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  heroImg: {
-    width: '100%',
-    height: '100%',
-  },
-  kitTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  kitSub: {
-    fontSize: 12,
-    color: '#AAA',
-    marginBottom: 14,
-  },
-  kitRow: {
-    flexDirection: 'column',
-    gap: 12,
-    marginBottom: 24,
-  },
-  kitRowWide: {
-    flexDirection: 'row',
-  },
-  kitCard: {
-    flex: 1,
-    borderRadius: 20,
-    padding: 18,
-    gap: 4,
-  },
-  kitNum: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: 'rgba(0,0,0,0.3)',
-    marginBottom: 2,
-  },
-  kitCardLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(0,0,0,0.4)',
-    letterSpacing: 0.8,
-  },
-  kitCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginTop: 2,
-  },
-  kitCardDesc: {
-    fontSize: 11.5,
-    color: '#555',
-    lineHeight: 16,
-  },
-  footer: {
-    fontSize: 11.5,
-    color: '#AAA',
-    textAlign: 'center',
-    marginTop: 14,
-  },
-});
+import { styles } from './styles/ReadyToBloomScreen.styles';

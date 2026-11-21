@@ -1,16 +1,16 @@
 // src/screens/journal/components/JournalEditor.jsx
-// Main journal writing card matching the Figma design
-// Includes draft indicator, prompt spark, title, reflection body, feeling chips, and save action
+// Main journal writing card with clearly defined, welcoming input text boxes
+// Includes "+ New entry" action, title container, expansive body canvas, mood chips, and save action
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
+import { styles } from '../styles/JournalEditor.styles';
 import { JournalSparkBanner } from './JournalSparkBanner';
 
 const FEELING_OPTIONS = [
@@ -34,19 +34,45 @@ export const JournalEditor = ({
   onHidePrompt,
   onShowPrompt,
   onSave,
+  onNewEntry,
   draftState = 'Unsaved draft',
+  isEditingExisting = false,
 }) => {
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [isBodyFocused, setIsBodyFocused] = useState(false);
+
+  const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
+
   return (
     <View style={styles.card}>
-      {/* Top Date & Draft Status Pill */}
+      {/* Top Header Row with Date, Draft Pill, and "+ New Entry" button */}
       <View style={styles.dateRow}>
-        <Text style={styles.dateText}>{dateString.toUpperCase()}</Text>
-        <View style={styles.draftPill}>
-          <Text style={styles.draftText}>{draftState}</Text>
+        <View style={styles.dateLeft}>
+          <Text style={styles.dateText}>{dateString.toUpperCase()}</Text>
+          {isEditingExisting && (
+            <View style={styles.editingBadge}>
+              <Text style={styles.editingBadgeText}>Editing saved</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.dateActions}>
+          <View style={styles.draftPill}>
+            <Text style={styles.draftText}>{draftState}</Text>
+          </View>
+
+          {/* Clear & Start Fresh Button */}
+          <TouchableOpacity
+            style={styles.newEntryBtn}
+            onPress={onNewEntry}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.newEntryBtnText}>+ New entry</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Gentle Spark Banner or Re-open Link */}
+      {/* Gentle Spark Prompt Banner or Re-open Link */}
       {isPromptVisible ? (
         <JournalSparkBanner
           prompt={prompt}
@@ -65,31 +91,64 @@ export const JournalEditor = ({
         </TouchableOpacity>
       )}
 
-      {/* Title Input */}
-      <TextInput
-        style={styles.titleInput}
-        placeholder="A small, softer moment"
-        placeholderTextColor="#B0A0C0"
-        value={title}
-        onChangeText={onChangeTitle}
-        returnKeyType="next"
-      />
+      {/* -- CLEARLY DEFINED TITLE INPUT BOX --------------------- */}
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>TITLE</Text>
+        <View
+          style={[
+            styles.titleBoxWrap,
+            isTitleFocused && styles.inputFocused,
+          ]}
+        >
+          <TextInput
+                    underlineColorAndroid="transparent"
+            style={styles.titleInput}
+            placeholder="Give your moment a title (e.g. A small, softer moment)..."
+            placeholderTextColor="#A89BB5"
+            value={title}
+            onChangeText={onChangeTitle}
+            onFocus={() => setIsTitleFocused(true)}
+            onBlur={() => setIsTitleFocused(false)}
+            returnKeyType="next"
+          />
+        </View>
+      </View>
 
-      {/* Body Reflection Input */}
-      <TextInput
-        style={styles.bodyInput}
-        placeholder="Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn't need to figure anything out..."
-        placeholderTextColor="#B0A0C0"
-        multiline
-        textAlignVertical="top"
-        value={body}
-        onChangeText={onChangeBody}
-      />
+      {/* -- CLEARLY DEFINED BODY WRITING TEXT BOX --------------- */}
+      <View style={styles.inputGroup}>
+        <View style={styles.bodyLabelRow}>
+          <Text style={styles.inputLabel}>YOUR REFLECTION · WRITE FREELY</Text>
+          <Text style={styles.wordCountText}>
+            {wordCount > 0 ? `${wordCount} words` : 'Empty sheet · No rush'}
+          </Text>
+        </View>
 
-      {/* Helper Tagline */}
-      <Text style={styles.helperNote}>
-        Keep going, or leave it here. Both are enough.
-      </Text>
+        <View
+          style={[
+            styles.bodyBoxWrap,
+            isBodyFocused && styles.inputFocused,
+          ]}
+        >
+          <TextInput
+                    underlineColorAndroid="transparent"
+            style={styles.bodyInput}
+            placeholder="Click here to start writing... What is on your mind? What felt heavy or gentle today? Take all the space you need..."
+            placeholderTextColor="#A89BB5"
+            multiline
+            textAlignVertical="top"
+            value={body}
+            onChangeText={onChangeBody}
+            onFocus={() => setIsBodyFocused(true)}
+            onBlur={() => setIsBodyFocused(false)}
+          />
+
+          <View style={styles.bodyFooterHintWrap}>
+            <Text style={styles.helperNote}>
+              Keep going, or leave it here. Both are enough.
+            </Text>
+          </View>
+        </View>
+      </View>
 
       {/* Mood Selector: How does this moment feel? */}
       <View style={styles.feelingSection}>
@@ -136,151 +195,12 @@ export const JournalEditor = ({
           onPress={onSave}
           activeOpacity={0.88}
         >
-          <Text style={styles.saveBtnText}>Save entry →</Text>
+          <Text style={styles.saveBtnText}>
+            {isEditingExisting ? 'Update entry →' : 'Save entry →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-    gap: 12,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  dateText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#8B6DA8',
-    letterSpacing: 1,
-  },
-  draftPill: {
-    backgroundColor: '#FAF5EE',
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-  },
-  draftText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#8B6DA8',
-  },
-  showSparkBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF6EA',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  showSparkText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8A531C',
-  },
-  titleInput: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-    paddingVertical: 4,
-  },
-  bodyInput: {
-    fontSize: 14.5,
-    color: '#2E1E3B',
-    lineHeight: 23,
-    minHeight: 160,
-    paddingVertical: 4,
-  },
-  helperNote: {
-    fontSize: 11.5,
-    fontStyle: 'italic',
-    color: '#A092B0',
-    marginTop: -4,
-  },
-  feelingSection: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(73, 37, 66, 0.06)',
-    gap: 8,
-  },
-  feelingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  feelingTitle: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#38234A',
-  },
-  feelingOptional: {
-    fontSize: 11,
-    color: '#A092B0',
-  },
-  feelingRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  feelingChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: '#FAF5EE',
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-  },
-  feelingLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#6E5D87',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(73, 37, 66, 0.06)',
-    marginTop: 4,
-  },
-  footerHint: {
-    fontSize: 11.5,
-    color: '#8B6DA8',
-    fontStyle: 'italic',
-  },
-  saveBtn: {
-    backgroundColor: colors.brand,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    shadowColor: colors.brand,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-});

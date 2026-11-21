@@ -1,6 +1,7 @@
 // src/screens/onboarding/AgeSelectScreen.jsx
 // "What season are you in?" — Figma screen 06
-// Direct age input + tailored age brackets for teenagers and twenties
+// Direct age input + tailored age brackets for teenagers (13+) and twenties
+// Strictly enforces 13+ age requirement with protective youth safety warning.
 
 import React, { useState } from 'react';
 import {
@@ -8,14 +9,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { COMPANION_MAP } from '../../constants/companions';
 
 const AGE_GROUPS = [
   { id: '13-17', min: 13, max: 17, defaultVal: '16', label: '13–17', desc: 'Finding who you are' },
@@ -24,12 +26,26 @@ const AGE_GROUPS = [
   { id: '26-29+', min: 26, max: 99, defaultVal: '27', label: '26–29+', desc: 'Building life on your own terms' },
 ];
 
+
+const GENDER_OPTIONS = [
+  { id: 'female', label: 'Female', emoji: '🌸' },
+  { id: 'male', label: 'Male', emoji: '🌿' },
+  { id: 'non_binary', label: 'Non-Binary', emoji: '✨' },
+  { id: 'prefer_not', label: 'Prefer not to say', emoji: '🕊️' },
+];
+
 export const AgeSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  const [typedAge, setTypedAge] = useState('22');
-  const [selectedGroup, setSelectedGroup] = useState('22-25');
+  const companion = COMPANION_MAP[route?.params?.companion] || COMPANION_MAP.noodle;
+
+  const [typedAge, setTypedAge] = useState(route?.params?.age || '22');
+  const [selectedGroup, setSelectedGroup] = useState(route?.params?.ageGroup || '22-25');
+  const [gender, setGender] = useState(route?.params?.gender || 'prefer_not');
+
+  const ageNum = parseInt(typedAge, 10);
+  const isUnderage = !isNaN(ageNum) && ageNum < 13 && typedAge.length > 0;
 
   const handleAgeChange = (text) => {
     const cleaned = text.replace(/[^0-9]/g, '').slice(0, 2);
@@ -37,13 +53,15 @@ export const AgeSelectScreen = ({ navigation, route }) => {
 
     const num = parseInt(cleaned, 10);
     if (!isNaN(num)) {
-      const match = AGE_GROUPS.find((g) => num >= g.min && num <= g.max);
-      if (match) {
-        setSelectedGroup(match.id);
-      } else if (num >= 26) {
-        setSelectedGroup('26-29+');
-      } else if (num < 13 && num > 0) {
-        setSelectedGroup('13-17');
+      if (num < 13) {
+        setSelectedGroup(null);
+      } else {
+        const match = AGE_GROUPS.find((g) => num >= g.min && num <= g.max);
+        if (match) {
+          setSelectedGroup(match.id);
+        } else if (num >= 26) {
+          setSelectedGroup('26-29+');
+        }
       }
     }
   };
@@ -54,12 +72,21 @@ export const AgeSelectScreen = ({ navigation, route }) => {
   };
 
   const handleContinue = () => {
+    if (isUnderage) {
+      Alert.alert(
+        'Age Requirement (13+)',
+        'MindBloom is designed for youth and young adults aged 13 and older. For your privacy and safety, independent registration is only permitted for ages 13+. Please explore wellness tools with a parent, guardian, or teacher.'
+      );
+      return;
+    }
+
     if (!navigation) return;
     const finalAge = typedAge || '22';
     navigation.navigate('FocusAreas', {
       ...(route?.params ?? {}),
       age: finalAge,
       ageGroup: selectedGroup,
+      gender,
     });
   };
 
@@ -78,8 +105,9 @@ export const AgeSelectScreen = ({ navigation, route }) => {
             <OnboardingHeroCard
               tag="LITTLE STEPS, REAL YOU."
               heading={"Growing isn't\na race."}
-              quote='"There’s no timeline for figuring life out."'
-              author="Noodle · here for the small steps"
+              quote={companion.quote}
+              author={companion.author}
+              image={companion.image}
               isWide={isWide}
             />
 
@@ -96,7 +124,11 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 <Text style={styles.inputCardLabel}>Your age</Text>
                 <View style={styles.inputRow}>
                   <TextInput
-                    style={styles.ageNumberInput}
+                    underlineColorAndroid="transparent"
+                    style={[
+                      styles.ageNumberInput,
+                      isUnderage && { color: '#BE123C' },
+                    ]}
                     value={typedAge}
                     onChangeText={handleAgeChange}
                     keyboardType="numeric"
@@ -108,6 +140,49 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
+              {/* Underage Protective Warning */}
+              {isUnderage && (
+                <View style={styles.underageWarningBox}>
+                  <Text style={styles.underageWarningTitle}>⚠️ Must Be 13 or Older to Register</Text>
+                  <Text style={styles.underageWarningText}>
+                    MindBloom is crafted for youth aged 13 and above. Under data protection regulations and youth safeguarding guidelines, users under 13 cannot register an independent account.
+                    {'\n\n'}
+                    If you are experiencing tough times, please reach out to Childline Kenya at 116 (Toll-Free) or speak with a trusted parent or counselor.
+                  </Text>
+                </View>
+              )}
+
+              
+              {/* Gender Identity Picker */}
+              <Text style={[styles.orGroupLabel, { marginTop: 18, marginBottom: 8 }]}>Your gender identity (optional):</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {GENDER_OPTIONS.map((item) => {
+                  const isSel = gender === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: 14,
+                        borderWidth: 1.5,
+                        borderColor: isSel ? '#2C5A38' : '#EAE3F7',
+                        backgroundColor: isSel ? '#EDF5EE' : '#FFFFFF',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      onPress={() => setGender(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: isSel ? '700' : '500', color: isSel ? '#2C5A38' : '#574C68' }}>
+                        {item.emoji} {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+  
               <Text style={styles.orGroupLabel}>Or choose your age group:</Text>
 
               {/* Age Bracket Options */}
@@ -133,13 +208,22 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 })}
               </View>
 
-              <Text style={styles.hint}>
-                No birthday needed. Just enough to make this relevant to you.
-              </Text>
-
-              <TouchableOpacity style={s.primaryBtn} onPress={handleContinue} activeOpacity={0.88}>
-                <Text style={s.primaryBtnText}>{"That's me →"}</Text>
+              {/* Action Button: Disabled when age < 13 */}
+              <TouchableOpacity
+                style={[
+                  s.primaryBtn,
+                  isUnderage && s.primaryBtnDisabled,
+                ]}
+                onPress={handleContinue}
+                disabled={isUnderage}
+                activeOpacity={0.88}
+              >
+                <Text style={s.primaryBtnText}>
+                  {isUnderage ? '13+ Required to Continue' : 'Next, your rhythm →'}
+                </Text>
               </TouchableOpacity>
+
+              <Text style={styles.hint}>Age helps us suggest relevant spaces. Changeable anytime.</Text>
             </View>
           </View>
         </View>
@@ -148,99 +232,4 @@ export const AgeSelectScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  inputCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  inputCardLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6E5D87',
-    marginBottom: 4,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  ageNumberInput: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#2E1E46',
-    minWidth: 44,
-    paddingVertical: 0,
-    letterSpacing: -0.5,
-  },
-  yearsSuffix: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#8B6DA8',
-  },
-  orGroupLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6E5D87',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  bracketGroup: {
-    gap: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  rowSelected: {
-    borderColor: '#492542',
-    backgroundColor: '#F0EAFA',
-  },
-  rowLeft: {
-    flex: 1,
-  },
-  rowLabel: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
-  rowLabelSelected: {
-    color: '#492542',
-  },
-  rowDesc: {
-    fontSize: 12,
-    color: '#777',
-    marginTop: 1,
-  },
-  rowCheck: {
-    fontSize: 16,
-    color: '#492542',
-    fontWeight: '800',
-  },
-  hint: {
-    fontSize: 11.5,
-    color: '#AAA',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-});
+import { styles } from './styles/AgeSelectScreen.styles';

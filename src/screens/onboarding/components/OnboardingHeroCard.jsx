@@ -18,6 +18,7 @@ export const OnboardingHeroCard = ({
   heading,
   quote,
   author = 'Noodle · here for the small steps',
+  image = require('../../../../assets/images/sloth.jpg'),
   isWide = false,
 }) => {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -58,7 +59,7 @@ export const OnboardingHeroCard = ({
       >
         <View style={styles.mascotCircle}>
           <Image
-            source={require('../../../../assets/images/sloth.jpg')}
+            source={image}
             style={styles.mascotImage}
             resizeMode="cover"
           />

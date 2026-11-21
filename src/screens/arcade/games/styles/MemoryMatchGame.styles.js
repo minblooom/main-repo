@@ -1,0 +1,152 @@
+// src/screens/arcade/games/styles/MemoryMatchGame.styles.js
+// Dedicated styles for MemoryMatchGame with Multi-Level Progression.
+
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#160E28',
+    position: 'relative',
+  },
+  hudRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 8,
+    width: '100%',
+  },
+  hudPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 37, 66, 0.08)',
+    alignItems: 'center',
+    minWidth: 68,
+  },
+  hudLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#7C3AED',
+    letterSpacing: 0.5,
+  },
+  hudValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#160E28',
+  },
+  grid: {
+    width: '100%',
+    maxWidth: 420,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  card: {
+    aspectRatio: 0.84,
+    borderRadius: 16,
+    backgroundColor: '#261B40',
+    borderWidth: 2,
+    borderColor: 'rgba(196, 181, 253, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardFlipped: {
+    backgroundColor: '#FAF5FF',
+    borderColor: '#A855F7',
+    shadowColor: '#A855F7',
+    shadowOpacity: 0.5,
+  },
+  cardMatched: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#22C55E',
+    opacity: 0.92,
+  },
+  cardBack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardBackPattern: {
+    fontSize: 22,
+    color: '#A78BFA',
+    fontWeight: '700',
+  },
+  cardFront: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  cardEmoji: {
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  cardName: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  cardTrait: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#DDD6FE',
+    fontStyle: 'italic',
+    paddingBottom: 6,
+  },
+
+  // Level Up Celebration Banner
+  levelBanner: {
+    position: 'absolute',
+    top: '32%',
+    left: 20,
+    right: 20,
+    backgroundColor: '#FAF5EE',
+    borderRadius: 24,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: '#A855F7',
+    zIndex: 100,
+    gap: 8,
+  },
+  levelBannerTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#8A531C',
+    letterSpacing: 1,
+  },
+  levelBannerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#160E28',
+  },
+  levelBannerSub: {
+    fontSize: 12,
+    color: '#6E5D87',
+    textAlign: 'center',
+  },
+});
