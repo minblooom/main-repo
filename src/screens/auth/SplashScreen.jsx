@@ -1,4 +1,4 @@
-// src/screens/auth/SplashScreen.jsx
+﻿// src/screens/auth/SplashScreen.jsx
 // Exact implementation of Figma splash screen for MindBloom
 // Responsive: 2-column on desktop/tablet, bottom sheet on mobile
 
@@ -87,8 +87,8 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     }
   };
 
-  const archWidth = isWide ? 260 : Math.min(containerMaxWidth * 0.72, 280);
-  const archHeight = isWide ? 340 : Math.min(height * 0.44, 380);
+  const archWidth = isWide ? 260 : Math.min(containerMaxWidth * 0.58, 220);
+  const archHeight = isWide ? 340 : Math.min(height * 0.32, 270);
 
   const progressInterpolate = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -180,3 +180,4 @@ export const SplashScreen = ({ onFinish, navigation }) => {
 };
 
 import { styles } from './styles/SplashScreen.styles';
+

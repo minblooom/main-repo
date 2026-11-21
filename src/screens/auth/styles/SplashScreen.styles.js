@@ -1,4 +1,4 @@
-// src/screens/auth/styles/SplashScreen.styles.js
+﻿// src/screens/auth/styles/SplashScreen.styles.js
 import { StyleSheet, Platform } from 'react-native';
 import { colors } from '../../../theme/colors';
 
@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
 
   // Left Section
   leftSection: {
-    flex: 1,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: Platform.OS === 'android' ? 16 : 8,
@@ -141,6 +141,7 @@ export const styles = StyleSheet.create({
 
   // Right Lavender Card / Bottom Sheet
   lavenderCard: {
+    marginTop: 'auto',
     backgroundColor: colors.lavenderSheet,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
@@ -213,3 +214,4 @@ export const styles = StyleSheet.create({
     borderRadius: 3,
   },
 });
+
