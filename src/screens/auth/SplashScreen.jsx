@@ -87,8 +87,8 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     }
   };
 
-  const archWidth = isWide ? 260 : Math.min(containerMaxWidth * 0.58, 220);
-  const archHeight = isWide ? 340 : Math.min(height * 0.32, 270);
+  const archWidth = isWide ? 280 : Math.min(containerMaxWidth * 0.65, 250);
+  const archHeight = isWide ? 340 : Math.min(height * 0.35, 300);
 
   const progressInterpolate = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -134,7 +134,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
                   <Image
                     source={require('../../../assets/images/splashscreen.jpg')}
                     style={styles.heroImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
               </Animated.View>
@@ -180,4 +180,5 @@ export const SplashScreen = ({ onFinish, navigation }) => {
 };
 
 import { styles } from './styles/SplashScreen.styles';
+
 
