@@ -12,7 +12,6 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../../theme/colors';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export const SplashScreen = ({ onFinish, navigation }) => {

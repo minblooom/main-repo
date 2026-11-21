@@ -15,8 +15,6 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
-import { COMPANION_MAP } from '../../constants/companions';
-
 // Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -104,7 +102,7 @@ export const ProfileContent = ({
         ...newProfile,
         companionId,
       });
-    } catch {}
+    } catch { }
     setActiveModal(null);
   };
 
@@ -117,7 +115,7 @@ export const ProfileContent = ({
         companion: newCompanionId,
         companionId: newCompanionId,
       });
-    } catch {}
+    } catch { }
     setActiveModal(null);
   };
 
@@ -251,8 +249,8 @@ export const ProfileContent = ({
           activeModal === 'legal_privacy'
             ? 'privacy'
             : activeModal === 'legal_disclaimer'
-            ? 'disclaimer'
-            : 'terms'
+              ? 'disclaimer'
+              : 'terms'
         }
         onClose={() => setActiveModal(null)}
       />

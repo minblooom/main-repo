@@ -6,9 +6,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useTheme, THEME_PALETTES } from '../../../theme/ThemeContext';
 
 const THEME_CARDS = [
-  { id: 'savannah',     emoji: '🌅', tag: 'Solar Bento' },
+  { id: 'savannah', emoji: '🌅', tag: 'Solar Bento' },
   { id: 'deep_horizon', emoji: '🌙', tag: 'Mindful silence' },
-  { id: 'sage_meadow',  emoji: '🌿', tag: 'Vitality & growth' },
+  { id: 'sage_meadow', emoji: '🌿', tag: 'Vitality & growth' },
   { id: 'teal_clarity', emoji: '💎', tag: 'Social joy' },
 ];
 

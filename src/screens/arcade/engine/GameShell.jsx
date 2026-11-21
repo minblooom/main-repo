@@ -52,7 +52,7 @@ export const GameShell = ({
           if (state) {
             setSavedState(state);
           }
-        } catch {}
+        } catch { }
         setLoadedState(true);
       })();
     } else {

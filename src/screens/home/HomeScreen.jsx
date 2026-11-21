@@ -52,7 +52,7 @@ export const HomeScreen = ({ navigation, route }) => {
             setUserFocusAreas(saved.focusAreas);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [route?.params]);
 

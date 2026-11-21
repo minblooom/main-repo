@@ -1,7 +1,5 @@
 // src/screens/profile/styles/SanctuaryHeroCard.styles.js
-import { StyleSheet, Platform } from 'react-native';
-import { colors } from '../../../theme/colors';
-
+import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,

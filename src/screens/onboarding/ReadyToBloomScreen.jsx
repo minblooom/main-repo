@@ -176,9 +176,8 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
                 <Text style={styles.kitCardTitle}>A little more ease.</Text>
                 <Text style={styles.kitCardDesc}>
                   {focusAreas.length > 0
-                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${
-                        focusAreas.length > 2 ? ' & more.' : '.'
-                      }`
+                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${focusAreas.length > 2 ? ' & more.' : '.'
+                    }`
                     : "We'll personalise as you go."}
                 </Text>
               </View>

@@ -121,7 +121,7 @@ export const SignupScreen = ({ navigation }) => {
         nickname: name,
         contact: contact.trim(),
       });
-    } catch {}
+    } catch { }
 
     if (navigation) {
       navigation.navigate('GentleHello');

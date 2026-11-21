@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalEntryModal.styles';
 
 export const JournalEntryModal = ({
@@ -118,4 +117,4 @@ export const JournalEntryModal = ({
     </Modal>
   );
 };
-
+

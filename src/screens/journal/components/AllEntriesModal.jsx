@@ -10,9 +10,8 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/AllEntriesModal.styles';
 
 export const AllEntriesModal = ({
@@ -228,4 +227,4 @@ export const AllEntriesModal = ({
     </Modal>
   );
 };
-
+

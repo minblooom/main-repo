@@ -49,10 +49,10 @@ const MOODS = [
 
 const FACTORS = [
   { id: 'sleep', label: '💤 Sleep' },
-  { id: 'work',  label: '📚 Study / Work' },
+  { id: 'work', label: '📚 Study / Work' },
   { id: 'people', label: '💬 Relationships' },
-  { id: 'quiet',  label: '🌿 Solitude' },
-  { id: 'body',   label: '🧘 Body / Energy' },
+  { id: 'quiet', label: '🌿 Solitude' },
+  { id: 'body', label: '🧘 Body / Energy' },
   { id: 'gratitude', label: '✨ Small win' },
 ];
 
@@ -85,7 +85,7 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
             }
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -122,7 +122,7 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
       filtered.push(entry);
       await AsyncStorage.setItem(MOOD_HISTORY_KEY, JSON.stringify(filtered));
       setHasSaved(true);
-    } catch {}
+    } catch { }
   };
 
   return (
