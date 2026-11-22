@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -10,11 +8,13 @@ import {
   ScrollView,
   Animated,
   Alert,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { AuthService } from '../../core/api/authService';
 
 export const LoginScreen = ({ navigation }) => {
   const { isTablet, isDesktop } = useResponsiveLayout();
@@ -26,6 +26,7 @@ export const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Gentle float animation for the sloth mascot
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -80,21 +81,36 @@ export const LoginScreen = ({ navigation }) => {
     return errs;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setSubmitted(true);
     const errs = validateLogin();
     setErrors(errs);
 
-    if (Object.keys(errs).length > 0) {
-      return;
-    }
+    if (Object.keys(errs).length > 0) return;
 
-    if (navigation) {
-      if (typeof navigation.replace === 'function') {
-        navigation.replace('Home');
-      } else {
-        navigation.navigate('Home');
+    setLoading(true);
+    try {
+      await AuthService.login({ identifier: identifier.trim(), password });
+      // Success — go home
+      if (navigation) {
+        if (typeof navigation.replace === 'function') {
+          navigation.replace('Home');
+        } else {
+          navigation.navigate('Home');
+        }
       }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Sign-in failed. Please try again.';
+      // Friendly error messages
+      if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
+        setErrors({ general: 'Hmm, those details don\'t match. Double-check and try again.' });
+      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused')) {
+        setErrors({ general: 'No connection right now. Check your internet and try again.' });
+      } else {
+        setErrors({ general: msg });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -149,24 +165,16 @@ export const LoginScreen = ({ navigation }) => {
                 {'Big feelings.\nSmall steps.\nStill you.'}
               </Text>
 
-              <Animated.View
+              <Animated.Image
+                source={require('../../../assets/images/sloth-companion.png')}
                 style={[
-                  s.mascotCircleWrapper,
+                  s.companionImage,
                   { transform: [{ translateY: floatAnim }] },
                 ]}
-              >
-                <View style={s.mascotCircle}>
-                  <Image
-                    source={require('../../../assets/images/sloth_cutout.png')}
-                    style={s.mascotImage}
-                    resizeMode="contain"
-                  />
-                </View>
-                <Text style={s.sparkleTopLeft}>✦</Text>
-                <Text style={s.sparkleBottomRight}>✦</Text>
-              </Animated.View>
+                resizeMode="contain"
+              />
 
-              <View style={s.speechBubbleCard}>
+              <View style={s.speechBubble}>
                 <Text style={s.speechQuote}>
                   "No catching up needed. Just come as you are."
                 </Text>
@@ -193,6 +201,13 @@ export const LoginScreen = ({ navigation }) => {
                 </View>
               </View>
 
+              {/* General error banner */}
+              {errors.general ? (
+                <View style={s.errorBanner}>
+                  <Text style={s.errorBannerText}>{errors.general}</Text>
+                </View>
+              ) : null}
+
               {/* Fields */}
               <View style={s.fieldsBlock}>
 
@@ -213,6 +228,7 @@ export const LoginScreen = ({ navigation }) => {
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
+                    editable={!loading}
                   />
                   {submitted && errors.identifier ? (
                     <Text style={s.errorText}>{errors.identifier}</Text>
@@ -223,7 +239,7 @@ export const LoginScreen = ({ navigation }) => {
                   <Text style={s.fieldLabel}>Your password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
-                    underlineColorAndroid="transparent"
+                      underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
                       onChangeText={(text) => {
@@ -232,9 +248,10 @@ export const LoginScreen = ({ navigation }) => {
                           setErrors(validateLogin(undefined, text));
                         }
                       }}
-                      placeholder="••••••••••••"
+                      placeholder="············"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showPassword}
+                      editable={!loading}
                     />
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -255,11 +272,16 @@ export const LoginScreen = ({ navigation }) => {
                 </View>
 
                 <TouchableOpacity
-                  style={s.primaryBtn}
+                  style={[s.primaryBtn, loading && { opacity: 0.7 }]}
                   onPress={handleLogin}
                   activeOpacity={0.88}
+                  disabled={loading}
                 >
-                  <Text style={s.primaryBtnText}>Come on in ➔</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={s.primaryBtnText}>Come on in →</Text>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
