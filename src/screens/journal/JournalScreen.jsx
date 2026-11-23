@@ -33,6 +33,7 @@ import { LegalModal } from '../legal/LegalScreen';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { journalStorage } from '../../services/journalStorage';
 import { COMPANION_MAP } from '../../constants/companions';
+import { useI18n } from '../../services/i18n';
 
 const FOCUS_SPARKS = {
   anxiety: [
@@ -79,6 +80,7 @@ export const JournalContent = ({
   isWide = false,
 }) => {
   const { theme, companionId: globalCompanionId } = useTheme();
+  const { countryData, t } = useI18n();
   const companionId = initialCompanionId || globalCompanionId || 'noodle';
   const activeSparks = FOCUS_SPARKS[userFocusAreas?.[0]] || FOCUS_SPARKS.default;
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
@@ -337,10 +339,18 @@ export const JournalContent = ({
             <View style={styles.editorFooterRow}>
               <Text style={[styles.footerWordsPace, { color: theme.textMuted }]}>Your words. Your pace.</Text>
               <TouchableOpacity
-                onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
+                onPress={() => {
+                  const title = t('need_support');
+                  const msg = `${countryData?.helplineName || 'Local Support'}: ${countryData?.helplinePhone || 'Dial local emergency services'}. You are never alone.`;
+                  if (Platform.OS === 'web') {
+                    window.alert(`${title}\n\n${msg}`);
+                  } else {
+                    Alert.alert(title, msg);
+                  }
+                }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.footerHelpline, { color: theme.textSecondary }]}>Need urgent support?</Text>
+                <Text style={[styles.footerHelpline, { color: theme.textSecondary }]}>{t('need_support')}</Text>
               </TouchableOpacity>
             </View>
           </View>
