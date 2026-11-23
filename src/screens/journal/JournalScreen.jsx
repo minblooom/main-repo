@@ -31,6 +31,7 @@ import { AllEntriesModal } from './components/AllEntriesModal';
 import { JournalPrivacyModal } from './components/JournalPrivacyModal';
 import { LegalModal } from '../legal/LegalScreen';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { journalStorage } from '../../services/journalStorage';
 import { COMPANION_MAP } from '../../constants/companions';
 
 const FOCUS_SPARKS = {
@@ -70,39 +71,6 @@ const FOCUS_SPARKS = {
   ],
 };
 
-const INITIAL_ENTRIES = [
-  {
-    id: 'entry-1',
-    dayNumber: '16',
-    badgeBg: '#EDF5EE',
-    badgeColor: '#2C5A38',
-    title: 'A small, softer moment',
-    feelingLabel: 'A little lighter',
-    body: 'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.',
-    dateString: 'TODAY, 16 NOVEMBER',
-  },
-  {
-    id: 'entry-2',
-    dayNumber: '14',
-    badgeBg: '#FFF5E8',
-    badgeColor: '#8A531C',
-    title: 'Overthinking during lunch',
-    feelingLabel: 'Somewhere in between',
-    body: 'Noticed my shoulders creeping up to my ears again. Took three deep breaths with Kovu and watched the trees move.',
-    dateString: 'SATURDAY, 14 NOVEMBER',
-  },
-  {
-    id: 'entry-3',
-    dayNumber: '09',
-    badgeBg: '#F2EDFA',
-    badgeColor: '#6E5D87',
-    title: 'Morning stillness',
-    feelingLabel: 'A little heavy',
-    body: 'A warm cup of tea and five minutes of absolute silence before the rush of the world began.',
-    dateString: 'MONDAY, 09 NOVEMBER',
-  },
-];
-
 export const JournalContent = ({
   companionId: initialCompanionId,
   userFocusAreas = ['anxiety'],
@@ -116,18 +84,30 @@ export const JournalContent = ({
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
   // State Management
-  const [entries, setEntries] = useState(INITIAL_ENTRIES);
+  const [entries, setEntries] = useState([]);
   const [sparkIndex, setSparkIndex] = useState(0);
   const [isSparkVisible, setIsSparkVisible] = useState(true);
 
   // Active Draft / Editor State
   const [editingEntryId, setEditingEntryId] = useState(null);
-  const [title, setTitle] = useState('A small, softer moment');
-  const [body, setBody] = useState(
-    'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.'
-  );
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
   const [feeling, setFeeling] = useState('lighter');
-  const [draftState, setDraftState] = useState('Unsaved draft');
+  const [draftState, setDraftState] = useState('New entry');
+
+  // Load real saved entries from local device storage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await journalStorage.getEntries();
+        if (saved && Array.isArray(saved)) {
+          setEntries(saved);
+        }
+      } catch (err) {
+        console.warn('Failed to load journal entries:', err);
+      }
+    })();
+  }, []);
 
   // Modals
   const [selectedEntry, setSelectedEntry] = useState(null);
@@ -176,21 +156,21 @@ export const JournalContent = ({
 
     if (editingEntryId) {
       // Update existing entry
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.id === editingEntryId
-            ? {
-              ...e,
-              title: title.trim() || 'A quiet thought',
-              body: body.trim(),
-              feelingLabel: feelingInfo.label,
-              badgeBg: feelingInfo.bg,
-              badgeColor: feelingInfo.color,
-              dateString: `UPDATED, ${dayStr} NOVEMBER`,
-            }
-            : e
-        )
+      const updatedEntries = entries.map((e) =>
+        e.id === editingEntryId
+          ? {
+            ...e,
+            title: title.trim() || 'A quiet thought',
+            body: body.trim(),
+            feelingLabel: feelingInfo.label,
+            badgeBg: feelingInfo.bg,
+            badgeColor: feelingInfo.color,
+            dateString: `UPDATED, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
+          }
+          : e
       );
+      setEntries(updatedEntries);
+      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert('Updated', 'Your changes have been quietly saved to this moment.');
     } else {
@@ -203,9 +183,11 @@ export const JournalContent = ({
         title: title.trim() || 'A quiet thought',
         feelingLabel: feelingInfo.label,
         body: body.trim(),
-        dateString: `TODAY, ${dayStr} NOVEMBER`,
+        dateString: `TODAY, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
       };
-      setEntries((prev) => [newEntry, ...prev]);
+      const updatedEntries = [newEntry, ...entries];
+      setEntries(updatedEntries);
+      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert(
         'Saved in Your Sanctuary',
@@ -215,7 +197,9 @@ export const JournalContent = ({
   };
 
   const handleDeleteEntry = (id) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    const updated = entries.filter((e) => e.id !== id);
+    setEntries(updated);
+    journalStorage.saveEntries(updated);
     if (editingEntryId === id) {
       handleNewEntry();
     }

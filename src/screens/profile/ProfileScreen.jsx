@@ -57,16 +57,16 @@ export const ProfileContent = ({
 
   const [companionId, setCompanionId] = useState(initialCompanionId || globalCompanionId || 'noodle');
   const [profile, setProfile] = useState({
-    nickname: 'soso',
-    bio: 'Taking it day by day, breath by breath.',
+    nickname: '',
+    bio: '',
     location: 'Kenya · East Africa',
     focusAreas: userFocusAreas,
   });
 
-  const [stats] = useState({
-    daysHere: 5,
-    streak: 5,
-    seeds: 14,
+  const [stats, setStats] = useState({
+    daysHere: 1,
+    streak: 1,
+    seeds: 1,
   });
 
   const [activeModal, setActiveModal] = useState(null);
