@@ -350,6 +350,7 @@ export const JournalContent = ({
             <JournalArchive
               entries={entries}
               onSelectEntry={handleOpenEntry}
+              onDeleteEntry={handleDeleteEntry}
               onViewAll={() => setAllEntriesVisible(true)}
             />
 

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { useTheme } from '../../theme/ThemeContext';
 import { COMPANION_MAP } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
@@ -39,6 +40,7 @@ const FOCUS_LABEL_MAP = {
 export const ReadyToBloomScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+  const { setCompanionId } = useTheme();
 
   const params = route?.params ?? {};
   const companion = COMPANION_MAP[params.companion] || COMPANION_MAP.noodle;
@@ -84,9 +86,12 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
 
   const handleEnter = async () => {
     try {
+      const chosenCompanion = params.companion || 'noodle';
+      setCompanionId(chosenCompanion);
       await onboardingStorage.setOnboardingCompleted(true);
       await onboardingStorage.savePreferences({
-        companion: params.companion || 'noodle',
+        companion: chosenCompanion,
+        companionId: chosenCompanion,
         focusAreas: params.focusAreas || [],
         rhythm: params.rhythm || '2',
         nudges: Boolean(params.nudges),
