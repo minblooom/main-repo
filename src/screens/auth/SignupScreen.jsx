@@ -203,7 +203,7 @@ export const SignupScreen = ({ navigation }) => {
               </Text>
 
               <Animated.Image
-                source={require('../../../assets/images/sloth-companion.png')}
+                source={require('../../../assets/images/sloth_cutout.png')}
                 style={[
                   s.companionImage,
                   { transform: [{ translateY: floatAnim }] },
