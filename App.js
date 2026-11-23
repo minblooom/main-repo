@@ -6,6 +6,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { I18nProvider } from './src/services/i18n';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 const AppContent = () => {
@@ -22,9 +23,11 @@ const AppContent = () => {
 export default function App() {
   return (
     <SafeAreaProvider style={styles.safeArea}>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }
