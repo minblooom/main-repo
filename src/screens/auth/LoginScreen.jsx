@@ -165,16 +165,24 @@ export const LoginScreen = ({ navigation }) => {
                 {'Big feelings.\nSmall steps.\nStill you.'}
               </Text>
 
-              <Animated.Image
-                source={require('../../../assets/images/sloth_cutout.png')}
+              <Animated.View
                 style={[
-                  s.companionImage,
+                  s.mascotCircleWrapper,
                   { transform: [{ translateY: floatAnim }] },
                 ]}
-                resizeMode="contain"
-              />
+              >
+                <View style={s.mascotCircle}>
+                  <Image
+                    source={require('../../../assets/images/sloth_cutout.png')}
+                    style={s.mascotImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={s.sparkleTopLeft}>✦</Text>
+                <Text style={s.sparkleBottomRight}>✦</Text>
+              </Animated.View>
 
-              <View style={s.speechBubble}>
+              <View style={s.speechBubbleCard}>
                 <Text style={s.speechQuote}>
                   "No catching up needed. Just come as you are."
                 </Text>
