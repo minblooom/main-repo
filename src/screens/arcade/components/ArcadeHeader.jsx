@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
 import { soundService } from '../audio/soundService';
 import { styles } from '../styles/ArcadeHeader.styles';
 
@@ -19,6 +20,7 @@ export const ArcadeHeader = ({
   onNotificationPress,
 }) => {
   const { theme } = useTheme();
+  const { language, setLanguage } = useI18n();
 
   const handleHome = () => {
     soundService.playClick();
@@ -33,6 +35,13 @@ export const ArcadeHeader = ({
   const handleNotifications = () => {
     soundService.playClick();
     onNotificationPress?.();
+  };
+
+  const toggleLanguage = () => {
+    soundService.playClick();
+    if (language === 'en') setLanguage('sw');
+    else if (language === 'sw') setLanguage('sheng');
+    else setLanguage('en');
   };
 
   return (
@@ -52,22 +61,14 @@ export const ArcadeHeader = ({
 
       {/* Right side controls */}
       <View style={styles.rightRow}>
-        <View style={[styles.weatherPill, { backgroundColor: theme.pillBg, borderColor: theme.accentBorder }]}>
-          <Text style={[styles.weatherText, { color: theme.pillText }]}>☀️ Warm · 25°C</Text>
-        </View>
-
         <TouchableOpacity
           style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
-          onPress={() => {
-            soundService.playClick();
-            Alert.alert(
-              'Language Selection',
-              'Currently set to English · Kenya. Swahili audio and translations are coming soon!'
-            );
-          }}
+          onPress={toggleLanguage}
           activeOpacity={0.7}
         >
-          <Text style={[styles.langText, { color: theme.textSecondary }]}>EN / SW</Text>
+          <Text style={[styles.langText, { color: theme.textSecondary }]}>
+            {language === 'en' ? 'EN' : language === 'sw' ? 'SW' : 'SH'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity

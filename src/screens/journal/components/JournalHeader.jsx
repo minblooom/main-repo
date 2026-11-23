@@ -74,15 +74,6 @@ export const JournalHeader = ({
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Live Weather Pill with Hydration Care Advice */}
-        <TouchableOpacity
-          style={styles.weatherPill}
-          onPress={() => Alert.alert(`${countryData?.name || 'Local'} Atmosphere`, weatherData.hydrationTip)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.weatherText}>{weatherData.pillText}</Text>
-        </TouchableOpacity>
-
         {/* Language Toggle with EN / SW / SH */}
         <TouchableOpacity
           onPress={toggleLanguage}

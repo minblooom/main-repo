@@ -198,6 +198,18 @@ const I18nContext = createContext({
   t: (key) => key,
 });
 
+export const detectCountryFromTimezone = () => {
+  try {
+    const tz = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone || '';
+    if (tz.includes('Kampala')) return 'ug';
+    if (tz.includes('Dar_es_Salaam') || tz.includes('Zanzibar')) return 'tz';
+    if (tz.includes('Addis_Ababa')) return 'et';
+    if (tz.includes('Kigali')) return 'rw';
+    if (tz.includes('Nairobi')) return 'ke';
+  } catch {}
+  return 'ke';
+};
+
 export const I18nProvider = ({ children }) => {
   const [language, setLanguageState] = useState('en');
   const [country, setCountryState] = useState('ke');
@@ -211,6 +223,16 @@ export const I18nProvider = ({ children }) => {
           onboardingStorage.getPreferences(),
         ]);
 
+        let resolvedCountry = 'ke';
+        if (savedCountry) {
+          resolvedCountry = savedCountry;
+        } else if (prefs?.country) {
+          resolvedCountry = prefs.country.toLowerCase();
+        } else {
+          resolvedCountry = detectCountryFromTimezone();
+        }
+        setCountryState(resolvedCountry);
+
         if (savedLang) {
           setLanguageState(savedLang);
         } else if (prefs?.language) {
@@ -218,12 +240,8 @@ export const I18nProvider = ({ children }) => {
           if (l.includes('swa')) setLanguageState('sw');
           else if (l.includes('sheng')) setLanguageState('sheng');
           else setLanguageState('en');
-        }
-
-        if (savedCountry) {
-          setCountryState(savedCountry);
-        } else if (prefs?.country) {
-          setCountryState(prefs.country.toLowerCase());
+        } else if (resolvedCountry === 'tz') {
+          setLanguageState('sw');
         }
       } catch (err) {
         console.warn('[I18nProvider] Failed to load preferences:', err);

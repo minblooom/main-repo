@@ -60,17 +60,6 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
 
       {/* Right Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill */}
-        <TouchableOpacity
-          style={[styles.weatherPill, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}
-          onPress={() => Alert.alert(`${countryData?.name || 'Local'} Atmosphere`, weatherData.hydrationTip)}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.weatherText, { color: theme.textPrimary }]}>
-            {weatherData.pillText}
-          </Text>
-        </TouchableOpacity>
-
         {/* Language Toggle */}
         <TouchableOpacity
           onPress={toggleLanguage}

@@ -39,6 +39,7 @@ import { PrivacyDataModal } from './components/modals/PrivacyDataModal';
 import { HelpSupportModal } from './components/modals/HelpSupportModal';
 import { DiscreetPrivacyModal } from './components/modals/DiscreetPrivacyModal';
 import { StepAwayConfirmModal } from './components/modals/StepAwayConfirmModal';
+import { LanguageRegionModal } from './components/modals/LanguageRegionModal';
 import { LegalModal } from '../legal/LegalScreen';
 
 /**
@@ -155,12 +156,7 @@ export const ProfileContent = ({
       {/* Comfort Settings */}
       <ComfortSettingsList
         onNotificationsPress={() => setActiveModal('notifications')}
-        onLanguagePress={() =>
-          Alert.alert(
-            'Language & Region',
-            'Currently set to English · Kenya. Swahili and local language options are arriving soon!'
-          )
-        }
+        onLanguagePress={() => setActiveModal('language')}
         onPrivacyPress={() => setActiveModal('privacy')}
         onDiscreetShieldPress={() => setActiveModal('discreet')}
       />
@@ -234,6 +230,12 @@ export const ProfileContent = ({
 
       <HelpSupportModal
         visible={activeModal === 'help'}
+        theme={theme}
+        onClose={() => setActiveModal(null)}
+      />
+
+      <LanguageRegionModal
+        visible={activeModal === 'language'}
         theme={theme}
         onClose={() => setActiveModal(null)}
       />
