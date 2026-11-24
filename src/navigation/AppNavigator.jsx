@@ -17,6 +17,7 @@ import { LocalSetupScreen }      from '../screens/onboarding/LocalSetupScreen';
 import { CompanionSelectScreen } from '../screens/onboarding/CompanionSelectScreen';
 import { AgeSelectScreen }       from '../screens/onboarding/AgeSelectScreen';
 import { FocusAreasScreen }      from '../screens/onboarding/FocusAreasScreen';
+import { InterestsSelectScreen }  from '../screens/onboarding/InterestsSelectScreen';
 import { RhythmSelectScreen }    from '../screens/onboarding/RhythmSelectScreen';
 import { ReadyToBloomScreen }    from '../screens/onboarding/ReadyToBloomScreen';
 
@@ -52,6 +53,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="CompanionSelect" component={CompanionSelectScreen} />
         <Stack.Screen name="AgeSelect"       component={AgeSelectScreen} />
         <Stack.Screen name="FocusAreas"      component={FocusAreasScreen} />
+        <Stack.Screen name="InterestsSelect" component={InterestsSelectScreen} />
         <Stack.Screen name="RhythmSelect"    component={RhythmSelectScreen} />
         <Stack.Screen name="ReadyToBloom"    component={ReadyToBloomScreen} />
 

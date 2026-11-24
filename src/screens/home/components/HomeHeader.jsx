@@ -1,47 +1,77 @@
 // src/screens/home/components/HomeHeader.jsx
 // Sanctuary top header with breadcrumb, peaceful weather widget, language toggle, and profile.
-// Fully integrated with dynamic theme context.
+// Fully integrated with dynamic theme context and localization.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
+import { WeatherService } from '../../../services/weatherService';
 import { styles } from '../styles/HomeHeader.styles';
 
 export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => {
   const { theme, companionId: globalCompanionId } = useTheme();
-  const [language, setLanguage] = useState('EN');
+  const { language, setLanguage, countryData, t } = useI18n();
+
+  const [weatherData, setWeatherData] = useState({
+    pillText: '☀️ Warm & Calm · 25°C',
+    hydrationTip: 'Stay refreshed with small sips of water today.',
+  });
+
   const companionKey = propCompanionId || globalCompanionId || 'noodle';
   const companion = COMPANION_MAP[companionKey] || COMPANION_MAP.noodle;
 
+  useEffect(() => {
+    let isMounted = true;
+    const lat = countryData?.lat ?? -1.2921;
+    const lon = countryData?.lon ?? 36.8219;
+    const capital = countryData?.capital || 'Nairobi';
+
+    WeatherService.getCurrentWeather(lat, lon, capital).then((data) => {
+      if (isMounted && data) {
+        setWeatherData(data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [countryData?.code]);
+
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'No unread alerts. Your space is calm and peaceful.');
+  };
+
+  const toggleLanguage = () => {
+    if (language === 'en') setLanguage('sw');
+    else if (language === 'sw') setLanguage('sheng');
+    else setLanguage('en');
   };
 
   return (
     <View style={styles.header}>
       {/* Breadcrumb / Location Indicator */}
       <View style={styles.breadcrumb}>
-        <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>My sanctuary  /  Home</Text>
+        <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+          {t('sanctuary_home')}
+        </Text>
       </View>
 
       {/* Right Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill */}
-        <View style={[styles.weatherPill, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
-          <Text style={[styles.weatherText, { color: theme.textPrimary }]}>☀️ Warm & Calm · 25°C</Text>
-        </View>
-
         {/* Language Toggle */}
         <TouchableOpacity
-          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          onPress={toggleLanguage}
           style={styles.langBtn}
           activeOpacity={0.7}
         >
           <Text style={[styles.langText, { color: theme.textMuted }]}>
-            <Text style={language === 'EN' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>EN</Text>
-            {' / '}
-            <Text style={language === 'SW' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SW</Text>
+            <Text style={language === 'en' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>EN</Text>
+            {' · '}
+            <Text style={language === 'sw' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SW</Text>
+            {' · '}
+            <Text style={language === 'sheng' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SH</Text>
           </Text>
         </TouchableOpacity>
 
@@ -61,7 +91,7 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
           activeOpacity={0.8}
         >
           <Image
-            source={companion.image}
+            source={companion.cutoutImage || companion.image}
             style={styles.avatarImg}
             resizeMode="cover"
           />
