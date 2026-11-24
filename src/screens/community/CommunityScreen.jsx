@@ -24,13 +24,19 @@ import { GroupSpaceView } from '../../features/community/groups/GroupSpaceView';
 import { SharingCircleView } from '../../features/community/circles/SharingCircleView';
 import { IdentitySpaceView } from '../../features/community/identity/IdentitySpaceView';
 import { EncouragementPage } from '../../features/community/encouragement/EncouragementPage';
+import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSection';
+import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
+import { ChaiMemesSection } from '../../features/community/memes/ChaiMemesSection';
 
 const TABS = [
-  { id: 'spaces', label: 'All Spaces' },
-  { id: 'groups', label: 'Peer Pods' },
-  { id: 'circles', label: 'Sharing Circles' },
-  { id: 'identity', label: 'Identity & Roots' },
-  { id: 'encouragement', label: 'Encouragement' },
+  { id: 'spaces', label: 'All Spaces 🌿' },
+  { id: 'small_wins', label: 'Small Wins 🌟' },
+  { id: 'vent_box', label: 'Vent & Burn 🔥' },
+  { id: 'chai_memes', label: 'Chai & Memes ☕' },
+  { id: 'encouragement', label: 'Encouragement 🌸' },
+  { id: 'groups', label: 'Peer Pods 👥' },
+  { id: 'circles', label: 'Sharing Circles ⭕' },
+  { id: 'identity', label: 'Identity & Roots 🌍' },
 ];
 
 export const CommunityContent = ({
@@ -137,7 +143,13 @@ export const CommunityContent = ({
               </ScrollView>
 
               {/* View Content */}
-              {activeSubTab === 'encouragement' ? (
+              {activeSubTab === 'small_wins' ? (
+                <SmallWinsSection companionId={companionId} />
+              ) : activeSubTab === 'vent_box' ? (
+                <VentBoxSection />
+              ) : activeSubTab === 'chai_memes' ? (
+                <ChaiMemesSection />
+              ) : activeSubTab === 'encouragement' ? (
                 <EncouragementPage companionId={companionId} />
               ) : (
                 <View style={styles.cardsGrid}>
