@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { GardenStrip } from '../encouragement/GardenStrip';
@@ -29,10 +30,11 @@ const CATEGORIES = [
 
 export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const { theme } = useTheme();
-  const { wins, addWin, toggleCheerWin } = useCommunityStore();
+  const { wins, addWin, editWin, deleteWin, toggleCheerWin } = useCommunityStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newWinText, setNewWinText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
+  const [editingWinId, setEditingWinId] = useState(null);
   const [postCategory, setPostCategory] = useState('personal');
   const [authorName, setAuthorName] = useState('You · MindBloom');
 
@@ -60,13 +62,42 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const handlePostWin = () => {
     if (!newWinText.trim() && !draftVoiceNote) return;
     soundService.playVictory();
+    if (editingWinId) {
+      editWin(editingWinId, newWinText.trim(), postCategory);
+      setEditingWinId(null);
+      setNewWinText('');
+      setDraftVoiceNote(null);
+      return;
+    }
     addWin(newWinText.trim(), postCategory, authorName, draftVoiceNote);
     setNewWinText('');
     setDraftVoiceNote(null);
-    Alert.alert(
-      'Hongera sana! 🌸',
-      'Your win was planted into the community garden. Every small step counts!'
-    );
+  };
+
+  const handleStartEditWin = (win) => {
+    setEditingWinId(win.id);
+    setNewWinText(win.text || '');
+    setPostCategory(win.category || 'personal');
+  };
+
+  const handleDeleteWin = (winId) => {
+    const doDelete = () => {
+      deleteWin(winId);
+      if (editingWinId === winId) {
+        setEditingWinId(null);
+        setNewWinText('');
+      }
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this small win from your garden?')) {
+        doDelete();
+      }
+      return;
+    }
+    Alert.alert('Delete Small Win', 'Remove this small win from your garden?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: doDelete },
+    ]);
   };
 
   const dynamicPlants = wins.map((w, idx) => ({
@@ -89,7 +120,12 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
         </Text>
 
         <TextInput
-          style={[styles.input, { color: theme.textPrimary, borderColor: theme.divider, backgroundColor: theme.bg }]}
+          underlineColorAndroid="transparent"
+          style={[
+            styles.input,
+            { color: theme.textPrimary, borderColor: theme.divider, backgroundColor: theme.bg },
+            Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
+          ]}
           placeholder="Share your quiet victory today (or record/dictate below)..."
           placeholderTextColor={theme.textMuted}
           value={newWinText}
@@ -133,14 +169,30 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
           ))}
         </View>
 
-        <TouchableOpacity
-          style={[styles.postBtn, { backgroundColor: theme.accent, opacity: newWinText.trim() || draftVoiceNote ? 1 : 0.6 }]}
-          onPress={handlePostWin}
-          disabled={!newWinText.trim() && !draftVoiceNote}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.postBtnText}>Plant Your Win 🌱</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {editingWinId && (
+            <TouchableOpacity
+              style={[styles.postBtn, { flex: 1, backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.divider }]}
+              onPress={() => {
+                setEditingWinId(null);
+                setNewWinText('');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.postBtnText, { color: theme.textSecondary }]}>Cancel Edit</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.postBtn, { flex: 2, backgroundColor: theme.accent, opacity: newWinText.trim() || draftVoiceNote ? 1 : 0.6 }]}
+            onPress={handlePostWin}
+            disabled={!newWinText.trim() && !draftVoiceNote}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.postBtnText}>
+              {editingWinId ? 'Save Changes ✓' : 'Plant Your Win 🌱'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filter Tabs */}
@@ -202,7 +254,7 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
                 </View>
               )}
 
-              <View style={styles.winFooter}>
+              <View style={[styles.winFooter, { justifyContent: 'space-between' }]}>
                 <TouchableOpacity
                   style={[
                     styles.cheerBtn,
@@ -223,6 +275,23 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
                     {win.cheers} {win.hasCheered ? 'Cheered!' : 'Cheer'}
                   </Text>
                 </TouchableOpacity>
+
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.cheerBtn, { borderColor: theme.divider }]}
+                    onPress={() => handleStartEditWin(win)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.cheerCount, { color: theme.textSecondary }]}>✏️ Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.cheerBtn, { borderColor: theme.divider }]}
+                    onPress={() => handleDeleteWin(win.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.cheerCount, { color: '#C0392B' }]}>🗑️ Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ))}

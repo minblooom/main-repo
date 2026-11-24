@@ -7,6 +7,7 @@ import {
   Text,
   Modal,
   Alert,
+  Platform,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';

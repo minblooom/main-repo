@@ -50,6 +50,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
   const [inputText, setInputText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMsgId, setEditingMsgId] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [userName, setUserName] = useState('You');
   const [showGuidelines, setShowGuidelines] = useState(false);
@@ -88,6 +89,19 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     soundService.playPop();
     if (!isJoined) {
       joinCircle(circleId);
+    }
+
+    if (editingMsgId) {
+      const nextMessages = messages.map((m) =>
+        m.id === editingMsgId ? { ...m, text, edited: true } : m
+      );
+      setMessages(nextMessages);
+      setEditingMsgId(null);
+      setInputText('');
+      try {
+        await AsyncStorage.setItem(storageKey, JSON.stringify(nextMessages));
+      } catch {}
+      return;
     }
 
     const newMsg = {
@@ -314,10 +328,23 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                             <TouchableOpacity onPress={() => setReplyingTo(item)} activeOpacity={0.7}>
                               <Text style={styles.myBubbleAction}>↩ Reply</Text>
                             </TouchableOpacity>
+                            {!!item.text && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setEditingMsgId(item.id);
+                                  setInputText(item.text);
+                                }}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={styles.myBubbleAction}>✏️ Edit</Text>
+                              </TouchableOpacity>
+                            )}
                             <TouchableOpacity onPress={() => handleDeleteMessage(item.id)} activeOpacity={0.7}>
                               <Text style={styles.myBubbleAction}>🗑️ Delete</Text>
                             </TouchableOpacity>
-                            <Text style={styles.myBubbleTime}>{item.time}</Text>
+                            <Text style={styles.myBubbleTime}>
+                              {item.edited ? `Edited · ${item.time}` : item.time}
+                            </Text>
                           </View>
                         </View>
                       </View>
@@ -458,11 +485,13 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         />
         <View style={styles.inputRow}>
           <TextInput
+            underlineColorAndroid="transparent"
             style={[
               styles.inputField,
               { color: theme.textPrimary, backgroundColor: theme.bg, borderColor: theme.divider },
+              Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
             ]}
-            placeholder="Share with the circle gently..."
+            placeholder={editingMsgId ? 'Edit your message...' : 'Share with the circle gently...'}
             placeholderTextColor={theme.textMuted}
             value={inputText}
             onChangeText={setInputText}

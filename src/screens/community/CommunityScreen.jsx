@@ -443,7 +443,12 @@ export const CommunityScreen = ({ navigation, route }) => {
                 >
                   <Text style={{ fontSize: 14 }}>🔍</Text>
                   <TextInput
-                    style={[styles.searchBarInput, { color: theme.textPrimary }]}
+                    underlineColorAndroid="transparent"
+                    style={[
+                      styles.searchBarInput,
+                      { color: theme.textPrimary },
+                      Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
+                    ]}
                     placeholder="Search circles by name, topic, or message..."
                     placeholderTextColor={theme.textMuted}
                     value={searchQuery}

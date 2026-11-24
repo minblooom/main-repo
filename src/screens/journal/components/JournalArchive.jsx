@@ -8,7 +8,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  
+  Alert,
+  Platform,
 } from 'react-native';
 import { styles } from '../styles/JournalArchive.styles';
 

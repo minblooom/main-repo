@@ -117,6 +117,32 @@ export const useCommunityStore = create((set, get) => ({
     } catch {}
   },
 
+  editWin: async (id, nextText, nextCategory) => {
+    const trimmed = (nextText || '').trim();
+    const nextWins = get().wins.map((w) =>
+      w.id === id
+        ? {
+            ...w,
+            text: trimmed,
+            category: nextCategory || w.category,
+            editedAt: `Edited ${formatTimestamp()}`,
+          }
+        : w
+    );
+    set({ wins: nextWins });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+    } catch {}
+  },
+
+  deleteWin: async (id) => {
+    const nextWins = get().wins.filter((w) => w.id !== id);
+    set({ wins: nextWins });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+    } catch {}
+  },
+
   toggleCheerWin: async (id) => {
     const nextWins = get().wins.map((w) => {
       if (w.id === id) {
@@ -161,6 +187,14 @@ export const useCommunityStore = create((set, get) => ({
     } catch {}
   },
 
+  deleteVent: async (id) => {
+    const nextVents = get().vents.filter((v) => v.id !== id);
+    set({ vents: nextVents });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+    } catch {}
+  },
+
   toggleHugVent: async (id) => {
     const nextVents = get().vents.map((v) => {
       if (v.id === id) {
@@ -196,6 +230,14 @@ export const useCommunityStore = create((set, get) => ({
 
     set({ vents: nextVents });
 
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+    } catch {}
+  },
+
+  deleteVent: async (id) => {
+    const nextVents = get().vents.filter((v) => v.id !== id);
+    set({ vents: nextVents });
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
     } catch {}

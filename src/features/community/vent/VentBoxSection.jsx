@@ -103,7 +103,7 @@ function getDetectedEmotion(text) {
 
 export const VentBoxSection = () => {
   const { theme } = useTheme();
-  const { vents, addVent, toggleHugVent, toggleCandleVent } = useCommunityStore();
+  const { vents, addVent, deleteVent, toggleHugVent, toggleCandleVent } = useCommunityStore();
   const [ventText, setVentText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [isBurning, setIsBurning] = useState(false);
@@ -202,6 +202,7 @@ export const VentBoxSection = () => {
         </View>
 
         <TextInput
+          underlineColorAndroid="transparent"
           style={[
             styles.input,
             {
@@ -209,6 +210,7 @@ export const VentBoxSection = () => {
               borderColor: emotion.border,
               backgroundColor: 'rgba(255,255,255,0.7)',
             },
+            Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
           ]}
           placeholder="Unburden your heart here. No judgment, no names... (the background breathes with your emotion)"
           placeholderTextColor={theme.textMuted}
@@ -273,10 +275,25 @@ export const VentBoxSection = () => {
               key={v.id}
               style={[styles.ventCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
             >
-              <View style={styles.cardHeader}>
+              <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                 <Text style={[styles.anonTag, { color: theme.textMuted }]}>
                   🕊️ Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (Platform.OS === 'web') {
+                      if (window.confirm('Remove this vent note?')) deleteVent(v.id);
+                    } else {
+                      Alert.alert('Remove Note', 'Remove this vent note?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Remove', style: 'destructive', onPress: () => deleteVent(v.id) },
+                      ]);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C0392B' }}>🗑️ Delete</Text>
+                </TouchableOpacity>
               </View>
 
               {!!v.text && (
