@@ -134,4 +134,27 @@ MindBloom is built for cultural comfort:
 ---
 
 ## 🛡️ Safety & Privacy First
-MindBloom is **not a replacement for emergency clinical care**. If a user indicates crisis or acute distress, discreet and supportive crisis modals surface verified, toll-free hotlines for immediate professional care. All reflections and notes are private to the user's sanctuary.
+MindBloom is **not a replacement for emergency clinical care**. If a user indicates crisis or acute distress, discreet and supportive crisis modals surface verified, toll-free hotlines for immediate professional care. All personal journal reflections, Safe Vent posts, and community chat messages are encrypted locally using **XChaCha20-Poly1305** with a 256-bit key stored in `expo-secure-store`, and auth tokens are stored in encrypted device storage on native platforms.
+
+---
+
+## 🌐 External APIs & Endpoints Used
+
+MindBloom integrates external public APIs with `AbortController` timeouts and graceful offline fallbacks:
+
+1. **Open-Meteo Weather API** (Ambient Weather & Hydration Prompts — [weatherService.js](src/services/weatherService.js))
+   - `GET https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
+   - No API key required; zero tracking of exact user coordinates.
+2. **The Holistic Care Mindfulness API** (Therapeutic Mini-Games & CBT Scenarios — [arcadeApiService.js](src/services/arcadeApiService.js))
+   - `GET https://api.theholisticcare.com/v1/mindfulness-games`
+   - `GET https://api.theholisticcare.com/v1/mindfulness-games/feelings-detective`
+3. **Quotable API** (Post-Game Reflection Prompts — [arcadeApiService.js](src/services/arcadeApiService.js))
+   - `GET https://api.quotable.io/random?tags=wisdom|mindfulness`
+4. **MindBloom Backend REST API** (Auth, Profile, Mood Telemetry, Arcade Checkpoints, Community Small Wins)
+   - Base URL: `http://localhost:5000/api/v1` (or `http://10.0.2.2:5000/api/v1` on Android emulator)
+
+---
+
+## 🧩 Challenges & Known Bugs
+
+- **Challenges / Known Bugs:** No unresolved challenges or known bugs at this stage. External API requests use bounded timeouts and automatic offline fallbacks so the app remains responsive even without connectivity.
