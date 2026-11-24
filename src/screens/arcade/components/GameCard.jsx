@@ -111,6 +111,14 @@ export const GameCard = ({
           {subtitleText}
         </Text>
 
+        {game.isInterestAligned && game.matchedInterests && game.matchedInterests.length > 0 ? (
+          <View style={{ marginTop: 4, marginBottom: 6, alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 6, backgroundColor: 'rgba(217, 119, 6, 0.12)' }}>
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#D97706' }}>
+              ✨ ALIGNED: {game.matchedInterests[0].toUpperCase()}
+            </Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity
           style={[
             styles.playBtn,

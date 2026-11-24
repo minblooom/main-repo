@@ -15,6 +15,9 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
+import { apiClient, AUTH_STORAGE_KEYS } from '../../core/api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -39,6 +42,7 @@ import { PrivacyDataModal } from './components/modals/PrivacyDataModal';
 import { HelpSupportModal } from './components/modals/HelpSupportModal';
 import { DiscreetPrivacyModal } from './components/modals/DiscreetPrivacyModal';
 import { StepAwayConfirmModal } from './components/modals/StepAwayConfirmModal';
+import { LanguageRegionModal } from './components/modals/LanguageRegionModal';
 import { LegalModal } from '../legal/LegalScreen';
 
 /**
@@ -57,16 +61,16 @@ export const ProfileContent = ({
 
   const [companionId, setCompanionId] = useState(initialCompanionId || globalCompanionId || 'noodle');
   const [profile, setProfile] = useState({
-    nickname: 'soso',
-    bio: 'Taking it day by day, breath by breath.',
+    nickname: '',
+    bio: '',
     location: 'Kenya · East Africa',
     focusAreas: userFocusAreas,
   });
 
-  const [stats] = useState({
-    daysHere: 5,
-    streak: 5,
-    seeds: 14,
+  const [stats, setStats] = useState({
+    daysHere: 1,
+    streak: 1,
+    seeds: 1,
   });
 
   const [activeModal, setActiveModal] = useState(null);
@@ -74,19 +78,21 @@ export const ProfileContent = ({
   useEffect(() => {
     (async () => {
       try {
-        const saved = await onboardingStorage.getPreferences();
-        if (saved) {
-          const comp = saved.companionId || saved.companion;
+        const [saved, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        if (saved || storedUser) {
+          const comp = saved?.companionId || saved?.companion;
           if (comp) setCompanionId(comp);
-          if (saved.nickname || saved.focusAreas) {
-            setProfile((prev) => ({
-              ...prev,
-              nickname: saved.nickname || prev.nickname,
-              bio: saved.bio || prev.bio,
-              location: saved.location || prev.location,
-              focusAreas: saved.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
-            }));
-          }
+          const resolvedNick = storedUser?.nickname || saved?.nickname;
+          setProfile((prev) => ({
+            ...prev,
+            nickname: resolvedNick || prev.nickname,
+            bio: saved?.bio || prev.bio,
+            location: saved?.location || prev.location,
+            focusAreas: saved?.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
+          }));
         }
       } catch (err) {
         console.warn('Failed loading profile preferences:', err);
@@ -102,6 +108,31 @@ export const ProfileContent = ({
         ...newProfile,
         companionId,
       });
+
+      // Update local auth session so all screens see the new nickname, bio, and struggles immediately
+      const storedUser = await AuthService.getStoredUser();
+      if (storedUser) {
+        const updatedUser = {
+          ...storedUser,
+          nickname: newProfile.nickname,
+          bio: newProfile.bio,
+          primaryStruggles: newProfile.focusAreas || storedUser.primaryStruggles || [],
+          interests: storedUser.interests || [],
+        };
+        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
+      }
+
+      // Sync with Supabase backend database
+      try {
+        await apiClient.patch('/user/profile', {
+          nickname: newProfile.nickname,
+          bio: newProfile.bio,
+          primaryStruggles: newProfile.focusAreas || [],
+          ...(storedUser?.interests && { interests: storedUser.interests }),
+        });
+      } catch (backendErr) {
+        // Backend offline or local fallback
+      }
     } catch { }
     setActiveModal(null);
   };
@@ -155,12 +186,7 @@ export const ProfileContent = ({
       {/* Comfort Settings */}
       <ComfortSettingsList
         onNotificationsPress={() => setActiveModal('notifications')}
-        onLanguagePress={() =>
-          Alert.alert(
-            'Language & Region',
-            'Currently set to English · Kenya. Swahili and local language options are arriving soon!'
-          )
-        }
+        onLanguagePress={() => setActiveModal('language')}
         onPrivacyPress={() => setActiveModal('privacy')}
         onDiscreetShieldPress={() => setActiveModal('discreet')}
       />
@@ -238,6 +264,12 @@ export const ProfileContent = ({
         onClose={() => setActiveModal(null)}
       />
 
+      <LanguageRegionModal
+        visible={activeModal === 'language'}
+        theme={theme}
+        onClose={() => setActiveModal(null)}
+      />
+
       <DiscreetPrivacyModal
         visible={activeModal === 'discreet'}
         onClose={() => setActiveModal(null)}
@@ -278,8 +310,8 @@ export const ProfileScreen = ({ navigation, route }) => {
       // Already on profile
     } else if (routeId === 'chill') {
       Alert.alert('Chill Space', 'A calm space to unwind and listen to soothing sounds.');
-    } else if (routeId === 'community') {
-      Alert.alert('Baraza Community', 'A warm circle of shared encouragement and peaceful stories.');
+    } else if (routeId === 'community' || routeId === 'baraza') {
+      navigation?.navigate?.('Community');
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora Companion', 'Aurora AI companion session is starting...');
     } else if (routeId === 'breath') {

@@ -6,6 +6,7 @@ import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
 import { styles } from '../styles/JournalHeader.styles';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { WeatherService } from '../../../services/weatherService';
+import { useI18n } from '../../../services/i18n';
 
 export const JournalHeader = ({
   companionId = 'noodle',
@@ -13,9 +14,9 @@ export const JournalHeader = ({
   onProfilePress,
   onHomePress,
 }) => {
-  const [language, setLanguage] = useState('EN');
+  const { language, setLanguage, countryData, t } = useI18n();
   const [weatherData, setWeatherData] = useState({
-    pillText: 'â˜€ï¸  Warm & Calm Â· 25Â°C',
+    pillText: '☀️ Warm & Calm · 25°C',
     hydrationTip: 'Stay refreshed with small sips of water today.',
   });
 
@@ -23,7 +24,11 @@ export const JournalHeader = ({
 
   useEffect(() => {
     let isMounted = true;
-    WeatherService.getCurrentWeather().then((data) => {
+    const lat = countryData?.lat ?? -1.2921;
+    const lon = countryData?.lon ?? 36.8219;
+    const capital = countryData?.capital || 'Nairobi';
+
+    WeatherService.getCurrentWeather(lat, lon, capital).then((data) => {
       if (isMounted && data) {
         setWeatherData(data);
       }
@@ -31,7 +36,7 @@ export const JournalHeader = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [countryData?.code]);
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
@@ -48,6 +53,12 @@ export const JournalHeader = ({
     );
   };
 
+  const toggleLanguage = () => {
+    if (language === 'en') setLanguage('sw');
+    else if (language === 'sw') setLanguage('sheng');
+    else setLanguage('en');
+  };
+
   return (
     <View style={styles.container}>
       {/* Breadcrumb / Location Indicator */}
@@ -57,31 +68,24 @@ export const JournalHeader = ({
         activeOpacity={0.7}
       >
         <Text style={styles.breadcrumbText}>
-          <Text style={styles.breadcrumbLink}>My sanctuary</Text>  /  Journal
+          <Text style={styles.breadcrumbLink}>{t('sanctuary_journal')}</Text>
         </Text>
       </TouchableOpacity>
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Live Weather Pill with Hydration Care Advice */}
+        {/* Language Toggle with EN / SW / SH */}
         <TouchableOpacity
-          style={styles.weatherPill}
-          onPress={() => Alert.alert("Today's Environment", weatherData.hydrationTip)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.weatherText}>{weatherData.pillText}</Text>
-        </TouchableOpacity>
-
-        {/* Language Toggle */}
-        <TouchableOpacity
-          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          onPress={toggleLanguage}
           style={styles.langBtn}
           activeOpacity={0.7}
         >
           <Text style={styles.langText}>
-            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
-            {' / '}
-            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
+            <Text style={language === 'en' ? styles.langActive : styles.langInactive}>EN</Text>
+            {' · '}
+            <Text style={language === 'sw' ? styles.langActive : styles.langInactive}>SW</Text>
+            {' · '}
+            <Text style={language === 'sheng' ? styles.langActive : styles.langInactive}>SH</Text>
           </Text>
         </TouchableOpacity>
 
@@ -110,4 +114,3 @@ export const JournalHeader = ({
     </View>
   );
 };
-

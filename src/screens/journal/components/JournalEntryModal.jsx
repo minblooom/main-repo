@@ -22,6 +22,14 @@ export const JournalEntryModal = ({
   if (!entry) return null;
 
   const handleDelete = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`)) {
+        onDeleteEntry?.(entry.id);
+        onClose();
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Moment',
       `Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`,

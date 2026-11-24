@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
   },
   tabItem: {
     paddingVertical: 7,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',

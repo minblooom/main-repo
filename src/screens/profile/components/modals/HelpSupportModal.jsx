@@ -1,5 +1,6 @@
 // src/screens/profile/components/modals/HelpSupportModal.jsx
 // Immediate crisis helplines, FAQ, and gentle feedback without stigma or county names.
+// Dynamically tailored to the user's selected home base / country.
 
 import React from 'react';
 import {
@@ -10,13 +11,26 @@ import {
   ScrollView,
   Linking,
   Alert,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { useI18n } from '../../../../services/i18n';
+import { styles } from '../../styles/HelpSupportModal.styles';
 
 export const HelpSupportModal = ({ visible, onClose, theme: propTheme }) => {
   const { theme: ctxTheme } = useTheme();
   const theme = propTheme || ctxTheme;
+  const { countryData, t } = useI18n();
+
   const callHelpline = (num) => {
+    if (!num) {
+      Linking.openURL('https://befrienders.org').catch(() => {});
+      return;
+    }
+    if (Platform.OS === 'web') {
+      window.alert(`Helpline Contact:\n\nPlease call ${num} on your mobile device for immediate, confidential emotional support.`);
+      return;
+    }
     Linking.openURL(`tel:${num}`).catch(() => {
       Alert.alert('Phone Helpline', `Dial ${num} directly on your mobile device for immediate confidential support.`);
     });
@@ -28,7 +42,7 @@ export const HelpSupportModal = ({ visible, onClose, theme: propTheme }) => {
         <View style={[styles.modalCard, { backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
             <View>
-              <Text style={[styles.tag, { color: theme.textMuted }]}>ALWAYS AVAILABLE</Text>
+              <Text style={[styles.tag, { color: theme.textMuted }]}>ALWAYS AVAILABLE · {countryData?.name?.toUpperCase()}</Text>
               <Text style={[styles.title, { color: theme.textPrimary }]}>Help & Support</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -41,37 +55,56 @@ export const HelpSupportModal = ({ visible, onClose, theme: propTheme }) => {
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            {/* Urgent Hotline 1199 */}
+            {/* Urgent Regional Hotline */}
             <View style={styles.urgentBanner}>
               <View style={styles.urgentHeader}>
-                <Text style={styles.urgentTag}>24/7 TOLL-FREE HELPLINE</Text>
+                <Text style={styles.urgentTag}>24/7 CRISIS HELPLINE</Text>
                 <Text style={styles.urgentBadge}>FREE</Text>
               </View>
-              <Text style={styles.urgentTitle}>Kenya Red Cross Hotline: 1199</Text>
+              <Text style={styles.urgentTitle}>{countryData?.helplineName || 'Local Support'}</Text>
               <Text style={styles.urgentDesc}>
-                Immediate psychological support, active listening, and gentle crisis guidance.
+                Immediate psychological support, active listening, and confidential crisis guidance in {countryData?.name}.
               </Text>
               <TouchableOpacity
                 style={styles.callBtn}
-                onPress={() => callHelpline('1199')}
+                onPress={() => callHelpline(countryData?.primaryCallNum || countryData?.helplinePhone)}
                 activeOpacity={0.88}
               >
-                <Text style={styles.callBtnText}>Call 1199 Now →</Text>
+                <Text style={styles.callBtnText}>
+                  {countryData?.primaryCallNum ? `Call ${countryData.primaryCallNum} Now →` : 'Open Support Directory →'}
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Befrienders Kenya */}
+            {/* Secondary Support Line if available */}
+            {countryData?.secondaryCallNum && (
+              <View style={styles.supportRow}>
+                <View style={styles.supportInfo}>
+                  <Text style={styles.supportName}>Secondary Listening Line</Text>
+                  <Text style={styles.supportDesc}>{countryData.secondaryCallNum}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.actionPill}
+                  onPress={() => callHelpline(countryData.secondaryCallNum)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.actionPillText}>Call</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Befrienders Worldwide / Global Backup */}
             <View style={styles.supportRow}>
               <View style={styles.supportInfo}>
-                <Text style={styles.supportName}>Befrienders Kenya</Text>
-                <Text style={styles.supportDesc}>Emotional support and listening line: +254 722 178 177</Text>
+                <Text style={styles.supportName}>Befrienders Worldwide & IASP</Text>
+                <Text style={styles.supportDesc}>Confidential global emotional support directory</Text>
               </View>
               <TouchableOpacity
                 style={styles.actionPill}
-                onPress={() => callHelpline('+254722178177')}
+                onPress={() => Linking.openURL('https://befrienders.org').catch(() => {})}
                 activeOpacity={0.8}
               >
-                <Text style={styles.actionPillText}>Call</Text>
+                <Text style={styles.actionPillText}>Visit</Text>
               </TouchableOpacity>
             </View>
 
@@ -102,5 +135,3 @@ export const HelpSupportModal = ({ visible, onClose, theme: propTheme }) => {
     </Modal>
   );
 };
-
-import { styles } from '../../styles/HelpSupportModal.styles';
