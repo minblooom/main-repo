@@ -15,7 +15,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { encryptedStorage } from '../../../services/encryptedStorage';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
@@ -64,7 +64,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     async function loadChat() {
       try {
         const [rawChat, prefs] = await Promise.all([
-          AsyncStorage.getItem(storageKey),
+          encryptedStorage.getItem(storageKey),
           onboardingStorage.getPreferences(),
         ]);
 
@@ -101,7 +101,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       setEditingMsgId(null);
       setInputText('');
       try {
-        await AsyncStorage.setItem(storageKey, JSON.stringify(nextMessages));
+        await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
       } catch {}
       return;
     }
@@ -132,7 +132,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setReplyingTo(null);
 
     try {
-      await AsyncStorage.setItem(storageKey, JSON.stringify(nextMessages));
+      await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
     } catch {}
 
     setTimeout(() => {
@@ -145,7 +145,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       const next = messages.filter((m) => m.id !== msgId);
       setMessages(next);
       try {
-        await AsyncStorage.setItem(storageKey, JSON.stringify(next));
+        await encryptedStorage.setItem(storageKey, JSON.stringify(next));
       } catch {}
     };
     if (Platform.OS === 'web') {
@@ -198,7 +198,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
 
     setMessages(next);
     try {
-      await AsyncStorage.setItem(storageKey, JSON.stringify(next));
+      await encryptedStorage.setItem(storageKey, JSON.stringify(next));
     } catch {}
   };
 

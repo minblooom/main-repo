@@ -3,7 +3,7 @@
 // Purely real, persistent user data with zero dummy mocks.
 
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { encryptedStorage } from '../../../services/encryptedStorage';
 
 const STORAGE_KEYS = {
   WINS: 'mindbloom:community:wins:v3',
@@ -34,11 +34,11 @@ export const useCommunityStore = create((set, get) => ({
   hydrate: async () => {
     try {
       const [savedWins, savedVents, savedMentors, savedJoined, savedReported] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.WINS),
-        AsyncStorage.getItem(STORAGE_KEYS.VENTS),
-        AsyncStorage.getItem(STORAGE_KEYS.NOTIFIED_MENTORS),
-        AsyncStorage.getItem(STORAGE_KEYS.JOINED_CIRCLES),
-        AsyncStorage.getItem(STORAGE_KEYS.REPORTED_MSGS),
+        encryptedStorage.getItem(STORAGE_KEYS.WINS),
+        encryptedStorage.getItem(STORAGE_KEYS.VENTS),
+        encryptedStorage.getItem(STORAGE_KEYS.NOTIFIED_MENTORS),
+        encryptedStorage.getItem(STORAGE_KEYS.JOINED_CIRCLES),
+        encryptedStorage.getItem(STORAGE_KEYS.REPORTED_MSGS),
       ]);
 
       const wins = savedWins ? JSON.parse(savedWins) : [];
@@ -61,7 +61,7 @@ export const useCommunityStore = create((set, get) => ({
     const next = [circleId, ...current];
     set({ joinedCircleIds: next });
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
+      await encryptedStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
     } catch {}
   },
 
@@ -69,7 +69,7 @@ export const useCommunityStore = create((set, get) => ({
     const next = get().joinedCircleIds.filter((id) => id !== circleId);
     set({ joinedCircleIds: next });
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
+      await encryptedStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
     } catch {}
   },
 
@@ -89,7 +89,7 @@ export const useCommunityStore = create((set, get) => ({
     const next = [...current, msgId];
     set({ reportedMessageIds: next });
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.REPORTED_MSGS, JSON.stringify(next));
+      await encryptedStorage.setItem(STORAGE_KEYS.REPORTED_MSGS, JSON.stringify(next));
     } catch {}
   },
 
@@ -113,7 +113,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ wins: nextWins });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+      await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
     } catch {}
   },
 
@@ -133,7 +133,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ wins: nextWins });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+      await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
     } catch {}
   },
 
@@ -157,7 +157,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ vents: nextVents });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
     } catch {}
   },
 
@@ -165,7 +165,7 @@ export const useCommunityStore = create((set, get) => ({
     const nextVents = get().vents.filter((v) => v.id !== id);
     set({ vents: nextVents });
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
     } catch {}
   },
 
@@ -185,7 +185,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ vents: nextVents });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
     } catch {}
   },
 
@@ -205,15 +205,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ vents: nextVents });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
-    } catch {}
-  },
-
-  deleteVent: async (id) => {
-    const nextVents = get().vents.filter((v) => v.id !== id);
-    set({ vents: nextVents });
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
     } catch {}
   },
 
@@ -228,7 +220,7 @@ export const useCommunityStore = create((set, get) => ({
     set({ notifiedMentors: next });
 
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.NOTIFIED_MENTORS, JSON.stringify(next));
+      await encryptedStorage.setItem(STORAGE_KEYS.NOTIFIED_MENTORS, JSON.stringify(next));
     } catch {}
   },
 }));

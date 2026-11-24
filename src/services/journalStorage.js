@@ -1,8 +1,8 @@
 // src/services/journalStorage.js
-// Local-First Encrypted/Persistent Storage for MindBloom Private Journal Entries
-// Guarantees that personal reflections remain 100% on the user's phone.
+// Local-First Encrypted Persistent Storage for MindBloom Private Journal Entries
+// Guarantees that personal reflections remain encrypted on the user's phone.
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { encryptedStorage } from './encryptedStorage';
 
 const JOURNAL_STORAGE_KEY = '@mindbloom:journal_entries';
 
@@ -12,7 +12,7 @@ export const journalStorage = {
    */
   async getEntries() {
     try {
-      const data = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
+      const data = await encryptedStorage.getItem(JOURNAL_STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (err) {
       console.warn('[journalStorage] Failed to read entries:', err);
@@ -25,7 +25,7 @@ export const journalStorage = {
    */
   async saveEntries(entries) {
     try {
-      await AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+      await encryptedStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
       return true;
     } catch (err) {
       console.warn('[journalStorage] Failed to save entries:', err);
