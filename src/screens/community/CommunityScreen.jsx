@@ -48,6 +48,7 @@ export const CommunityScreen = ({ navigation, route }) => {
   const [activeModal, setActiveModal] = useState(null); // 'small_wins' | 'vent_box' | null
   const [userProfile, setUserProfile] = useState({
     age: '18-24',
+    gender: 'prefer_not',
     focusAreas: [],
     interests: [],
   });
@@ -59,6 +60,7 @@ export const CommunityScreen = ({ navigation, route }) => {
         if (prefs) {
           setUserProfile({
             age: prefs.age || prefs.ageBand || '18-24',
+            gender: prefs.gender || 'prefer_not',
             focusAreas: prefs.focusAreas || prefs.primaryStruggles || [],
             interests: prefs.interests || [],
           });
@@ -66,18 +68,36 @@ export const CommunityScreen = ({ navigation, route }) => {
       } catch {}
     }
     loadUserPreferences();
-  }, []);
+    const unsubscribe = navigation?.addListener?.('focus', loadUserPreferences);
+    return unsubscribe;
+  }, [navigation]);
 
-  // Compute 4-Invariant Dynamic Grouping & Resonance Matching
+  // Compute 5-Invariant Dynamic Grouping & Resonance Matching (includes Gender Alignment)
   const { primaryMatch, eligibleCircles, userAgeBand } = useMemo(
     () =>
       getMatchingCirclesForUser({
         age: userProfile.age,
+        gender: userProfile.gender,
         focusAreas: userProfile.focusAreas,
         interests: userProfile.interests,
       }),
     [userProfile]
   );
+
+  const visibleCategories = useMemo(() => {
+    const g = String(userProfile.gender || 'prefer_not').toLowerCase().trim();
+    return CATEGORIES.filter((cat) => {
+      if (cat === 'Sisterhood 🌸') return g === 'female';
+      if (cat === "Men's Grounding 🦁") return g === 'male';
+      return true;
+    });
+  }, [userProfile.gender]);
+
+  useEffect(() => {
+    if (!visibleCategories.includes(selectedCategory)) {
+      setSelectedCategory('All Circles');
+    }
+  }, [visibleCategories, selectedCategory]);
 
   const filteredCircles =
     selectedCategory === 'All Circles'
@@ -309,7 +329,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.categoriesScroll}
                 >
-                  {CATEGORIES.map((cat) => {
+                  {visibleCategories.map((cat) => {
                     const isSelected = selectedCategory === cat;
                     return (
                       <TouchableOpacity

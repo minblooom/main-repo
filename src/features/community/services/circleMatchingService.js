@@ -1,10 +1,11 @@
 // src/features/community/services/circleMatchingService.js
 // Dynamic Baraza Circle Matching Engine
-// Enforces the 4 Non-Negotiable Invariants:
+// Enforces the 5 Non-Negotiable Invariants:
 // 1. Strict Age Cohort (13–17, 18–24, 25+)
-// 2. Shared Clinical Issue / Struggle (>= 1 common struggle)
-// 3. Shared Passion / Interest (>= 1 common passion, picks up to 5)
-// 4. Hard Capacity Cap (<= 12 members per circle, auto-locks when full)
+// 2. Gender Alignment (gender-specific spaces like Sisterhood / Men's Grounding only shown to matching gender)
+// 3. Shared Clinical Issue / Struggle (>= 1 common struggle)
+// 4. Shared Passion / Interest (>= 1 common passion, picks up to 5)
+// 5. Hard Capacity Cap (<= 12 members per circle, auto-locks when full)
 
 import { barazaCircles } from '../data/communityData.js';
 
@@ -34,18 +35,22 @@ export function getAgeBand(age) {
  *
  * @param {Object} params
  * @param {string|number} params.age - User's age or ageBand
+ * @param {string} params.gender - User's selected gender ('female' | 'male' | 'non_binary' | 'prefer_not')
  * @param {string[]} params.focusAreas - User's selected struggles / focus areas
  * @param {string[]} params.interests - User's selected passions / interests (up to 5)
  * @returns {Object} { primaryMatch, eligibleCircles, userAgeBand, matchedTags }
  */
 export function getMatchingCirclesForUser({
   age = '18-24',
+  gender = 'prefer_not',
   focusAreas = [],
   interests = [],
 }) {
   const userAgeBand = typeof age === 'string' && (age.includes('-') || age.includes('+'))
     ? age.replace(/–/g, '-')
     : getAgeBand(age);
+
+  const normalizedGender = String(gender || 'prefer_not').toLowerCase().trim();
 
   const cleanUserIssues = (focusAreas || []).map(clean);
   const cleanUserInterests = (interests || []).map(clean);
@@ -58,6 +63,14 @@ export function getMatchingCirclesForUser({
     // 1. Age Cohort Match Check
     const circleAgeBand = (circle.ageGroup || '18-24').replace(/–/g, '-');
     const isAgeMatch = circleAgeBand === userAgeBand;
+
+    // 2. Gender Alignment Check
+    // Circles without allowedGenders are open to everyone.
+    // Circles with allowedGenders (e.g. Sisterhood, Men's Grounding) strictly require a matching gender.
+    const isGenderMatch =
+      !Array.isArray(circle.allowedGenders) ||
+      circle.allowedGenders.length === 0 ||
+      circle.allowedGenders.map((g) => g.toLowerCase().trim()).includes(normalizedGender);
 
     // 2. Shared Issues Intersection
     const circleIssues = (circle.issues || []).map(clean);
@@ -93,6 +106,7 @@ export function getMatchingCirclesForUser({
     return {
       ...circle,
       isAgeMatch,
+      isGenderMatch,
       sharedIssuesCount: sharedIssues.length,
       sharedInterestsCount: sharedInterests.length,
       matchResonance,
@@ -100,15 +114,15 @@ export function getMatchingCirclesForUser({
     };
   });
 
-  // Filter: Invariant 1 (Strict Age Band)
-  const ageCohortCircles = scored.filter((c) => c.isAgeMatch);
+  // Filter: Invariant 1 (Strict Age Band) & Invariant 2 (Strict Gender Alignment)
+  const cohortCircles = scored.filter((c) => c.isAgeMatch && c.isGenderMatch);
 
-  // If there are circles in this age band matching at least one struggle
-  const struggleMatches = ageCohortCircles.filter((c) =>
+  // If there are circles in this cohort matching at least one struggle
+  const struggleMatches = cohortCircles.filter((c) =>
     userHasIssues ? c.sharedIssuesCount > 0 : true
   );
 
-  const candidatePool = struggleMatches.length > 0 ? struggleMatches : ageCohortCircles;
+  const candidatePool = struggleMatches.length > 0 ? struggleMatches : cohortCircles;
 
   // Rank candidate pool: highest resonance first, open spots before full rooms
   const sorted = [...candidatePool].sort((a, b) => {
@@ -119,7 +133,7 @@ export function getMatchingCirclesForUser({
   });
 
   // Top candidate becomes Primary Matched Sanctuary Circle (Hero Card)
-  const primary = sorted[0] || scored[0];
+  const primary = sorted[0] || scored.find((c) => c.isGenderMatch) || scored[0];
   const primaryMatch = {
     ...primary,
     isPrimaryMatch: true,
