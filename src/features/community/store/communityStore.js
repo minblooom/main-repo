@@ -117,32 +117,6 @@ export const useCommunityStore = create((set, get) => ({
     } catch {}
   },
 
-  editWin: async (id, nextText, nextCategory) => {
-    const trimmed = (nextText || '').trim();
-    const nextWins = get().wins.map((w) =>
-      w.id === id
-        ? {
-            ...w,
-            text: trimmed,
-            category: nextCategory || w.category,
-            editedAt: `Edited ${formatTimestamp()}`,
-          }
-        : w
-    );
-    set({ wins: nextWins });
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
-    } catch {}
-  },
-
-  deleteWin: async (id) => {
-    const nextWins = get().wins.filter((w) => w.id !== id);
-    set({ wins: nextWins });
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
-    } catch {}
-  },
-
   toggleCheerWin: async (id) => {
     const nextWins = get().wins.map((w) => {
       if (w.id === id) {
