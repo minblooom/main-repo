@@ -14,6 +14,7 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 import { GardenStrip } from '../encouragement/GardenStrip';
 import { soundService } from '../../../screens/arcade/audio/soundService';
+import { useCommunityStore } from '../store/communityStore';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Wins 🌟' },
@@ -23,49 +24,10 @@ const CATEGORIES = [
   { id: 'healing', label: 'Healing/Body 🌺' },
 ];
 
-const INITIAL_WINS = [
-  {
-    id: '1',
-    author: 'Wanjiku',
-    category: 'personal',
-    text: 'Drank a full glass of cold water and sat in the sun for 10 minutes instead of scrolling in the dark.',
-    cheers: 24,
-    hasCheered: false,
-    time: '20m ago',
-  },
-  {
-    id: '2',
-    author: 'Kevo_Nbo',
-    category: 'school',
-    text: 'Submitted my statistics assignment after 3 days of feeling paralyzed. Done is better than perfect!',
-    cheers: 42,
-    hasCheered: true,
-    time: '1h ago',
-  },
-  {
-    id: '3',
-    author: 'Amina',
-    category: 'healing',
-    text: 'Didn’t apologize for resting today. Said no to an extra favor that would have drained my battery.',
-    cheers: 31,
-    hasCheered: false,
-    time: '3h ago',
-  },
-  {
-    id: '4',
-    author: 'Brian_M',
-    category: 'work',
-    text: 'Finally responded to that client email that was giving me anxiety since Friday. Weight lifted!',
-    cheers: 19,
-    hasCheered: false,
-    time: '5h ago',
-  },
-];
-
 export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const { theme } = useTheme();
+  const { wins, addWin, toggleCheerWin } = useCommunityStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [wins, setWins] = useState(INITIAL_WINS);
   const [newWinText, setNewWinText] = useState('');
   const [postCategory, setPostCategory] = useState('personal');
 
@@ -75,34 +37,13 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
 
   const handleCheer = (winId) => {
     soundService.playPop();
-    setWins((prev) =>
-      prev.map((w) => {
-        if (w.id === winId) {
-          const nextState = !w.hasCheered;
-          return {
-            ...w,
-            cheers: nextState ? w.cheers + 1 : Math.max(0, w.cheers - 1),
-            hasCheered: nextState,
-          };
-        }
-        return w;
-      })
-    );
+    toggleCheerWin(winId);
   };
 
   const handlePostWin = () => {
     if (!newWinText.trim()) return;
     soundService.playVictory();
-    const newEntry = {
-      id: Date.now().toString(),
-      author: 'You (Champion)',
-      category: postCategory,
-      text: newWinText.trim(),
-      cheers: 1,
-      hasCheered: true,
-      time: 'Just now',
-    };
-    setWins([newEntry, ...wins]);
+    addWin(newWinText.trim(), postCategory);
     setNewWinText('');
     Alert.alert(
       'Hongera sana! 🌸',

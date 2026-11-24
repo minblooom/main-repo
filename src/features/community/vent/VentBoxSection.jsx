@@ -15,41 +15,12 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { soundService } from '../../../screens/arcade/audio/soundService';
-
-const INITIAL_VENTS = [
-  {
-    id: '1',
-    text: 'I feel like I am always the strong friend who has to fix everyone else’s crisis. Nobody ever asks if my chest feels heavy.',
-    hugs: 38,
-    candles: 19,
-    hasHugged: true,
-    hasCandle: false,
-    time: '45m ago',
-  },
-  {
-    id: '2',
-    text: 'Graduating next month and the pressure from family to immediately land a 6-figure job is keeping me awake at 3 AM.',
-    hugs: 54,
-    candles: 27,
-    hasHugged: false,
-    hasCandle: true,
-    time: '2h ago',
-  },
-  {
-    id: '3',
-    text: 'It feels like everyone on social media is flourishing and buying land while I am barely holding my daily routine together.',
-    hugs: 62,
-    candles: 35,
-    hasHugged: false,
-    hasCandle: false,
-    time: '4h ago',
-  },
-];
+import { useCommunityStore } from '../store/communityStore';
 
 export const VentBoxSection = () => {
   const { theme } = useTheme();
+  const { vents, addVent, toggleHugVent, toggleCandleVent } = useCommunityStore();
   const [ventText, setVentText] = useState('');
-  const [vents, setVents] = useState(INITIAL_VENTS);
   const [isBurning, setIsBurning] = useState(false);
 
   // Dissolve/Burn Animation
@@ -92,16 +63,7 @@ export const VentBoxSection = () => {
   const handlePostAnonymous = () => {
     if (!ventText.trim()) return;
     soundService.playPop();
-    const newEntry = {
-      id: Date.now().toString(),
-      text: ventText.trim(),
-      hugs: 1,
-      candles: 0,
-      hasHugged: true,
-      hasCandle: false,
-      time: 'Just now',
-    };
-    setVents([newEntry, ...vents]);
+    addVent(ventText.trim());
     setVentText('');
     Alert.alert(
       'Shared Anonymously 🫂',
@@ -111,36 +73,12 @@ export const VentBoxSection = () => {
 
   const handleToggleHug = (id) => {
     soundService.playPop();
-    setVents((prev) =>
-      prev.map((v) => {
-        if (v.id === id) {
-          const next = !v.hasHugged;
-          return {
-            ...v,
-            hugs: next ? v.hugs + 1 : Math.max(0, v.hugs - 1),
-            hasHugged: next,
-          };
-        }
-        return v;
-      })
-    );
+    toggleHugVent(id);
   };
 
   const handleToggleCandle = (id) => {
     soundService.playPop();
-    setVents((prev) =>
-      prev.map((v) => {
-        if (v.id === id) {
-          const next = !v.hasCandle;
-          return {
-            ...v,
-            candles: next ? v.candles + 1 : Math.max(0, v.candles - 1),
-            hasCandle: next,
-          };
-        }
-        return v;
-      })
-    );
+    toggleCandleVent(id);
   };
 
   return (
