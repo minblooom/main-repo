@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
 
 export const SanctuaryHeroCard = ({
   profile,
@@ -16,6 +17,7 @@ export const SanctuaryHeroCard = ({
   onCompanionPress,
 }) => {
   const { theme } = useTheme();
+  const { countryData } = useI18n();
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP['noodle'];
 
   return (
@@ -41,7 +43,7 @@ export const SanctuaryHeroCard = ({
             {profile.nickname || 'friend'}
           </Text>
           <Text style={[styles.location, { color: theme.textMuted }]}>
-            {profile.location || 'Kenya · East Africa'}
+            {countryData?.regionName || profile.location || 'East Africa'}
           </Text>
           {Boolean(profile.bio) && (
             <Text style={[styles.bioText, { color: theme.textSecondary }]} numberOfLines={2}>

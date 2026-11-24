@@ -90,6 +90,10 @@ export const ProfileContent = ({
             ...prev,
             nickname: resolvedNick || prev.nickname,
             bio: saved?.bio || prev.bio,
+            age: saved?.age || prev.age,
+            ageBand: saved?.ageBand || storedUser?.ageBand || prev.ageBand,
+            gender: saved?.gender || storedUser?.gender || prev.gender || 'prefer_not',
+            interests: saved?.interests || storedUser?.interests || prev.interests || [],
             location: saved?.location || prev.location,
             focusAreas: saved?.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
           }));
@@ -101,7 +105,13 @@ export const ProfileContent = ({
   }, []);
 
   const handleSaveProfile = async (updated) => {
-    const newProfile = { ...profile, ...updated };
+    const newProfile = {
+      ...profile,
+      ...updated,
+      // Age & ageBand remain constant and cannot be changed after onboarding
+      age: profile.age,
+      ageBand: profile.ageBand,
+    };
     setProfile(newProfile);
     try {
       await onboardingStorage.savePreferences({
@@ -109,26 +119,27 @@ export const ProfileContent = ({
         companionId,
       });
 
-      // Update local auth session so all screens see the new nickname, bio, and struggles immediately
+      // Update local auth session so all screens see the new nickname, bio, gender, interests, and struggles immediately
       const storedUser = await AuthService.getStoredUser();
       if (storedUser) {
         const updatedUser = {
           ...storedUser,
           nickname: newProfile.nickname,
           bio: newProfile.bio,
+          gender: newProfile.gender || storedUser.gender,
           primaryStruggles: newProfile.focusAreas || storedUser.primaryStruggles || [],
-          interests: storedUser.interests || [],
+          interests: newProfile.interests || storedUser.interests || [],
         };
         await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
       }
 
-      // Sync with Supabase backend database
+      // Sync with backend database
       try {
         await apiClient.patch('/user/profile', {
           nickname: newProfile.nickname,
           bio: newProfile.bio,
           primaryStruggles: newProfile.focusAreas || [],
-          ...(storedUser?.interests && { interests: storedUser.interests }),
+          interests: newProfile.interests || [],
         });
       } catch (backendErr) {
         // Backend offline or local fallback

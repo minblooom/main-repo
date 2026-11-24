@@ -10,9 +10,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { useI18n } from '../../../../services/i18n';
+import { YOUTH_INTERESTS } from '../../../onboarding/InterestsSelectScreen';
 import { styles } from '../../styles/EditProfileModal.styles';
 
 const AVAILABLE_FOCUS = [
@@ -44,19 +46,27 @@ export const EditProfileModal = ({
 
   const [nickname, setNickname] = useState(profile?.nickname || '');
   const [bio, setBio] = useState(profile?.bio || '');
-  const [location, setLocation] = useState(profile?.location || countryData?.regionName || 'East Africa');
   const [gender, setGender] = useState(profile?.gender || 'prefer_not');
   const [selectedFocus, setSelectedFocus] = useState(profile?.focusAreas || ['anxiety']);
+  const [selectedInterests, setSelectedInterests] = useState(profile?.interests || []);
 
   useEffect(() => {
     if (visible) {
       setNickname(profile?.nickname || '');
       setBio(profile?.bio || '');
-      setLocation(profile?.location || countryData?.regionName || 'East Africa');
       setGender(profile?.gender || 'prefer_not');
       setSelectedFocus(profile?.focusAreas || ['anxiety']);
+      setSelectedInterests(profile?.interests || []);
     }
-  }, [visible, profile, countryData]);
+  }, [visible, profile]);
+
+  const toggleInterest = (id) => {
+    if (selectedInterests.includes(id)) {
+      setSelectedInterests(selectedInterests.filter((i) => i !== id));
+    } else if (selectedInterests.length < 5) {
+      setSelectedInterests([...selectedInterests, id]);
+    }
+  };
 
   const toggleFocus = (id) => {
     if (selectedFocus.includes(id)) {
@@ -75,9 +85,10 @@ export const EditProfileModal = ({
       ...profile,
       nickname: nickname.trim(),
       bio: bio.trim(),
-      location: location.trim() || countryData?.regionName || 'East Africa',
+      location: countryData?.regionName || profile?.location || 'East Africa',
       gender,
       focusAreas: selectedFocus,
+      interests: selectedInterests,
     });
     onClose();
   };
@@ -104,7 +115,11 @@ export const EditProfileModal = ({
               <View style={styles.inputBox}>
                 <TextInput
                   underlineColorAndroid="transparent"
-                  style={[styles.input, { color: theme.textPrimary }]}
+                  style={[
+                    styles.input,
+                    { color: theme.textPrimary },
+                    Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
+                  ]}
                   value={nickname}
                   onChangeText={setNickname}
                   placeholder="e.g. Amani or your preferred nickname"
@@ -119,7 +134,11 @@ export const EditProfileModal = ({
               <View style={styles.inputBox}>
                 <TextInput
                   underlineColorAndroid="transparent"
-                  style={[styles.input, { color: theme.textPrimary }]}
+                  style={[
+                    styles.input,
+                    { color: theme.textPrimary },
+                    Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
+                  ]}
                   value={bio}
                   onChangeText={setBio}
                   placeholder="e.g. Quiet pocket of peace or your personal bio"
@@ -128,18 +147,16 @@ export const EditProfileModal = ({
               </View>
             </View>
 
-            {/* Region / Neutral Location */}
+            {/* Constant Age Cohort & Synced Region (Read-Only) */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Region</Text>
-              <View style={styles.inputBox}>
-                <TextInput
-                  underlineColorAndroid="transparent"
-                  style={[styles.input, { color: theme.textPrimary }]}
-                  value={location}
-                  onChangeText={setLocation}
-                  placeholder={countryData?.regionName || 'East Africa'}
-                  placeholderTextColor="#A092B0"
-                />
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Age Cohort & Region</Text>
+              <View style={[styles.inputBox, { backgroundColor: theme.bg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: theme.textSecondary }}>
+                  🔒 Age {profile?.ageBand || profile?.age || '18-24'} (Locked)
+                </Text>
+                <Text style={{ fontSize: 12.5, fontWeight: '600', color: theme.textMuted }}>
+                  📍 {countryData?.regionName || 'East Africa'}
+                </Text>
               </View>
             </View>
 
@@ -190,6 +207,38 @@ export const EditProfileModal = ({
                         isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
                       ]}
                       onPress={() => toggleFocus(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: isSelected ? theme.accent : theme.textSecondary },
+                          isSelected && { fontWeight: '800' },
+                        ]}
+                      >
+                        {item.label} {isSelected ? '✓' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+            {/* Passions & Interests Picker */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                Your Interests & Passions ({selectedInterests.length}/5)
+              </Text>
+              <View style={styles.chipsWrap}>
+                {YOUTH_INTERESTS.map((item) => {
+                  const isSelected = selectedInterests.includes(item.id);
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[
+                        styles.chip,
+                        isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                      ]}
+                      onPress={() => toggleInterest(item.id)}
                       activeOpacity={0.8}
                     >
                       <Text

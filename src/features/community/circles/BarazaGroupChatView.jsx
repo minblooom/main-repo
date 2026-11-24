@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { onboardingStorage } from '../../../services/onboardingStorage';
 import { useCommunityStore } from '../store/communityStore';
@@ -34,6 +35,7 @@ function formatTimestamp(date = new Date()) {
 
 export const BarazaGroupChatView = ({ circle, onBack }) => {
   const { theme } = useTheme();
+  const { countryData } = useI18n();
   const circleId = circle?.id || 'campus_grounding';
   const storageKey = `mindbloom:baraza:chat:${circleId}:v2`;
 
@@ -587,7 +589,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
               • <Text style={{ fontWeight: '800' }}>Confidentiality:</Text> What is shared in this circle stays in this circle.{'\n'}
               • <Text style={{ fontWeight: '800' }}>Kindness First:</Text> Listen without judgment or unsolicited fixing.{'\n'}
               • <Text style={{ fontWeight: '800' }}>Your Pace:</Text> You can speak via text, voice note, or simply read quietly.{'\n'}
-              • <Text style={{ fontWeight: '800' }}>Need Urgent Support?</Text> If you feel overwhelmed, reach out to Befrienders Kenya (0722 178 177) or local emergency services.
+              • <Text style={{ fontWeight: '800' }}>Need Urgent Support?</Text> If you feel overwhelmed, reach out to {countryData?.helplineName || 'Local Support'} ({countryData?.helplinePhone || 'local emergency services'}) in {countryData?.name || 'your region'}.
             </Text>
             <TouchableOpacity
               style={[styles.guidelinesBtn, { backgroundColor: theme.accent }]}
