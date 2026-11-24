@@ -1,64 +1,125 @@
 // src/screens/home/components/HomeHeader.jsx
-// Sanctuary top header with breadcrumb, peaceful weather widget (no county names), language toggle, and profile
+// Sanctuary top header with breadcrumb, peaceful weather widget, language toggle, and profile.
+// Fully integrated with dynamic theme context and localization.
 
+// src/screens/home/components/HomeHeader.jsx
+// Sanctuary top header with breadcrumb, peaceful weather widget, language toggle, and profile.
+// Fully integrated with dynamic theme context.
+
+// src/screens/home/components/HomeHeader.jsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
-import { colors } from '../../../theme/colors';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { COMPANION_MAP } from '../../../constants/companions';
+import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
+import { WeatherService } from '../../../services/weatherService';
+import { styles } from '../styles/HomeHeader.styles';
 
-export const HomeHeader = ({ companionId = 'noodle', onProfilePress }) => {
-  const [language, setLanguage] = useState('EN');
-  const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+export const HomeHeader = ({
+  companionId: propCompanionId,
+  onProfilePress,
+  currentPage = 'Home',
+  onBackPress,
+}) => {
+  const { theme, companionId: globalCompanionId } = useTheme();
+  const { language, setLanguage, countryData, t } = useI18n();
+
+  const [weatherData, setWeatherData] = useState({
+    pillText: '☀️ Warm & Calm · 25°C',
+    hydrationTip: 'Stay refreshed with small sips of water today.',
+  });
+
+  const companionKey = propCompanionId || globalCompanionId || 'noodle';
+  const companion = COMPANION_MAP[companionKey] || COMPANION_MAP.noodle;
+
+  useEffect(() => {
+    let isMounted = true;
+    const lat = countryData?.lat ?? -1.2921;
+    const lon = countryData?.lon ?? 36.8219;
+    const capital = countryData?.capital || 'Nairobi';
+
+    WeatherService.getCurrentWeather(lat, lon, capital).then((data) => {
+      if (isMounted && data) {
+        setWeatherData(data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [countryData?.code]);
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'No unread alerts. Your space is calm and peaceful.');
   };
 
+  const toggleLanguage = () => {
+    if (language === 'en') setLanguage('sw');
+    else if (language === 'sw') setLanguage('sheng');
+    else setLanguage('en');
+  };
+
   return (
     <View style={styles.header}>
-      {/* Breadcrumb / Location Indicator */}
       <View style={styles.breadcrumb}>
-        <Text style={styles.breadcrumbText}>My sanctuary  /  Home</Text>
+        {onBackPress ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Back to My sanctuary"
+            onPress={onBackPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+              My sanctuary  /  <Text style={{ color: theme.textPrimary }}>{currentPage}</Text>
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+            My sanctuary  /  {currentPage}
+          </Text>
+        )}
+        <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+          {t('sanctuary_home')}
+        </Text>
       </View>
 
-      {/* Right Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill — Strictly No County/City Names */}
-        <View style={styles.weatherPill}>
-          <Text style={styles.weatherText}>☀️ Warm & Calm · 25°C</Text>
+        <View style={[styles.weatherPill, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
+          <Text style={[styles.weatherText, { color: theme.textPrimary }]}>☀️ Warm & Calm · 25°C</Text>
         </View>
 
         {/* Language Toggle */}
         <TouchableOpacity
-          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          onPress={toggleLanguage}
           style={styles.langBtn}
           activeOpacity={0.7}
         >
-          <Text style={styles.langText}>
-            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
-            {' / '}
-            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
+          <Text style={[styles.langText, { color: theme.textMuted }]}>
+            <Text style={language === 'en' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>EN</Text>
+            {' · '}
+            <Text style={language === 'sw' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SW</Text>
+            {' · '}
+            <Text style={language === 'sheng' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SH</Text>
           </Text>
         </TouchableOpacity>
 
-        {/* Notification Bell */}
         <TouchableOpacity
-          style={styles.iconBtn}
+          style={[styles.iconBtn, { backgroundColor: theme.heroBg }]}
           onPress={handleNotifications}
           activeOpacity={0.7}
         >
           <Text style={styles.iconEmoji}>🔔</Text>
         </TouchableOpacity>
 
-        {/* Profile Avatar with Chosen Companion */}
         <TouchableOpacity
-          style={styles.avatarCircle}
+          style={[styles.avatarCircle, { backgroundColor: companion.accent || theme.accentSoft, borderColor: theme.cardBg }]}
           onPress={onProfilePress}
           activeOpacity={0.8}
         >
           <Image
-            source={companion.image}
-            style={styles.avatarImage}
+            source={companion.cutoutImage || companion.image}
+            style={styles.avatarImg}
             resizeMode="cover"
           />
         </TouchableOpacity>
@@ -66,84 +127,3 @@ export const HomeHeader = ({ companionId = 'noodle', onProfilePress }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  breadcrumb: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  breadcrumbText: {
-    fontSize: 12,
-    color: '#8B6DA8',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  weatherPill: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  weatherText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  langBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  langText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  langActive: {
-    color: colors.textPrimary,
-    fontWeight: '800',
-  },
-  langInactive: {
-    color: colors.textMuted,
-  },
-  iconBtn: {
-    padding: 6,
-  },
-  iconEmoji: {
-    fontSize: 16,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EAE3F7',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 32,
-    height: 36,
-  },
-});

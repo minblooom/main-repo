@@ -1,6 +1,6 @@
 // src/screens/auth/SignupScreen.jsx
-// "Create your space" — sign-up form screen
-// Figma: "01 – Create your space" (Desktop + Mobile)
+// MindBloom Account Creation Screen
+// Wired to AuthService.register() — creates real account then flows to onboarding
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -12,21 +12,31 @@ import {
   ScrollView,
   Animated,
   Alert,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { onboardingStorage } from '../../services/onboardingStorage';
+import { LegalModal } from '../legal/LegalScreen';
+import { AuthService } from '../../core/api/authService';
 
 export const SignupScreen = ({ navigation }) => {
-  const { isMobile, isTablet, isDesktop } = useResponsiveLayout();
+  const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
   const [language, setLanguage] = useState('EN');
   const [nickname, setNickname] = useState('');
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
 
   // Gentle float animation for the sloth mascot
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -56,13 +66,92 @@ export const SignupScreen = ({ navigation }) => {
     );
   };
 
-  const handleCreateSpace = () => {
-    const name = nickname.trim() || 'Amani';
-    // Navigate to companion selection onboarding
-    if (navigation) {
-      navigation.navigate('GentleHello');
+  const validateForm = (nameVal, contactVal, passVal, confirmPassVal) => {
+    const errs = {};
+    const n = (nameVal !== undefined ? nameVal : nickname).trim();
+    const c = (contactVal !== undefined ? contactVal : contact).trim();
+    const p = passVal !== undefined ? passVal : password;
+    const cp = confirmPassVal !== undefined ? confirmPassVal : confirmPassword;
+
+    if (!n) {
+      errs.nickname = 'Please enter what we should call you.';
+    } else if (n.length < 2) {
+      errs.nickname = 'Nickname must be at least 2 characters.';
+    }
+
+    if (!c) {
+      errs.contact = 'Please enter your email or phone number.';
+    } else if (c.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(c)) {
+        errs.contact = 'Please enter a valid email address.';
+      }
     } else {
-      Alert.alert('Space Created', `Karibu sana, ${name}! Your peaceful sanctuary is ready.`);
+      const digits = c.replace(/\D/g, '');
+      if (digits.length < 9) {
+        errs.contact = 'Please enter a valid phone number (at least 9 digits).';
+      }
+    }
+
+    if (!p) {
+      errs.password = 'Please create a password.';
+    } else if (p.length < 6) {
+      errs.password = 'Password must be at least 6 characters.';
+    }
+
+    if (!cp) {
+      errs.confirmPassword = 'Please confirm your password.';
+    } else if (cp !== p) {
+      errs.confirmPassword = 'Passwords do not match.';
+    }
+
+    return errs;
+  };
+
+  const handleCreateSpace = async () => {
+    setSubmitted(true);
+    const errs = validateForm();
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) return;
+
+    const name = nickname.trim();
+    const contactVal = contact.trim();
+
+    setLoading(true);
+    try {
+      // Save to onboarding storage first (used in onboarding steps)
+      await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
+
+      // Try to register with backend (non-blocking — onboarding still works offline)
+      try {
+        await AuthService.register({
+          nickname: name,
+          contact: contactVal,
+          password,
+          // ageBand and gender come from onboarding steps — added later
+        });
+      } catch (backendErr) {
+        // If the backend is unreachable, still allow onboarding to proceed
+        // The registration will be retried when the user completes onboarding
+        const msg = backendErr?.response?.data?.message || '';
+        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('duplicate')) {
+          setErrors({ general: 'That email or nickname is already taken. Try a different one or sign in.' });
+          setLoading(false);
+          return;
+        }
+        // Network / server unavailable — proceed to onboarding anyway
+        console.warn('[SignupScreen] Backend unreachable, proceeding offline:', backendErr?.message);
+      }
+
+      // Always navigate to onboarding after successful local save
+      if (navigation) {
+        navigation.navigate('GentleHello');
+      }
+    } catch (err) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,7 +170,7 @@ export const SignupScreen = ({ navigation }) => {
       >
         <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
 
-          {/* ── HEADER ─────────────────────────────────── */}
+          {/* -- HEADER (matches LoginScreen exactly) ----- */}
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
@@ -102,15 +191,15 @@ export const SignupScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ── MAIN CONTENT ───────────────────────────── */}
+          {/* -- MAIN CONTENT ----------------------------- */}
           <View style={[s.mainLayout, isWide && s.mainLayoutWide]}>
 
-            {/* ── LEFT: COMPANION HERO CARD ─────────────── */}
+            {/* -- LEFT: COMPANION HERO CARD --------------- */}
             <View style={[s.companionCard, isWide && s.companionCardWide]}>
-              <Text style={s.tagText}>KARIBU RAFIKI · HELLO, FRIEND</Text>
+              <Text style={s.tagText}>KARIBU · WELCOME</Text>
 
               <Text style={s.heroHeading}>
-                {'Your mind.\nYour pace.\nYour kind of bloom.'}
+                {'Your space.\nYour pace.\nYour bloom.'}
               </Text>
 
               <Animated.View
@@ -121,9 +210,9 @@ export const SignupScreen = ({ navigation }) => {
               >
                 <View style={s.mascotCircle}>
                   <Image
-                    source={require('../../../assets/images/sloth.jpg')}
+                    source={require('../../../assets/images/sloth_cutout.png')}
                     style={s.mascotImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
                 <Text style={s.sparkleTopLeft}>✦</Text>
@@ -132,20 +221,18 @@ export const SignupScreen = ({ navigation }) => {
 
               <View style={s.speechBubbleCard}>
                 <Text style={s.speechQuote}>
-                  "You don't have to have it all figured out."
+                  "Every big journey starts with one gentle step."
                 </Text>
-                <Text style={s.speechAuthor}>Pole · your little pocket of courage</Text>
+                <Text style={s.speechAuthor}>Pole · your quiet pocket of calm</Text>
               </View>
             </View>
 
-            {/* ── RIGHT: SIGNUP FORM ────────────────────── */}
+            {/* -- RIGHT: SIGNUP FORM ---------------------- */}
             <View style={[s.formContainer, isWide && s.formContainerWide]}>
-              <Text style={s.formTitle}>Let's make this space yours.</Text>
-              <Text style={s.formSubhead}>
-                A nickname is enough. Being yourself is plenty.
-              </Text>
+              <Text style={s.formTitle}>Create your space.</Text>
+              <Text style={s.formSubhead}>Free, private, and entirely yours.</Text>
 
-              {/* Segmented tab switcher */}
+              {/* Segmented tab switcher — matches LoginScreen layout */}
               <View style={s.segmentedTabsContainer}>
                 <View style={[s.tabButton, s.tabButtonActive]}>
                   <Text style={[s.tabText, s.tabTextActive]}>Create account</Text>
@@ -159,45 +246,79 @@ export const SignupScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
+              {/* General error banner */}
+              {errors.general ? (
+                <View style={s.errorBanner}>
+                  <Text style={s.errorBannerText}>{errors.general}</Text>
+                </View>
+              ) : null}
+
               {/* Fields */}
               <View style={s.fieldsBlock}>
 
+                {/* 1. Nickname */}
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>What should we call you?</Text>
+                  <Text style={s.fieldLabel}>What should we call you? *</Text>
                   <TextInput
-                    style={s.textInput}
+                    underlineColorAndroid="transparent"
+                    style={[s.textInput, (submitted && errors.nickname) && s.inputError]}
                     value={nickname}
-                    onChangeText={setNickname}
-                    placeholder="e.g. Wanjiku or Amani"
+                    onChangeText={(text) => {
+                      setNickname(text);
+                      if (submitted) setErrors(validateForm(text, undefined, undefined, undefined));
+                    }}
+                    placeholder="e.g. Wanjiku, Kofi, Amara"
                     placeholderTextColor="#76648E"
+                    autoCapitalize="words"
                     autoCorrect={false}
+                    editable={!loading}
                   />
+                  {submitted && errors.nickname ? (
+                    <Text style={s.errorText}>{errors.nickname}</Text>
+                  ) : null}
                 </View>
 
+                {/* 2. Contact */}
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Email or phone · optional for now</Text>
+                  <Text style={s.fieldLabel}>Email or phone number *</Text>
                   <TextInput
-                    style={s.textInput}
+                    underlineColorAndroid="transparent"
+                    style={[s.textInput, (submitted && errors.contact) && s.inputError]}
                     value={contact}
-                    onChangeText={setContact}
-                    placeholder="For saving and recovering your space"
+                    onChangeText={(text) => {
+                      setContact(text);
+                      if (submitted) setErrors(validateForm(undefined, text, undefined, undefined));
+                    }}
+                    placeholder="wanjiku@email.com or +254 7xx xxx xxx"
                     placeholderTextColor="#76648E"
                     autoCapitalize="none"
-                    keyboardType="email-address"
                     autoCorrect={false}
+                    keyboardType="email-address"
+                    editable={!loading}
                   />
+                  {submitted && errors.contact ? (
+                    <Text style={s.errorText}>{errors.contact}</Text>
+                  ) : (
+                    <Text style={s.helperText}>We'll never share this with anyone.</Text>
+                  )}
                 </View>
 
+                {/* 3. Password */}
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Create a password</Text>
-                  <View style={s.passwordInputWrapper}>
+                  <Text style={s.fieldLabel}>Create a password *</Text>
+                  <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
+                      underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
-                      onChangeText={setPassword}
-                      placeholder="At least 12 characters"
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (submitted) setErrors(validateForm(undefined, undefined, text, undefined));
+                      }}
+                      placeholder="At least 6 characters"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showPassword}
+                      editable={!loading}
                     />
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -206,17 +327,57 @@ export const SignupScreen = ({ navigation }) => {
                       <Text style={s.showBtnText}>{showPassword ? 'Hide' : 'Show'}</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={s.helperText}>You can add/edit details later in Settings.</Text>
+                  {submitted && errors.password ? (
+                    <Text style={s.errorText}>{errors.password}</Text>
+                  ) : (
+                    <Text style={s.helperText}>Must be at least 6 characters.</Text>
+                  )}
                 </View>
 
+                {/* 4. Confirm Password */}
+                <View style={s.fieldGroup}>
+                  <Text style={s.fieldLabel}>Confirm password *</Text>
+                  <View style={[s.passwordInputWrapper, (submitted && errors.confirmPassword) && s.inputError]}>
+                    <TextInput
+                      underlineColorAndroid="transparent"
+                      style={s.passwordInput}
+                      value={confirmPassword}
+                      onChangeText={(text) => {
+                        setConfirmPassword(text);
+                        if (submitted) setErrors(validateForm(undefined, undefined, undefined, text));
+                      }}
+                      placeholder="Re-enter your password"
+                      placeholderTextColor="#76648E"
+                      secureTextEntry={!showConfirmPassword}
+                      editable={!loading}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={s.showBtn}
+                    >
+                      <Text style={s.showBtnText}>{showConfirmPassword ? 'Hide' : 'Show'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {submitted && errors.confirmPassword ? (
+                    <Text style={s.errorText}>{errors.confirmPassword}</Text>
+                  ) : null}
+                </View>
+
+                {/* Submit Button */}
                 <TouchableOpacity
-                  style={s.primaryBtn}
+                  style={[s.primaryBtn, loading && { opacity: 0.7 }]}
                   onPress={handleCreateSpace}
                   activeOpacity={0.88}
+                  disabled={loading}
                 >
-                  <Text style={s.primaryBtnText}>Create my space ➔</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={s.primaryBtnText}>Create my space →</Text>
+                  )}
                 </TouchableOpacity>
 
+                {/* Sign-in Switch Link */}
                 <TouchableOpacity
                   onPress={goToLogin}
                   style={s.switchLinkWrapper}
@@ -227,8 +388,29 @@ export const SignupScreen = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
 
+                {/* Terms of Service & Privacy Policy Popup Links */}
                 <Text style={s.termsText}>
-                  You're agreeing to our privacy terms and age guidelines here.
+                  By creating a space, you agree to our{' '}
+                  <Text
+                    style={s.termsLink}
+                    onPress={() => setLegalModalTab('terms')}
+                  >
+                    Terms of Service
+                  </Text>
+                  {', '}
+                  <Text
+                    style={s.termsLink}
+                    onPress={() => setLegalModalTab('privacy')}
+                  >
+                    Privacy Policy
+                  </Text>
+                  {', and '}
+                  <Text
+                    style={s.termsLink}
+                    onPress={() => setLegalModalTab('disclaimer')}
+                  >
+                    Mental Health Disclaimer
+                  </Text>.
                 </Text>
 
               </View>
@@ -243,6 +425,13 @@ export const SignupScreen = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* In-App Terms, Privacy & Disclaimer Modal Popup */}
+      <LegalModal
+        visible={!!legalModalTab}
+        initialTab={legalModalTab || 'terms'}
+        onClose={() => setLegalModalTab(null)}
+      />
     </SafeAreaView>
   );
 };

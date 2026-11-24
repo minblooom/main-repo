@@ -1,6 +1,6 @@
 // src/screens/onboarding/CompanionSelectScreen.jsx
 // "Who's coming with you?" — Figma screen 05
-// Companion picker with 2×2 animated grid, bounce select, and preview
+// Companion picker with 2x2 animated grid, bounce select, and preview
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -8,7 +8,6 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   Animated,
   Platform,
@@ -18,8 +17,6 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { COMPANIONS } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
-import { colors } from '../../theme/colors';
-
 export const CompanionSelectScreen = ({ navigation, route }) => {
   const { width, isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
@@ -99,7 +96,7 @@ export const CompanionSelectScreen = ({ navigation, route }) => {
                 Pick a little pocket of encouragement. Any companion is fine.
               </Text>
 
-              {/* 2×2 Grid */}
+              {/* 2x2 Grid */}
               <View style={[styles.grid, isWide && { maxWidth: 440 }]}>
                 {COMPANIONS.map((c, i) => {
                   const isSelected = selected === c.id;
@@ -125,10 +122,15 @@ export const CompanionSelectScreen = ({ navigation, route }) => {
                         <Animated.View
                           style={[
                             styles.imgWrap,
+                            { backgroundColor: c.accent || '#FAF5EE' },
                             isSelected && { transform: [{ translateY: floatAnim }] },
                           ]}
                         >
-                          <Image source={c.image} style={styles.img} resizeMode="cover" />
+                          <Image
+                            source={c.cutoutImage || c.image}
+                            style={styles.img}
+                            resizeMode="contain"
+                          />
                         </Animated.View>
                         <Text
                           style={[
@@ -193,115 +195,4 @@ export const CompanionSelectScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  centerBlock: {
-    width: '100%',
-    maxWidth: 520,
-    alignSelf: 'center',
-    alignItems: 'center',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-    justifyContent: 'center',
-    marginBottom: 20,
-    width: '100%',
-  },
-  card: {
-    borderRadius: 24,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
-    minHeight: 155,
-    justifyContent: 'center',
-  },
-  cardSelected: {
-    borderColor: colors.brand,
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  checkBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  imgWrap: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    overflow: 'hidden',
-    marginBottom: 10,
-    backgroundColor: '#FAF5EE',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  img: {
-    width: '100%',
-    height: '100%',
-  },
-  cardName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  cardNameSelected: {
-    color: colors.brand,
-  },
-  cardTrait: {
-    fontSize: 10.5,
-    color: '#777',
-    textAlign: 'center',
-  },
-  preview: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  previewHi: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  previewMsg: {
-    fontSize: 12.5,
-    fontStyle: 'italic',
-    color: '#555',
-    lineHeight: 18,
-  },
-  ctaBtn: {
-    width: '100%',
-    maxWidth: 500,
-  },
-});
+import { styles } from './styles/CompanionSelectScreen.styles';

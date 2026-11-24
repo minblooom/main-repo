@@ -1,13 +1,12 @@
 // src/screens/onboarding/LocalSetupScreen.jsx
 // "A little closer to home." — Figma screen 04
-// Harmonized layout: localized country & language selection
+// Harmonized layout: clean country code badges and language selection
 
 import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,14 +14,14 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
-import { colors } from '../../theme/colors';
+import { useI18n, COUNTRY_DATA } from '../../services/i18n';
 
 const COUNTRIES = [
-  { id: 'ke', flag: '🇰🇪', name: 'Kenya', langs: 'Sheng, Kiswahili & English' },
-  { id: 'ug', flag: '🇺🇬', name: 'Uganda', langs: 'Luganda & English' },
-  { id: 'tz', flag: '🇹🇿', name: 'Tanzania', langs: 'Kiswahili & English' },
-  { id: 'et', flag: '🇪🇹', name: 'Ethiopia', langs: 'Amharic & English' },
-  { id: 'rw', flag: '🇷🇼', name: 'Rwanda', langs: 'Kinyarwanda & English' },
+  { id: 'ke', code: 'KE', name: 'Kenya', langs: 'Sheng, Kiswahili & English' },
+  { id: 'ug', code: 'UG', name: 'Uganda', langs: 'Luganda & English' },
+  { id: 'tz', code: 'TZ', name: 'Tanzania', langs: 'Kiswahili & English' },
+  { id: 'et', code: 'ET', name: 'Ethiopia', langs: 'Amharic & English' },
+  { id: 'rw', code: 'RW', name: 'Rwanda', langs: 'Kinyarwanda & English' },
 ];
 
 const LANGUAGES = ['English', 'Kiswahili', 'Sheng'];
@@ -30,15 +29,21 @@ const LANGUAGES = ['English', 'Kiswahili', 'Sheng'];
 export const LocalSetupScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [country, setCountry] = useState(route?.params?.country || 'ke');
-  const [language, setLanguage] = useState(route?.params?.language || 'English');
-  const [elsewhere, setElsewhere] = useState(false);
+  const { country: globalCountry, language: globalLanguage, setCountry: setGlobalCountry, setLanguage: setGlobalLanguage } = useI18n();
+
+  const [country, setCountry] = useState(route?.params?.country || globalCountry || 'ke');
+  const [language, setLanguage] = useState(route?.params?.language || (globalLanguage === 'sw' ? 'Kiswahili' : globalLanguage === 'sheng' ? 'Sheng' : 'English'));
+  const [elsewhere, setElsewhere] = useState(country === 'global');
 
   const handleContinue = () => {
     if (!navigation) return;
+    const finalCountry = elsewhere ? 'global' : country;
+    setGlobalCountry(finalCountry);
+    setGlobalLanguage(language);
+
     navigation.navigate('CompanionSelect', {
       ...(route?.params ?? {}),
-      country,
+      country: finalCountry,
       language,
     });
   };
@@ -73,43 +78,57 @@ export const LocalSetupScreen = ({ navigation, route }) => {
 
               {/* Country list */}
               <View style={styles.listWrapper}>
-                {COUNTRIES.map((c) => (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={[styles.row, country === c.id && !elsewhere && styles.rowSelected]}
-                    onPress={() => {
-                      setCountry(c.id);
-                      setElsewhere(false);
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.flag}>{c.flag}</Text>
-                    <View style={styles.rowText}>
-                      <Text
-                        style={[
-                          styles.rowName,
-                          country === c.id && !elsewhere && styles.rowNameSelected,
-                        ]}
-                      >
-                        {c.name}
-                      </Text>
-                      <Text style={styles.rowLangs}>{c.langs}</Text>
-                    </View>
-                    {country === c.id && !elsewhere && (
-                      <Text style={styles.rowCheck}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                {COUNTRIES.map((c) => {
+                  const isSelected = country === c.id && !elsewhere;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.row, isSelected && styles.rowSelected]}
+                      onPress={() => {
+                        setCountry(c.id);
+                        setElsewhere(false);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <View style={[styles.codeBadge, isSelected && styles.codeBadgeSelected]}>
+                        <Text style={[styles.codeBadgeText, isSelected && styles.codeBadgeTextSelected]}>
+                          {c.code}
+                        </Text>
+                      </View>
+                      <View style={styles.rowText}>
+                        <Text
+                          style={[
+                            styles.rowName,
+                            isSelected && styles.rowNameSelected,
+                          ]}
+                        >
+                          {c.name}
+                        </Text>
+                        <Text style={styles.rowLangs}>{c.langs}</Text>
+                      </View>
+                      {isSelected && (
+                        <Text style={styles.rowCheck}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
 
                 <TouchableOpacity
                   style={[styles.row, elsewhere && styles.rowSelected]}
                   onPress={() => setElsewhere(true)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.flag}>🌍</Text>
-                  <Text style={[styles.rowName, elsewhere && styles.rowNameSelected]}>
-                    I'm somewhere else
-                  </Text>
+                  <View style={[styles.codeBadge, elsewhere && styles.codeBadgeSelected]}>
+                    <Text style={[styles.codeBadgeText, elsewhere && styles.codeBadgeTextSelected]}>
+                      GL
+                    </Text>
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowName, elsewhere && styles.rowNameSelected]}>
+                      I'm somewhere else
+                    </Text>
+                    <Text style={styles.rowLangs}>International & global resources</Text>
+                  </View>
                   {elsewhere && <Text style={styles.rowCheck}>✓</Text>}
                 </TouchableOpacity>
               </View>
@@ -148,86 +167,4 @@ export const LocalSetupScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  listWrapper: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.07)',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  rowSelected: {
-    backgroundColor: '#F0EAFA',
-  },
-  flag: {
-    fontSize: 18,
-  },
-  rowText: {
-    flex: 1,
-  },
-  rowName: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  rowNameSelected: {
-    color: colors.brand,
-  },
-  rowLangs: {
-    fontSize: 10.5,
-    color: '#888',
-    marginTop: 1,
-  },
-  rowCheck: {
-    fontSize: 14,
-    color: colors.brand,
-    fontWeight: '800',
-  },
-  langLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6E5D87',
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  langRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  langChip: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  langChipSelected: {
-    backgroundColor: colors.brand,
-    borderColor: colors.brand,
-  },
-  langChipText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#555',
-  },
-  langChipTextSelected: {
-    color: '#fff',
-  },
-  hint: {
-    fontSize: 10.5,
-    color: '#AAA',
-    textAlign: 'center',
-    marginTop: 6,
-  },
-});
+import { styles } from './styles/LocalSetupScreen.styles';

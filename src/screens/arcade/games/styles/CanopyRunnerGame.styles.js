@@ -1,0 +1,175 @@
+// src/screens/arcade/games/styles/CanopyRunnerGame.styles.js
+// Dedicated styles for CanopyRunnerGame (Endless Savanna Dash).
+
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#2A1208',
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  hudBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    paddingVertical: 12,
+    zIndex: 10,
+  },
+  hudPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(73, 37, 66, 0.08)',
+    alignItems: 'center',
+  },
+  hudLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#8A531C',
+    letterSpacing: 0.6,
+  },
+  hudValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#2A1208',
+  },
+  trackArea: {
+    flex: 1,
+    minHeight: 340,
+    position: 'relative',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  skyScenery: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sunGlyph: {
+    fontSize: 48,
+    opacity: 0.85,
+  },
+  cloudGlyph: {
+    fontSize: 32,
+    opacity: 0.7,
+  },
+  groundLine: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: '#5C2E14',
+    borderTopWidth: 4,
+    borderTopColor: '#8C4820',
+  },
+  grassEdge: {
+    position: 'absolute',
+    top: -14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  grassTuft: {
+    fontSize: 16,
+  },
+  playerCharacter: {
+    position: 'absolute',
+    left: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  playerEmoji: {
+    fontSize: 46,
+    transform: [{ scaleX: -1 }],
+  },
+  obstacle: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+  obstacleEmoji: {
+    fontSize: 28,
+  },
+  collectible: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+  collectibleEmoji: {
+    fontSize: 22,
+  },
+  controlsRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    alignItems: 'center',
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  jumpButton: {
+    backgroundColor: '#FFE082',
+    paddingHorizontal: 48,
+    paddingVertical: 14,
+    borderRadius: 24,
+    shadowColor: '#FFE082',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  jumpButtonText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#2A1208',
+    letterSpacing: 0.6,
+  },
+
+  // Level Up Celebration Banner
+  levelBanner: {
+    position: 'absolute',
+    top: '30%',
+    left: 24,
+    right: 24,
+    backgroundColor: '#FAF5EE',
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: '#FFE082',
+    zIndex: 100,
+    gap: 8,
+  },
+  levelBannerTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#8A531C',
+    letterSpacing: 1,
+  },
+  levelBannerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#2A1208',
+  },
+  levelBannerSub: {
+    fontSize: 12,
+    color: '#6E5D87',
+    textAlign: 'center',
+  },
+});

@@ -7,7 +7,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,24 +14,23 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
-import { colors } from '../../theme/colors';
 import { COMPANION_MAP } from '../../constants/companions';
 
 const FOCUS_AREAS = [
-  { id: 'anxiety',       label: 'Anxiety & Overwhelm',       desc: 'Mentally exhausting' },
-  { id: 'burnout',       label: 'Daily Hustle Burnout',       desc: 'Too much, all at once' },
-  { id: 'low_mood',      label: 'Low Mood & Exhaustion',      desc: 'Vacant on the inside' },
-  { id: 'sleep',         label: 'Sleep & Night Calm',         desc: 'Rest that actually restores' },
-  { id: 'body',          label: 'Body Peace & Respect',       desc: 'A gentler relationship with self' },
-  { id: 'strong_one',    label: 'Strong One Burden',          desc: 'Always holding it together' },
-  { id: 'relationships', label: 'Relationship Strain',        desc: 'In spaces sometimes strained' },
-  { id: 'trauma',        label: 'Past Wounds & Trauma',       desc: 'Things that still echo' },
-  { id: 'grief',         label: 'Sacred Grief Space',         desc: 'Loss, in its many forms' },
-  { id: 'self_doubt',    label: 'Self-Doubt & Inner Critic',  desc: 'An unfair inner mirror' },
-  { id: 'isolation',     label: 'Digital Isolation',          desc: 'Connected, yet very alone' },
-  { id: 'identity',      label: 'Identity & Belonging',       desc: 'Finding where you fit' },
-  { id: 'feeling_off',   label: "Feeling 'Off'",              desc: "Can't quite name it" },
-  { id: 'emptiness',     label: 'Exhaustion & Emptiness',     desc: 'Running on nothing' },
+  { id: 'anxiety', label: 'Anxiety & Overwhelm', desc: 'Mentally exhausting' },
+  { id: 'burnout', label: 'Daily Hustle Burnout', desc: 'Too much, all at once' },
+  { id: 'low_mood', label: 'Low Mood & Exhaustion', desc: 'Vacant on the inside' },
+  { id: 'sleep', label: 'Sleep & Night Calm', desc: 'Rest that actually restores' },
+  { id: 'body', label: 'Body Peace & Respect', desc: 'A gentler relationship with self' },
+  { id: 'strong_one', label: 'Strong One Burden', desc: 'Always holding it together' },
+  { id: 'relationships', label: 'Relationship Strain', desc: 'In spaces sometimes strained' },
+  { id: 'trauma', label: 'Past Wounds & Trauma', desc: 'Things that still echo' },
+  { id: 'grief', label: 'Sacred Grief Space', desc: 'Loss, in its many forms' },
+  { id: 'self_doubt', label: 'Self-Doubt & Inner Critic', desc: 'An unfair inner mirror' },
+  { id: 'isolation', label: 'Digital Isolation', desc: 'Connected, yet very alone' },
+  { id: 'identity', label: 'Identity & Belonging', desc: 'Finding where you fit' },
+  { id: 'feeling_off', label: "Feeling 'Off'", desc: "Can't quite name it" },
+  { id: 'emptiness', label: 'Exhaustion & Emptiness', desc: 'Running on nothing' },
 ];
 
 const MAX_SELECT = 3;
@@ -54,7 +52,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
 
   const handleContinue = () => {
     if (!navigation) return;
-    navigation.navigate('RhythmSelect', {
+    navigation.navigate('InterestsSelect', {
       ...(route?.params ?? {}),
       focusAreas: selected,
     });
@@ -62,7 +60,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
 
   const handleSkip = () => {
     if (!navigation) return;
-    navigation.navigate('RhythmSelect', {
+    navigation.navigate('InterestsSelect', {
       ...(route?.params ?? {}),
       focusAreas: [],
     });
@@ -85,7 +83,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
             <OnboardingHeroCard
               tag="LITTLE STEPS, REAL YOU."
               heading={'All of you\nis welcome\nhere.'}
-              quote='"You don’t need the perfect words."'
+              quote={`"You don't need the perfect words."`}
               author={companion.author}
               image={companion.image}
               isWide={isWide}
@@ -160,64 +158,4 @@ export const FocusAreasScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  counter: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#8B6DA8',
-    marginBottom: 6,
-  },
-  grid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  col: {
-    flex: 1,
-    gap: 10,
-  },
-  chip: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 11,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  chipSelected: {
-    backgroundColor: '#F0EAFA',
-    borderColor: colors.brand,
-  },
-  chipDisabled: {
-    opacity: 0.4,
-  },
-  chipTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  chipLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    flex: 1,
-    lineHeight: 16,
-  },
-  chipLabelSelected: {
-    color: colors.brand,
-  },
-  chipCheck: {
-    fontSize: 12,
-    color: colors.brand,
-    fontWeight: '800',
-    marginLeft: 4,
-  },
-  chipDesc: {
-    fontSize: 10.5,
-    color: '#888',
-    marginTop: 2,
-  },
-});
+import { styles } from './styles/FocusAreasScreen.styles';
