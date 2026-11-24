@@ -56,3 +56,8 @@ export const COMPANION_MAP = COMPANIONS.reduce((acc, companion) => {
   acc[companion.id] = companion;
   return acc;
 }, {});
+
+export const getCompanionByIndex = (index = 0) => {
+  const safeIndex = Math.abs(Number(index) || 0) % COMPANIONS.length;
+  return COMPANIONS[safeIndex] || COMPANIONS[0];
+};
