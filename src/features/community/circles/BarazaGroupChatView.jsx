@@ -49,8 +49,11 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [userName, setUserName] = useState('You');
   const [showGuidelines, setShowGuidelines] = useState(false);
+  const [showCircleInfo, setShowCircleInfo] = useState(false);
   const scrollRef = useRef(null);
 
   // Load chat history & user profile
@@ -93,15 +96,24 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       emoji: '🌱',
       text,
       voiceNote: draftVoiceNote,
+      replyTo: replyingTo
+        ? {
+            id: replyingTo.id,
+            sender: replyingTo.sender,
+            snippet: replyingTo.text || (replyingTo.voiceNote ? '🎙️ Voice note' : ''),
+          }
+        : null,
+      dateLabel: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
       time: formatTimestamp(),
       isMe: true,
-      reactions: { hugs: 0, hearts: 0 },
+      reactions: { hugs: 0, hearts: 0, pray: 0, green: 0 },
     };
 
     const nextMessages = [...messages, newMsg];
     setMessages(nextMessages);
     setInputText('');
     setDraftVoiceNote(null);
+    setReplyingTo(null);
 
     try {
       await AsyncStorage.setItem(storageKey, JSON.stringify(nextMessages));
@@ -110,6 +122,26 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
+
+  const handleDeleteMessage = (msgId) => {
+    const doDelete = async () => {
+      const next = messages.filter((m) => m.id !== msgId);
+      setMessages(next);
+      try {
+        await AsyncStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {}
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this message?')) {
+        doDelete();
+      }
+      return;
+    }
+    Alert.alert('Delete Message', 'Remove this message from the circle?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: doDelete },
+    ]);
   };
 
   const handleReportMessage = (msgId) => {
@@ -165,20 +197,26 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
           <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
             <Text style={[styles.backBtnText, { color: theme.textSecondary }]}>‹ Baraza</Text>
           </TouchableOpacity>
-          <View style={[styles.circleIconPill, { backgroundColor: circle.iconBg || '#E8F0FF' }]}>
-            <Text style={styles.circleIconEmoji}>{circle.icon || '💬'}</Text>
-          </View>
-          <View style={styles.circleTitleBlock}>
-            <Text style={[styles.circleTitleText, { color: theme.textPrimary }]} numberOfLines={1}>
-              {circle.title}
-            </Text>
-            <View style={styles.circleStatusRow}>
-              <View style={styles.onlineDot} />
-              <Text style={[styles.onlineStatusText, { color: '#16A34A' }]}>
-                Cohort: {circle.ageGroup || '18-24'} • Max 12 Members
-              </Text>
+          <TouchableOpacity
+            onPress={() => setShowCircleInfo(true)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.circleIconPill, { backgroundColor: circle.iconBg || '#E8F0FF' }]}>
+              <Text style={styles.circleIconEmoji}>{circle.icon || '💬'}</Text>
             </View>
-          </View>
+            <View style={styles.circleTitleBlock}>
+              <Text style={[styles.circleTitleText, { color: theme.textPrimary }]} numberOfLines={1}>
+                {circle.title}
+              </Text>
+              <View style={styles.circleStatusRow}>
+                <View style={styles.onlineDot} />
+                <Text style={[styles.onlineStatusText, { color: '#16A34A' }]}>
+                  Cohort: {circle.ageGroup || '18-24'} • Tap for circle info
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -214,114 +252,179 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       </View>
 
       {/* ── MESSAGES FEED ─────────────────────────────────────── */}
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={styles.messagesScroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.bannerNotice, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-          <Text style={styles.bannerNoticeEmoji}>🌿</Text>
-          <Text style={[styles.bannerNoticeText, { color: theme.textSecondary }]}>
-            Welcome to {circle.title}. A confidential sanctuary for {circle.ageGroup || '18-24'} peers. Share gently, listen kindly.
-          </Text>
-        </View>
-
-        {messages.filter((m) => !reportedMessageIds.includes(m.id)).length === 0 ? (
-          <View style={[styles.emptyChatCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-            <Text style={styles.emptyChatEmoji}>🕊️</Text>
-            <Text style={[styles.emptyChatTitle, { color: theme.textPrimary }]}>The circle is calm and open</Text>
-            <Text style={[styles.emptyChatSubtitle, { color: theme.textMuted }]}>
-              No messages have been sent here yet today. Be the first to share a quiet thought, dictate, or send a voice note below.
+      <View style={{ flex: 1, position: 'relative' }}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.messagesScroll}
+          showsVerticalScrollIndicator={false}
+          onScroll={(e) => {
+            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+            const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+            setShowScrollBottom(distanceFromBottom > 120);
+          }}
+          scrollEventThrottle={100}
+        >
+          <View style={[styles.bannerNotice, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            <Text style={styles.bannerNoticeEmoji}>🌿</Text>
+            <Text style={[styles.bannerNoticeText, { color: theme.textSecondary }]}>
+              Welcome to {circle.title}. A confidential sanctuary for {circle.ageGroup || '18-24'} peers. Share gently, listen kindly.
             </Text>
           </View>
-        ) : (
-          messages
-            .filter((m) => !reportedMessageIds.includes(m.id))
-            .map((item) => {
-            if (item.isMe) {
-              return (
-                <View key={item.id} style={styles.myBubbleRow}>
-                  <View style={[styles.myBubble, { backgroundColor: theme.accent }]}>
-                    {item.voiceNote && (
-                      <View style={{ marginBottom: item.text ? 8 : 2 }}>
-                        <VoiceNotePlayer voiceNote={item.voiceNote} inverted compact />
+
+          {messages.filter((m) => !reportedMessageIds.includes(m.id)).length === 0 ? (
+            <View style={[styles.emptyChatCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+              <Text style={styles.emptyChatEmoji}>🕊️</Text>
+              <Text style={[styles.emptyChatTitle, { color: theme.textPrimary }]}>The circle is calm and open</Text>
+              <Text style={[styles.emptyChatSubtitle, { color: theme.textMuted }]}>
+                No messages have been sent here yet today. Be the first to share a quiet thought, dictate, or send a voice note below.
+              </Text>
+            </View>
+          ) : (
+            (() => {
+              const visibleMsgs = messages.filter((m) => !reportedMessageIds.includes(m.id));
+              let lastDate = null;
+              return visibleMsgs.map((item) => {
+                const msgDate = item.dateLabel || 'Today';
+                const showDateDivider = msgDate !== lastDate;
+                lastDate = msgDate;
+
+                if (item.isMe) {
+                  return (
+                    <React.Fragment key={item.id}>
+                      {showDateDivider && (
+                        <View style={[styles.dateDividerPill, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+                          <Text style={[styles.dateDividerText, { color: theme.textMuted }]}>{msgDate}</Text>
+                        </View>
+                      )}
+                      <View style={styles.myBubbleRow}>
+                        <View style={[styles.myBubble, { backgroundColor: theme.accent }]}>
+                          {item.replyTo && (
+                            <View style={styles.myReplyQuote}>
+                              <Text style={styles.myReplySender}>{item.replyTo.sender}</Text>
+                              <Text style={styles.myReplySnippet} numberOfLines={1}>{item.replyTo.snippet}</Text>
+                            </View>
+                          )}
+                          {item.voiceNote && (
+                            <View style={{ marginBottom: item.text ? 8 : 2 }}>
+                              <VoiceNotePlayer voiceNote={item.voiceNote} inverted compact />
+                            </View>
+                          )}
+                          {!!item.text && <Text style={styles.myBubbleText}>{item.text}</Text>}
+                          <View style={styles.myBubbleMetaRow}>
+                            <TouchableOpacity onPress={() => setReplyingTo(item)} activeOpacity={0.7}>
+                              <Text style={styles.myBubbleAction}>↩ Reply</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleDeleteMessage(item.id)} activeOpacity={0.7}>
+                              <Text style={styles.myBubbleAction}>🗑️ Delete</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.myBubbleTime}>{item.time}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <React.Fragment key={item.id}>
+                    {showDateDivider && (
+                      <View style={[styles.dateDividerPill, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+                        <Text style={[styles.dateDividerText, { color: theme.textMuted }]}>{msgDate}</Text>
                       </View>
                     )}
-                    {!!item.text && <Text style={styles.myBubbleText}>{item.text}</Text>}
-                    <Text style={styles.myBubbleTime}>{item.time}</Text>
-                  </View>
-                </View>
-              );
-            }
-
-            return (
-              <View key={item.id} style={styles.peerBubbleRow}>
-                <View style={styles.peerAvatar}>
-                  <Text style={styles.peerAvatarEmoji}>{item.emoji || '🌱'}</Text>
-                </View>
-                <View style={styles.peerBubbleCol}>
-                  <View style={styles.peerSenderRow}>
-                    <Text style={[styles.peerSenderName, { color: theme.textPrimary }]}>
-                      {item.sender}
-                    </Text>
-                    <Text style={[styles.peerTimeText, { color: theme.textMuted }]}>
-                      {item.time}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.peerBubble,
-                      { backgroundColor: theme.cardBg, borderColor: theme.divider },
-                    ]}
-                  >
-                    {item.voiceNote && (
-                      <View style={{ marginBottom: item.text ? 8 : 0 }}>
-                        <VoiceNotePlayer voiceNote={item.voiceNote} compact />
+                    <View style={styles.peerBubbleRow}>
+                      <View style={styles.peerAvatar}>
+                        <Text style={styles.peerAvatarEmoji}>{item.emoji || '🌱'}</Text>
                       </View>
-                    )}
-                    {!!item.text && (
-                      <Text style={[styles.peerBubbleText, { color: theme.textPrimary }]}>
-                        {item.text}
-                      </Text>
-                    )}
-                  </View>
+                      <View style={styles.peerBubbleCol}>
+                        <View style={styles.peerSenderRow}>
+                          <Text style={[styles.peerSenderName, { color: theme.textPrimary }]}>
+                            {item.sender}
+                          </Text>
+                          <Text style={[styles.peerTimeText, { color: theme.textMuted }]}>
+                            {item.time}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.peerBubble,
+                            { backgroundColor: theme.cardBg, borderColor: theme.divider },
+                          ]}
+                        >
+                          {item.replyTo && (
+                            <View style={[styles.peerReplyQuote, { backgroundColor: theme.bg, borderLeftColor: theme.accent }]}>
+                              <Text style={[styles.peerReplySender, { color: theme.accent }]}>{item.replyTo.sender}</Text>
+                              <Text style={[styles.peerReplySnippet, { color: theme.textSecondary }]} numberOfLines={1}>{item.replyTo.snippet}</Text>
+                            </View>
+                          )}
+                          {item.voiceNote && (
+                            <View style={{ marginBottom: item.text ? 8 : 0 }}>
+                              <VoiceNotePlayer voiceNote={item.voiceNote} compact />
+                            </View>
+                          )}
+                          {!!item.text && (
+                            <Text style={[styles.peerBubbleText, { color: theme.textPrimary }]}>
+                              {item.text}
+                            </Text>
+                          )}
+                        </View>
 
-                  {/* Quick Support Reactions & Safety Flag */}
-                  <View style={styles.reactionRow}>
-                    <TouchableOpacity
-                      style={[styles.reactBtn, { borderColor: theme.divider }]}
-                      onPress={() => handleReaction(item.id, 'hugs')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.reactBtnEmoji}>🫂</Text>
-                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
-                        {item.reactions?.hugs || 0}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.reactBtn, { borderColor: theme.divider }]}
-                      onPress={() => handleReaction(item.id, 'hearts')}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.reactBtnEmoji}>🌸</Text>
-                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
-                        {item.reactions?.hearts || 0}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.reactBtn, { borderColor: theme.divider }]}
-                      onPress={() => handleReportMessage(item.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>⚑ Hide</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          })
+                        {/* Quick Support Reactions, Reply & Safety Flag */}
+                        <View style={styles.reactionRow}>
+                          {[
+                            { key: 'hugs', emoji: '🫂' },
+                            { key: 'hearts', emoji: '🌸' },
+                            { key: 'pray', emoji: '🙏' },
+                            { key: 'green', emoji: '💚' },
+                          ].map((rx) => (
+                            <TouchableOpacity
+                              key={rx.key}
+                              style={[styles.reactBtn, { borderColor: theme.divider }]}
+                              onPress={() => handleReaction(item.id, rx.key)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.reactBtnEmoji}>{rx.emoji}</Text>
+                              {(item.reactions?.[rx.key] || 0) > 0 && (
+                                <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
+                                  {item.reactions[rx.key]}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                          <TouchableOpacity
+                            style={[styles.reactBtn, { borderColor: theme.divider }]}
+                            onPress={() => setReplyingTo(item)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>↩ Reply</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.reactBtn, { borderColor: theme.divider }]}
+                            onPress={() => handleReportMessage(item.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>⚑ Hide</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </React.Fragment>
+                );
+              });
+            })()
+          )}
+        </ScrollView>
+
+        {showScrollBottom && (
+          <TouchableOpacity
+            style={[styles.scrollBottomBtn, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
+            onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.scrollBottomArrow, { color: theme.accent }]}>↓</Text>
+          </TouchableOpacity>
         )}
-      </ScrollView>
+      </View>
 
       {/* ── INPUT DOCK (Sticky above BottomNavBar) ───────────── */}
       <View
@@ -330,6 +433,21 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
           { backgroundColor: theme.cardBg, borderColor: theme.divider },
         ]}
       >
+        {replyingTo && (
+          <View style={[styles.replyBanner, { backgroundColor: theme.bg, borderLeftColor: theme.accent }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.replyBannerSender, { color: theme.accent }]}>
+                Replying to {replyingTo.sender}
+              </Text>
+              <Text style={[styles.replyBannerText, { color: theme.textSecondary }]} numberOfLines={1}>
+                {replyingTo.text || (replyingTo.voiceNote ? '🎙️ Voice note' : '')}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ padding: 4 }} activeOpacity={0.7}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: theme.textMuted }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <VoiceInputControls
           voiceNote={draftVoiceNote}
           onVoiceNoteChange={setDraftVoiceNote}
@@ -367,6 +485,64 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* ── CIRCLE INFO MODAL (WhatsApp-style Group Info) ─────── */}
+      <Modal
+        visible={showCircleInfo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCircleInfo(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.guidelinesCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={[styles.circleIconPill, { backgroundColor: circle.iconBg || '#E8F0FF', width: 48, height: 48 }]}>
+                <Text style={{ fontSize: 24 }}>{circle.icon || '💬'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.guidelinesTitle, { color: theme.textPrimary }]}>{circle.title}</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontWeight: '600' }}>
+                  Age Cohort {circle.ageGroup || '18-24'} · {Math.min(12, (circle.memberCount || 1) + (isJoined ? 1 : 0))}/12 Members
+                </Text>
+              </View>
+            </View>
+            {!!circle.description && (
+              <Text style={[styles.guidelinesBody, { color: theme.textSecondary }]}>
+                {circle.description}
+              </Text>
+            )}
+            <View style={{ backgroundColor: theme.bg, padding: 12, borderRadius: 14, gap: 4 }}>
+              <Text style={{ fontSize: 12, color: theme.textPrimary, fontWeight: '700' }}>
+                Your Alias: {userName}
+              </Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted }}>
+                Messages here: {messages.length} · Voice notes: {messages.filter((m) => m.voiceNote).length}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (isJoined) leaveCircle(circleId);
+                  else joinCircle(circleId);
+                }}
+                style={{ paddingVertical: 8, paddingHorizontal: 12 }}
+                activeOpacity={0.75}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: isJoined ? '#DC2626' : theme.accent }}>
+                  {isJoined ? 'Leave Circle' : '+ Join Circle'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.guidelinesBtn, { backgroundColor: theme.accent }]}
+                onPress={() => setShowCircleInfo(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.guidelinesBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── COMMUNITY GUIDELINES MODAL ───────────────────────── */}
       <Modal
@@ -660,6 +836,98 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+  dateDividerPill: {
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 99,
+    borderWidth: 1,
+    marginVertical: 4,
+  },
+  dateDividerText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  myReplyQuote: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  myReplySender: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  myReplySnippet: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 11.5,
+  },
+  myBubbleMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 2,
+  },
+  myBubbleAction: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  peerReplyQuote: {
+    borderLeftWidth: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  peerReplySender: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  peerReplySnippet: {
+    fontSize: 11.5,
+  },
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 8,
+  },
+  replyBannerSender: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  replyBannerText: {
+    fontSize: 12,
+  },
+  scrollBottomBtn: {
+    position: 'absolute',
+    right: 16,
+    bottom: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  scrollBottomArrow: {
+    fontSize: 16,
+    fontWeight: '900',
   },
   inputContainer: {
     flexDirection: 'row',

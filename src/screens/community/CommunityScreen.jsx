@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -18,6 +19,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -45,6 +47,8 @@ export const CommunityScreen = ({ navigation, route }) => {
   const companionId = route?.params?.companion || 'noodle';
 
   const [selectedCategory, setSelectedCategory] = useState('All Circles');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [circleLastMessages, setCircleLastMessages] = useState({});
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [activeModal, setActiveModal] = useState(null); // 'small_wins' | 'vent_box' | null
   const { joinedCircleIds, hydrate } = useCommunityStore();
@@ -105,10 +109,66 @@ export const CommunityScreen = ({ navigation, route }) => {
     }
   }, [visibleCategories, selectedCategory]);
 
-  const filteredCircles =
-    selectedCategory === 'All Circles'
-      ? eligibleCircles
-      : eligibleCircles.filter((c) => c.category === selectedCategory);
+  const filteredCircles = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const list = eligibleCircles.filter((c) => {
+      const catOk = selectedCategory === 'All Circles' || c.category === selectedCategory;
+      if (!catOk) return false;
+      if (!q) return true;
+      const lastMsgText = circleLastMessages[c.id]?.text || '';
+      return (
+        c.title?.toLowerCase().includes(q) ||
+        c.description?.toLowerCase().includes(q) ||
+        c.category?.toLowerCase().includes(q) ||
+        lastMsgText.toLowerCase().includes(q)
+      );
+    });
+    // Bubble circles with real recent messages to the top (WhatsApp style)
+    return [...list].sort((a, b) => {
+      const aTs = circleLastMessages[a.id]?.createdAtMs || 0;
+      const bTs = circleLastMessages[b.id]?.createdAtMs || 0;
+      return bTs - aTs;
+    });
+  }, [eligibleCircles, selectedCategory, searchQuery, circleLastMessages]);
+
+  // Load real last message from AsyncStorage for each eligible circle
+  useEffect(() => {
+    if (selectedCircle) return; // refresh whenever returning from a chat
+    let cancelled = false;
+    async function loadLastMessages() {
+      try {
+        const entries = await Promise.all(
+          eligibleCircles.map(async (c) => {
+            const raw = await AsyncStorage.getItem(`mindbloom:baraza:chat:${c.id}:v2`);
+            if (!raw) return [c.id, null];
+            const msgs = JSON.parse(raw);
+            if (!Array.isArray(msgs) || msgs.length === 0) return [c.id, null];
+            const last = msgs[msgs.length - 1];
+            return [
+              c.id,
+              {
+                sender: last.sender || 'You',
+                text: last.text || (last.voiceNote ? `🎙️ Voice note` : ''),
+                time: last.time || '',
+                createdAtMs: Number(String(last.id || '').replace('msg-', '')) || 0,
+              },
+            ];
+          })
+        );
+        if (!cancelled) {
+          const map = {};
+          entries.forEach(([id, val]) => {
+            if (val) map[id] = val;
+          });
+          setCircleLastMessages(map);
+        }
+      } catch {}
+    }
+    loadLastMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [eligibleCircles, selectedCircle]);
 
   const joinedCircles = useMemo(
     () => eligibleCircles.filter((c) => joinedCircleIds.includes(c.id)),
@@ -374,6 +434,28 @@ export const CommunityScreen = ({ navigation, route }) => {
                   </Text>
                 </View>
 
+                {/* WhatsApp-style Search Bar */}
+                <View
+                  style={[
+                    styles.searchBarWrap,
+                    { backgroundColor: theme.cardBg, borderColor: theme.divider },
+                  ]}
+                >
+                  <Text style={{ fontSize: 14 }}>🔍</Text>
+                  <TextInput
+                    style={[styles.searchBarInput, { color: theme.textPrimary }]}
+                    placeholder="Search circles by name, topic, or message..."
+                    placeholderTextColor={theme.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: theme.textMuted }}>✕</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
                 {/* Filter Pills */}
                 <ScrollView
                   horizontal
@@ -496,7 +578,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                               </View>
                             </View>
 
-                            {circle.description && (
+                            {circleLastMessages[circle.id] ? (
                               <Text
                                 style={[
                                   styles.circleItemSnippet,
@@ -504,8 +586,23 @@ export const CommunityScreen = ({ navigation, route }) => {
                                 ]}
                                 numberOfLines={1}
                               >
-                                {circle.description}
+                                <Text style={{ fontWeight: '700', color: theme.textPrimary }}>
+                                  {circleLastMessages[circle.id].sender}:{' '}
+                                </Text>
+                                {circleLastMessages[circle.id].text}
                               </Text>
+                            ) : (
+                              circle.description && (
+                                <Text
+                                  style={[
+                                    styles.circleItemSnippet,
+                                    { color: theme.textSecondary },
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {circle.description}
+                                </Text>
+                              )
                             )}
 
                             <View style={styles.circleItemBottomRow}>
@@ -526,7 +623,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                                   { color: theme.textMuted },
                                 ]}
                               >
-                                Age {circle.ageGroup || userAgeBand}
+                                {circleLastMessages[circle.id]?.time || `Age ${circle.ageGroup || userAgeBand}`}
                               </Text>
                             </View>
                           </View>
@@ -1114,5 +1211,20 @@ const styles = StyleSheet.create({
   },
   modalInnerScroll: {
     paddingVertical: 4,
+  },
+  searchBarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  searchBarInput: {
+    flex: 1,
+    fontSize: 13.5,
+    paddingVertical: 2,
   },
 });
