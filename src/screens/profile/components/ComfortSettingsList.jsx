@@ -1,10 +1,12 @@
 // src/screens/profile/components/ComfortSettingsList.jsx
 // "Your comfort comes first" settings section
-// Clean English text, clear Privacy Shield purpose, customize disguise trigger, and dynamic theme integration.
+// Clean English text, clear Privacy Shield purpose, customize disguise trigger, and dynamic theme/locale integration.
 
 import React from 'react';
 import { View, Text, Switch, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useI18n } from '../../../services/i18n';
+import { styles } from '../styles/ComfortSettingsList.styles';
 
 export const ComfortSettingsList = ({
   onNotificationsPress,
@@ -13,6 +15,15 @@ export const ComfortSettingsList = ({
   onDiscreetShieldPress,
 }) => {
   const { theme, isDark, toggleDark, privacyShield, togglePrivacyShield } = useTheme();
+  const { language, countryData } = useI18n();
+
+  const langNames = {
+    en: 'English',
+    sw: 'Kiswahili',
+    sheng: 'Sheng',
+  };
+  const activeLangName = langNames[language] || 'English';
+  const regionLabel = `${activeLangName} · ${countryData?.name || 'Kenya'}`;
 
   return (
     <View style={[styles.section, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
@@ -88,7 +99,7 @@ export const ComfortSettingsList = ({
         <View style={styles.rowText}>
           <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Language & Region</Text>
           <Text style={[styles.rowSublabel, { color: theme.textMuted }]}>
-            English · Kenya
+            {regionLabel}
           </Text>
         </View>
         <Text style={[styles.arrow, { color: theme.textMuted }]}>›</Text>
@@ -111,5 +122,3 @@ export const ComfortSettingsList = ({
     </View>
   );
 };
-
-import { styles } from '../styles/ComfortSettingsList.styles';
