@@ -43,6 +43,13 @@ export const AllEntriesModal = ({
   }, [entries, searchQuery, filterMood]);
 
   const confirmDelete = (item) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to let go of "${item.title || 'this reflection'}"? This cannot be undone.`)) {
+        onDeleteEntry?.(item.id);
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Moment',
       `Are you sure you want to let go of "${item.title || 'this reflection'}"? This cannot be undone.`,

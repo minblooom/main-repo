@@ -109,22 +109,26 @@ export const ProfileContent = ({
         companionId,
       });
 
-      // Update local auth session so all screens see the new nickname and bio immediately
+      // Update local auth session so all screens see the new nickname, bio, and struggles immediately
       const storedUser = await AuthService.getStoredUser();
       if (storedUser) {
         const updatedUser = {
           ...storedUser,
           nickname: newProfile.nickname,
           bio: newProfile.bio,
+          primaryStruggles: newProfile.focusAreas || storedUser.primaryStruggles || [],
+          interests: storedUser.interests || [],
         };
         await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
       }
 
       // Sync with Supabase backend database
       try {
-        await apiClient.patch('/users/profile', {
+        await apiClient.patch('/user/profile', {
           nickname: newProfile.nickname,
           bio: newProfile.bio,
+          primaryStruggles: newProfile.focusAreas || [],
+          ...(storedUser?.interests && { interests: storedUser.interests }),
         });
       } catch (backendErr) {
         // Backend offline or local fallback
@@ -306,8 +310,8 @@ export const ProfileScreen = ({ navigation, route }) => {
       // Already on profile
     } else if (routeId === 'chill') {
       Alert.alert('Chill Space', 'A calm space to unwind and listen to soothing sounds.');
-    } else if (routeId === 'community') {
-      Alert.alert('Baraza Community', 'A warm circle of shared encouragement and peaceful stories.');
+    } else if (routeId === 'community' || routeId === 'baraza') {
+      navigation?.navigate?.('Community');
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora Companion', 'Aurora AI companion session is starting...');
     } else if (routeId === 'breath') {

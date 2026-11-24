@@ -1,8 +1,10 @@
 // src/screens/arcade/engine/gameSessionManager.js
 // Centralized session, favorites, recent history, and game-state persistence manager for Bloom Arcade.
+// Seamlessly syncs local AsyncStorage state with backend cloud saves via ArcadeSyncService.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getGameById } from './gameRegistry';
+import { ArcadeSyncService } from '../../../core/api/arcadeSyncService';
 
 const RECENT_KEY = '@mindbloom:arcade:recently_played';
 const FAVOURITES_KEY = '@mindbloom:arcade:favourites';
@@ -72,8 +74,9 @@ export const gameSessionManager = {
       ids = ids.filter((id) => id !== gameId);
       await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(ids));
 
-      // Also clean up any paused game state
+      // Also clean up any paused game state locally and cloud
       await this.clearGameState(gameId);
+      ArcadeSyncService.dismissSession(gameId).catch(() => {});
 
       const remainingGames = await Promise.all(
         ids.map(async (id) => {
@@ -94,7 +97,7 @@ export const gameSessionManager = {
 
   /**
    * Save game-specific progress (level, score, grid, moves, etc.)
-   * In-place updates the progress and moves the game to the top of recently played without duplicates.
+   * In-place updates local storage and silently mirrors to backend cloud sync.
    */
   async saveGameState(gameId, state) {
     if (!gameId || !state) return;
@@ -108,6 +111,18 @@ export const gameSessionManager = {
       );
       // Ensure game is at front of recents without duplicates
       await this.recordGamePlayed(gameId);
+
+      // Cloud mirror (non-blocking)
+      const gameObj = getGameById(gameId);
+      ArcadeSyncService.saveState({
+        gameId,
+        gameTitle: gameObj?.title || gameId,
+        currentLevel: state.currentLevel || 1,
+        score: state.score || 0,
+        highScore: state.highScore || 0,
+        statePayload: state,
+        timeSpentSecs: state.timeSpentSecs || 0,
+      }).catch(() => {});
     } catch {}
   },
 
@@ -170,6 +185,7 @@ export const gameSessionManager = {
         ids = [gameId, ...ids.filter((id) => id !== gameId)];
       }
       await AsyncStorage.setItem(FAVOURITES_KEY, JSON.stringify(ids));
+      ArcadeSyncService.toggleFavourite(gameId).catch(() => {});
       return !exists;
     } catch {
       return false;

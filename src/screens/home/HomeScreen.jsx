@@ -3,6 +3,7 @@
 // Responsive: Desktop sidebar on wide screens, bottom navigation bar on mobile
 // Fully integrated with dynamic app-wide themes & dark mode.
 
+// src/screens/home/HomeScreen.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -12,13 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 import { useTheme } from '../../theme/ThemeContext';
+import { CommunityContent } from '../../screens/community/CommunityContent';
 
-// Modular Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 
-// Modular Home Screen Sections
 import { HomeHeader } from './components/HomeHeader';
 import { GreetingSection } from './components/GreetingSection';
 import { MoodCheckIn } from './components/MoodCheckIn';
@@ -31,23 +32,28 @@ import { MoodAnalyticsModal } from '../profile/components/modals/MoodAnalyticsMo
 import { styles } from './styles/HomeScreen.styles';
 
 export const HomeScreen = ({ navigation, route }) => {
-  const { theme, companionId: themeCompanionId } = useTheme();
+  const { theme, companionId: themeCompanionId, setCompanionId } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
   const [activeTab, setActiveTab] = useState(route?.params?.tab || 'home');
   const companionId = themeCompanionId || route?.params?.companion || 'noodle';
+  const [userName, setUserName] = useState('');
   const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
   const [moodAnalyticsVisible, setMoodAnalyticsVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const saved = await onboardingStorage.getPreferences();
+        const [saved, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        const name = storedUser?.nickname || saved?.nickname || '';
+        if (name) {
+          setUserName(name);
+        }
         if (saved) {
-          if (saved.companion && !route?.params?.companion) {
-            setCompanionId(saved.companion);
-          }
           if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
             setUserFocusAreas(saved.focusAreas);
           }
@@ -73,7 +79,9 @@ export const HomeScreen = ({ navigation, route }) => {
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza') {
-      Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
+      setActiveTab('baraza');
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation.navigate('Community');
     } else if (routeId === 'acacia') {
       Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
@@ -84,7 +92,6 @@ export const HomeScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
       <View style={[styles.rootContainer, { backgroundColor: theme.bg }]}>
-        {/* Desktop Sidebar Navigation */}
         {isWide && (
           <SidebarNav
             activeRoute={activeTab}
@@ -93,11 +100,11 @@ export const HomeScreen = ({ navigation, route }) => {
           />
         )}
 
-        {/* Main Content Area */}
         <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
           {activeTab === 'arcade' ? (
             <ArcadeContent
               companionId={companionId}
+              userName={userName}
               onNavigateHome={() => setActiveTab('home')}
               isWide={isWide}
             />
@@ -127,21 +134,24 @@ export const HomeScreen = ({ navigation, route }) => {
                   onSignOut={() => navigation.reset({ index: 0, routes: [{ name: 'Splash' }] })}
                   isWide={isWide}
                 />
+              ) : activeTab === 'baraza' ? (
+                <CommunityContent
+                  onOpenProfile={() => handleNavigate('sanctuary')}
+                  onNavigateHome={() => setActiveTab('home')}
+                />
               ) : (
                 <View style={[styles.contentMaxWrapper, isWide && styles.contentMaxWrapperWide]}>
-                  {/* Header with Breadcrumb & Weather */}
                   <HomeHeader
                     companionId={companionId}
                     onProfilePress={() => handleNavigate('sanctuary')}
                   />
 
-                  {/* Welcoming Greeting */}
                   <GreetingSection userName="soso" />
+                  {/* Welcoming Greeting */}
+                  <GreetingSection userName={userName || 'friend'} />
 
-                  {/* Gentle Mood Check-in */}
                   <MoodCheckIn onOpenAnalytics={() => setMoodAnalyticsVisible(true)} />
 
-                  {/* Hero Twin Banners: Aurora & Animated Companion Mascot + Tulia Breath */}
                   <HeroBanners
                     isWide={isWide}
                     companionId={companionId}
@@ -149,7 +159,6 @@ export const HomeScreen = ({ navigation, route }) => {
                     onBreathPress={() => handleNavigate('breath')}
                   />
 
-                  {/* "A Moment for You" 3 Activities */}
                   <MomentsSection
                     isWide={isWide}
                     userFocusAreas={userFocusAreas}
@@ -160,7 +169,6 @@ export const HomeScreen = ({ navigation, route }) => {
             </ScrollView>
           )}
 
-          {/* Mobile Bottom Navigation Bar */}
           {!isWide && (
             <BottomNavBar
               activeRoute={activeTab}
@@ -169,7 +177,6 @@ export const HomeScreen = ({ navigation, route }) => {
             />
           )}
 
-          {/* Interactive Mood Analytics Modal */}
           <MoodAnalyticsModal
             visible={moodAnalyticsVisible}
             theme={theme}

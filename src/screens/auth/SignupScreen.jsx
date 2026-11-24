@@ -1,7 +1,6 @@
 // src/screens/auth/SignupScreen.jsx
 // MindBloom Account Creation Screen
-// Features nickname, contact, password, and confirm password fields,
-// validation, responsive layout, and in-app legal modal popup.
+// Wired to AuthService.register() — creates real account then flows to onboarding
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -13,6 +12,7 @@ import {
   ScrollView,
   Animated,
   Alert,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { LegalModal } from '../legal/LegalScreen';
+import { AuthService } from '../../core/api/authService';
 
 export const SignupScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -34,6 +35,7 @@ export const SignupScreen = ({ navigation }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
 
   // Gentle float animation for the sloth mascot
@@ -111,20 +113,45 @@ export const SignupScreen = ({ navigation }) => {
     const errs = validateForm();
     setErrors(errs);
 
-    if (Object.keys(errs).length > 0) {
-      return;
-    }
+    if (Object.keys(errs).length > 0) return;
 
     const name = nickname.trim();
-    try {
-      await onboardingStorage.savePreferences({
-        nickname: name,
-        contact: contact.trim(),
-      });
-    } catch { }
+    const contactVal = contact.trim();
 
-    if (navigation) {
-      navigation.navigate('GentleHello');
+    setLoading(true);
+    try {
+      // Save to onboarding storage first (used in onboarding steps)
+      await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
+
+      // Try to register with backend (non-blocking — onboarding still works offline)
+      try {
+        await AuthService.register({
+          nickname: name,
+          contact: contactVal,
+          password,
+          // ageBand and gender come from onboarding steps — added later
+        });
+      } catch (backendErr) {
+        // If the backend is unreachable, still allow onboarding to proceed
+        // The registration will be retried when the user completes onboarding
+        const msg = backendErr?.response?.data?.message || '';
+        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('duplicate')) {
+          setErrors({ general: 'That email or nickname is already taken. Try a different one or sign in.' });
+          setLoading(false);
+          return;
+        }
+        // Network / server unavailable — proceed to onboarding anyway
+        console.warn('[SignupScreen] Backend unreachable, proceeding offline:', backendErr?.message);
+      }
+
+      // Always navigate to onboarding after successful local save
+      if (navigation) {
+        navigation.navigate('GentleHello');
+      }
+    } catch (err) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -143,13 +170,14 @@ export const SignupScreen = ({ navigation }) => {
       >
         <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
 
-          {/* -- HEADER ----------------------------------- */}
+          {/* -- HEADER (matches LoginScreen exactly) ----- */}
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
               <TouchableOpacity
                 onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
                 style={s.langBtn}
+                activeOpacity={0.7}
               >
                 <Text style={s.langText}>
                   <Text style={language === 'EN' ? s.langActive : s.langInactive}>EN</Text>
@@ -157,24 +185,23 @@ export const SignupScreen = ({ navigation }) => {
                   <Text style={language === 'SW' ? s.langActive : s.langInactive}>SW</Text>
                 </Text>
               </TouchableOpacity>
-
-              <TouchableOpacity onPress={handleUrgentSupport}>
+              <TouchableOpacity onPress={handleUrgentSupport} activeOpacity={0.7}>
                 <Text style={s.urgentLink}>Need urgent support?</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* -- MAIN CONTENT (2-COL / 1-COL) ------------- */}
+          {/* -- MAIN CONTENT ----------------------------- */}
           <View style={[s.mainLayout, isWide && s.mainLayoutWide]}>
 
-            {/* LEFT / TOP HERO CARD */}
+            {/* -- LEFT: COMPANION HERO CARD --------------- */}
             <View style={[s.companionCard, isWide && s.companionCardWide]}>
-              <Text style={s.tagText}>KARIBU RAFIKI · HELLO, FRIEND</Text>
+              <Text style={s.tagText}>KARIBU · WELCOME</Text>
+
               <Text style={s.heroHeading}>
-                {'Your mind.\nYour pace.\nYour kind of bloom.'}
+                {'Your space.\nYour pace.\nYour bloom.'}
               </Text>
 
-              {/* Floating mascot circular badge */}
               <Animated.View
                 style={[
                   s.mascotCircleWrapper,
@@ -192,25 +219,20 @@ export const SignupScreen = ({ navigation }) => {
                 <Text style={s.sparkleBottomRight}>✦</Text>
               </Animated.View>
 
-              {/* Calming bottom anchor card */}
               <View style={s.speechBubbleCard}>
                 <Text style={s.speechQuote}>
-                  "You don't have to have it all figured out."
+                  "Every big journey starts with one gentle step."
                 </Text>
-                <Text style={s.speechAuthor}>
-                  Pole · your little pocket of courage
-                </Text>
+                <Text style={s.speechAuthor}>Pole · your quiet pocket of calm</Text>
               </View>
             </View>
 
-            {/* RIGHT / BOTTOM FORM CARD */}
+            {/* -- RIGHT: SIGNUP FORM ---------------------- */}
             <View style={[s.formContainer, isWide && s.formContainerWide]}>
-              <Text style={s.formTitle}>Let's make this space yours.</Text>
-              <Text style={s.formSubhead}>
-                A nickname is enough. Being yourself is plenty.
-              </Text>
+              <Text style={s.formTitle}>Create your space.</Text>
+              <Text style={s.formSubhead}>Free, private, and entirely yours.</Text>
 
-              {/* Auth Tab Switcher */}
+              {/* Segmented tab switcher — matches LoginScreen layout */}
               <View style={s.segmentedTabsContainer}>
                 <View style={[s.tabButton, s.tabButtonActive]}>
                   <Text style={[s.tabText, s.tabTextActive]}>Create account</Text>
@@ -224,9 +246,17 @@ export const SignupScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Input Fields */}
+              {/* General error banner */}
+              {errors.general ? (
+                <View style={s.errorBanner}>
+                  <Text style={s.errorBannerText}>{errors.general}</Text>
+                </View>
+              ) : null}
+
+              {/* Fields */}
               <View style={s.fieldsBlock}>
-                {/* 1. Nickname Field */}
+
+                {/* 1. Nickname */}
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>What should we call you? *</Text>
                   <TextInput
@@ -235,61 +265,60 @@ export const SignupScreen = ({ navigation }) => {
                     value={nickname}
                     onChangeText={(text) => {
                       setNickname(text);
-                      if (submitted) {
-                        setErrors(validateForm(text, undefined, undefined, undefined));
-                      }
+                      if (submitted) setErrors(validateForm(text, undefined, undefined, undefined));
                     }}
-                    placeholder="e.g. Wanjiku, Kevo, or just 'M'"
+                    placeholder="e.g. Wanjiku, Kofi, Amara"
                     placeholderTextColor="#76648E"
                     autoCapitalize="words"
                     autoCorrect={false}
+                    editable={!loading}
                   />
                   {submitted && errors.nickname ? (
                     <Text style={s.errorText}>{errors.nickname}</Text>
                   ) : null}
                 </View>
 
-                {/* 2. Email or Phone Field */}
+                {/* 2. Contact */}
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Email or phone *</Text>
+                  <Text style={s.fieldLabel}>Email or phone number *</Text>
                   <TextInput
                     underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.contact) && s.inputError]}
                     value={contact}
                     onChangeText={(text) => {
                       setContact(text);
-                      if (submitted) {
-                        setErrors(validateForm(undefined, text, undefined, undefined));
-                      }
+                      if (submitted) setErrors(validateForm(undefined, text, undefined, undefined));
                     }}
-                    placeholder="e.g. wanjiku@email.com or 0712345678"
+                    placeholder="wanjiku@email.com or +254 7xx xxx xxx"
                     placeholderTextColor="#76648E"
                     autoCapitalize="none"
-                    keyboardType="email-address"
                     autoCorrect={false}
+                    keyboardType="email-address"
+                    editable={!loading}
                   />
                   {submitted && errors.contact ? (
                     <Text style={s.errorText}>{errors.contact}</Text>
-                  ) : null}
+                  ) : (
+                    <Text style={s.helperText}>We'll never share this with anyone.</Text>
+                  )}
                 </View>
 
-                {/* 3. Password Field */}
+                {/* 3. Password */}
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>Create a password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
-                    underlineColorAndroid="transparent"
+                      underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
                       onChangeText={(text) => {
                         setPassword(text);
-                        if (submitted) {
-                          setErrors(validateForm(undefined, undefined, text, undefined));
-                        }
+                        if (submitted) setErrors(validateForm(undefined, undefined, text, undefined));
                       }}
                       placeholder="At least 6 characters"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showPassword}
+                      editable={!loading}
                     />
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -305,23 +334,22 @@ export const SignupScreen = ({ navigation }) => {
                   )}
                 </View>
 
-                {/* 4. Confirm Password Field */}
+                {/* 4. Confirm Password */}
                 <View style={s.fieldGroup}>
                   <Text style={s.fieldLabel}>Confirm password *</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.confirmPassword) && s.inputError]}>
                     <TextInput
-                    underlineColorAndroid="transparent"
+                      underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={confirmPassword}
                       onChangeText={(text) => {
                         setConfirmPassword(text);
-                        if (submitted) {
-                          setErrors(validateForm(undefined, undefined, undefined, text));
-                        }
+                        if (submitted) setErrors(validateForm(undefined, undefined, undefined, text));
                       }}
                       placeholder="Re-enter your password"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showConfirmPassword}
+                      editable={!loading}
                     />
                     <TouchableOpacity
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -337,11 +365,16 @@ export const SignupScreen = ({ navigation }) => {
 
                 {/* Submit Button */}
                 <TouchableOpacity
-                  style={s.primaryBtn}
+                  style={[s.primaryBtn, loading && { opacity: 0.7 }]}
                   onPress={handleCreateSpace}
                   activeOpacity={0.88}
+                  disabled={loading}
                 >
-                  <Text style={s.primaryBtnText}>Create my space ➔</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={s.primaryBtnText}>Create my space →</Text>
+                  )}
                 </TouchableOpacity>
 
                 {/* Sign-in Switch Link */}

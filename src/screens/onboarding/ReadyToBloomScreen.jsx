@@ -14,10 +14,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { useTheme } from '../../theme/ThemeContext';
 import { COMPANION_MAP } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { apiClient } from '../../core/api/client';
 
 const FOCUS_LABEL_MAP = {
   anxiety: 'Anxiety & Overwhelm',
@@ -39,6 +41,7 @@ const FOCUS_LABEL_MAP = {
 export const ReadyToBloomScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+  const { setCompanionId } = useTheme();
 
   const params = route?.params ?? {};
   const companion = COMPANION_MAP[params.companion] || COMPANION_MAP.noodle;
@@ -84,10 +87,14 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
 
   const handleEnter = async () => {
     try {
+      const chosenCompanion = params.companion || 'noodle';
+      setCompanionId(chosenCompanion);
       await onboardingStorage.setOnboardingCompleted(true);
       await onboardingStorage.savePreferences({
-        companion: params.companion || 'noodle',
+        companion: chosenCompanion,
+        companionId: chosenCompanion,
         focusAreas: params.focusAreas || [],
+        interests: params.interests || [],
         rhythm: params.rhythm || '2',
         nudges: Boolean(params.nudges),
         country: params.country || 'ke',
@@ -96,6 +103,26 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
         ageGroup: params.ageGroup || '22-25',
         completedAt: new Date().toISOString(),
       });
+
+      // Synchronize focus areas, interests, and age with backend if user is authenticated
+      apiClient.patch('/user/profile', {
+        primaryStruggles: params.focusAreas || [],
+        interests: params.interests || [],
+        ageBand: params.age && Number(params.age) <= 17 ? 'TEEN_13_17' : Number(params.age) <= 24 ? 'YOUNG_ADULT_18_24' : 'ADULT_25_PLUS',
+      }).catch(() => {});
+
+      // Keep stored user session updated with struggles and passions
+      try {
+        const storedUser = await AuthService.getStoredUser();
+        if (storedUser) {
+          const updatedUser = {
+            ...storedUser,
+            primaryStruggles: params.focusAreas || [],
+            interests: params.interests || [],
+          };
+          await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
+        }
+      } catch { }
     } catch {
       // Memory fallback active
     }

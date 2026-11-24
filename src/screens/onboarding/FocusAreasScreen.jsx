@@ -52,7 +52,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
 
   const handleContinue = () => {
     if (!navigation) return;
-    navigation.navigate('RhythmSelect', {
+    navigation.navigate('InterestsSelect', {
       ...(route?.params ?? {}),
       focusAreas: selected,
     });
@@ -60,7 +60,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
 
   const handleSkip = () => {
     if (!navigation) return;
-    navigation.navigate('RhythmSelect', {
+    navigation.navigate('InterestsSelect', {
       ...(route?.params ?? {}),
       focusAreas: [],
     });

@@ -7,7 +7,7 @@ export class WeatherService {
    * Fetches current ambient weather data based on latitude and longitude
    * Default coordinates: Nairobi (-1.2921, 36.8219)
    */
-  static async getCurrentWeather(latitude = -1.2921, longitude = 36.8219) {
+  static async getCurrentWeather(latitude = -1.2921, longitude = 36.8219, locationName = 'Nairobi') {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`;
       
@@ -22,21 +22,25 @@ export class WeatherService {
       const code = current.weather_code;
 
       const conditionInfo = this.mapWeatherCode(code, temp);
+      const locSuffix = locationName ? ` · ${locationName}` : '';
 
       return {
         temperature: temp,
         condition: conditionInfo.label,
         icon: conditionInfo.icon,
-        pillText: `${conditionInfo.icon}  ${conditionInfo.label} · ${temp}°C`,
-        hydrationTip: this.getHydrationTip(temp),
+        location: locationName,
+        pillText: `${conditionInfo.icon}  ${conditionInfo.label} · ${temp}°C${locSuffix}`,
+        hydrationTip: this.getHydrationTip(temp, locationName),
       };
     } catch {
+      const locSuffix = locationName ? ` · ${locationName}` : '';
       // Graceful offline fallback
       return {
         temperature: 24,
         condition: 'Warm & Calm',
         icon: '☀️',
-        pillText: '☀️  Warm & Calm · 24°C',
+        location: locationName,
+        pillText: `☀️  Warm & Calm · 24°C${locSuffix}`,
         hydrationTip: 'Stay hydrated today with small sips of water.',
       };
     }
