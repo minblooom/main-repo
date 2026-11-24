@@ -208,6 +208,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['anxiety', 'burnout', 'sleep', 'feeling_off'],
+    interests: ['music', 'mindfulness', 'podcasts', 'deep_talks'],
     clinicalGoal: 'Resets sympathetic nervous system arousal via paced vagal stimulation.',
     instructions: [
       'Inhale deeply through your nose as the glowing bubble expands (4s).',
@@ -237,6 +238,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['burnout', 'anxiety', 'strong_one', 'self_doubt', 'relationships'],
+    interests: ['outdoors', 'mindfulness', 'crafts', 'cooking'],
     clinicalGoal: 'Interrupts chronic over-responsibility by separating actionable control from emotional rumination.',
     instructions: [
       'Read the incoming thought or worry card on screen.',
@@ -266,6 +268,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['self_doubt', 'anxiety', 'low_mood', 'trauma', 'isolation', 'emptiness'],
+    interests: ['writing', 'books', 'tech', 'gaming', 'podcasts'],
     clinicalGoal: 'Builds cognitive restructuring skills to dispute catastrophizing and all-or-nothing self-criticism.',
     instructions: [
       'Inspect the automatic negative thought displayed on the suspect card.',
@@ -295,6 +298,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['trauma', 'anxiety', 'feeling_off', 'body', 'low_mood', 'grief'],
+    interests: ['art', 'photography', 'outdoors', 'fitness', 'sports'],
     clinicalGoal: 'Rapidly reduces fight-or-flight hyperarousal by redirecting cognitive focus to immediate physical sensory inputs.',
     instructions: [
       'Tap 5 visible stars or sights around you to anchor your eyes.',
@@ -325,6 +329,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['sleep', 'burnout', 'emptiness'],
+    interests: ['books', 'music', 'tech', 'mindfulness'],
     clinicalGoal: 'Slows cardiac rhythm and stimulates parasympathetic tone to quiet racing late-night insomnia thoughts.',
     instructions: [
       'Inhale quietly through your nose as the star brightens (4s).',
@@ -354,6 +359,7 @@ export const THERAPEUTIC_EVIDENCE_GAMES = [
     isTherapeutic: true,
     isDailyEligible: true,
     issues: ['low_mood', 'emptiness', 'burnout', 'isolation', 'grief'],
+    interests: ['cooking', 'fashion', 'crafts', 'art', 'music'],
     clinicalGoal: 'Interrupts depressive inertia and learned helplessness using low-friction micro-actions.',
     instructions: [
       'Choose one tiny, effortless spark card that feels gentle enough for your energy right now.',
@@ -372,21 +378,46 @@ export const ALL_AVAILABLE_GAMES = [...UNIVERSAL_ARCADE_GAMES, ...THERAPEUTIC_EV
  * - The 6 Universal Arcade Games (always identical for every user)
  * - PLUS only the evidence-based therapeutic games relevant to the user's focus areas!
  */
-export const getCatalogForUser = (userFocusAreas = []) => {
+export const getCatalogForUser = (userFocusAreas = [], userInterests = []) => {
   if (!userFocusAreas || userFocusAreas.length === 0) {
     return UNIVERSAL_ARCADE_GAMES;
   }
-  const normalized = userFocusAreas.map((a) => String(a).toLowerCase().trim());
-  const userMatchedTherapeutic = THERAPEUTIC_EVIDENCE_GAMES.filter((game) =>
+  const normalizedAreas = userFocusAreas.map((a) => String(a).toLowerCase().trim());
+  const normalizedInterests = (userInterests || []).map((i) => String(i).toLowerCase().trim());
+
+  // 1. Filter therapeutic games that address the user's active focus areas
+  const matchedIssuesGames = THERAPEUTIC_EVIDENCE_GAMES.filter((game) =>
     game.issues?.some((issue) =>
-      normalized.some((userFocus) =>
+      normalizedAreas.some((userFocus) =>
         userFocus === issue ||
         userFocus.includes(issue) ||
         issue.includes(userFocus)
       )
     )
   );
-  return [...userMatchedTherapeutic, ...UNIVERSAL_ARCADE_GAMES];
+
+  // 2. Score, align, and prioritize games by the user's selected passions & hobbies
+  const rankedTherapeutic = matchedIssuesGames.map((game) => {
+    const matchedInterests = (game.interests || []).filter((interest) =>
+      normalizedInterests.some((userInterest) =>
+        userInterest === interest ||
+        userInterest.includes(interest) ||
+        interest.includes(userInterest)
+      )
+    );
+    const isInterestAligned = matchedInterests.length > 0;
+    return {
+      ...game,
+      matchedInterests,
+      isInterestAligned,
+      affinityScore: (matchedInterests.length * 3) + 1,
+      interestBadge: isInterestAligned
+        ? `ALIGNED WITH YOUR PASSIONS · ${matchedInterests[0].toUpperCase()}`
+        : game.badge,
+    };
+  }).sort((a, b) => b.affinityScore - a.affinityScore);
+
+  return [...rankedTherapeutic, ...UNIVERSAL_ARCADE_GAMES];
 };
 
 export const GAMES_CATALOG = ALL_AVAILABLE_GAMES;

@@ -117,6 +117,7 @@ export const ProfileContent = ({
           nickname: newProfile.nickname,
           bio: newProfile.bio,
           primaryStruggles: newProfile.focusAreas || storedUser.primaryStruggles || [],
+          interests: storedUser.interests || [],
         };
         await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
       }
@@ -127,6 +128,7 @@ export const ProfileContent = ({
           nickname: newProfile.nickname,
           bio: newProfile.bio,
           primaryStruggles: newProfile.focusAreas || [],
+          ...(storedUser?.interests && { interests: storedUser.interests }),
         });
       } catch (backendErr) {
         // Backend offline or local fallback

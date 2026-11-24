@@ -71,6 +71,7 @@ export const ArcadeContent = ({
   const [dailyGame, setDailyGame] = useState(getGameOfTheDay());
   const [displayName, setDisplayName] = useState(userName || 'friend');
   const [userFocusAreas, setUserFocusAreas] = useState([]);
+  const [userInterests, setUserInterests] = useState([]);
 
   // Load user data, recents, and favourites on mount
   useEffect(() => {
@@ -90,11 +91,20 @@ export const ArcadeContent = ({
           setUserFocusAreas(storedUser.primaryStruggles);
         }
 
-        // Check backend database for cloud-synced struggles and tailored catalog
+        if (savedPrefs?.interests && savedPrefs.interests.length > 0) {
+          setUserInterests(savedPrefs.interests);
+        } else if (storedUser?.interests && storedUser.interests.length > 0) {
+          setUserInterests(storedUser.interests);
+        }
+
+        // Check backend database for cloud-synced struggles, interests, and tailored catalog
         try {
           const backendCatalog = await ArcadeSyncService.getCatalog();
           if (backendCatalog?.primaryStruggles && backendCatalog.primaryStruggles.length > 0) {
             setUserFocusAreas(backendCatalog.primaryStruggles);
+          }
+          if (backendCatalog?.interests && backendCatalog.interests.length > 0) {
+            setUserInterests(backendCatalog.interests);
           }
         } catch { }
         const recents = await gameSessionManager.getRecentlyPlayed();
@@ -111,8 +121,8 @@ export const ArcadeContent = ({
 
   // Filtered games list tailored specifically for this user
   const userCatalog = useMemo(() => {
-    return getCatalogForUser(userFocusAreas);
-  }, [userFocusAreas]);
+    return getCatalogForUser(userFocusAreas, userInterests);
+  }, [userFocusAreas, userInterests]);
 
   const filteredGames = useMemo(() => {
     return userCatalog.filter((g) => {
