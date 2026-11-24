@@ -1,7 +1,7 @@
 // src/features/community/smallWins/SmallWinsSection.jsx
 // Categorized Small Wins Garden combining react-frontend's categories and teammate's GardenStrip.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { GardenStrip } from '../encouragement/GardenStrip';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { useCommunityStore } from '../store/communityStore';
+import { onboardingStorage } from '../../../services/onboardingStorage';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Wins 🌟' },
@@ -30,6 +31,19 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newWinText, setNewWinText] = useState('');
   const [postCategory, setPostCategory] = useState('personal');
+  const [authorName, setAuthorName] = useState('You · MindBloom');
+
+  useEffect(() => {
+    async function loadUserName() {
+      try {
+        const prefs = await onboardingStorage.getPreferences();
+        if (prefs?.name || prefs?.nickname) {
+          setAuthorName(`${prefs.name || prefs.nickname} · MindBloom`);
+        }
+      } catch {}
+    }
+    loadUserName();
+  }, []);
 
   const filteredWins = wins.filter(
     (w) => selectedCategory === 'all' || w.category === selectedCategory
@@ -43,7 +57,7 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const handlePostWin = () => {
     if (!newWinText.trim()) return;
     soundService.playVictory();
-    addWin(newWinText.trim(), postCategory);
+    addWin(newWinText.trim(), postCategory, authorName);
     setNewWinText('');
     Alert.alert(
       'Hongera sana! 🌸',
@@ -146,7 +160,7 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
           >
             <View style={styles.winHeader}>
               <Text style={[styles.authorName, { color: theme.accent }]}>🌿 {win.author}</Text>
-              <Text style={[styles.winTime, { color: theme.textMuted }]}>{win.time}</Text>
+              <Text style={[styles.winTime, { color: theme.textMuted }]}>{win.createdAt || win.time || 'Today'}</Text>
             </View>
 
             <Text style={[styles.winText, { color: theme.textPrimary }]}>{win.text}</Text>

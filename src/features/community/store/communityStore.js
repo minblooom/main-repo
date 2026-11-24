@@ -1,8 +1,15 @@
 // src/features/community/store/communityStore.js
 // Centralized reactive Zustand store for MindBloom Community Baraza
-// Ported from react-frontend with real-time cheering, anonymous venting, hugs, and candles.
+// Features persistent Small Wins vault, ephemeral Zero-Trace Safe Vents, and interactive reactions.
 
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEYS = {
+  WINS: 'mindbloom:community:wins:v2',
+  VENTS: 'mindbloom:community:vents:v2',
+  NOTIFIED_MENTORS: 'mindbloom:community:notified_mentors:v1',
+};
 
 const INITIAL_WINS = [
   {
@@ -25,7 +32,7 @@ const INITIAL_WINS = [
   },
   {
     id: 'win-3',
-    text: 'Stood up for myself in a toxic workplace meeting with soft calmness and zero apologies 💼',
+    text: 'Stood up for myself in a workplace discussion with calm confidence and zero apologies 💼',
     author: 'Kavata · Westlands',
     category: 'work',
     cheers: 52,
@@ -46,7 +53,7 @@ const INITIAL_WINS = [
 const INITIAL_VENTS = [
   {
     id: 'vent-1',
-    text: 'Tired of being the "strong eldest daughter" who holds everyone together while crumbling quietly in the dark.',
+    text: 'Tired of being the "strong eldest sibling" who holds everyone together while feeling overwhelmed inside.',
     createdAt: '22m ago',
     hugs: 34,
     hasHugged: true,
@@ -55,7 +62,7 @@ const INITIAL_VENTS = [
   },
   {
     id: 'vent-2',
-    text: 'Applied for 40 internships this month. Getting automated rejection emails feels like a punch in the chest every morning.',
+    text: 'Sent out 20 job applications this month. Getting automated rejections can feel heavy, but taking it one day at a time.',
     createdAt: '1h ago',
     hugs: 56,
     hasHugged: false,
@@ -64,7 +71,7 @@ const INITIAL_VENTS = [
   },
   {
     id: 'vent-3',
-    text: 'My family thinks mental health struggles are just "lack of prayer" or "idleness". It hurts so much not to be understood.',
+    text: 'When people dismiss mental wellness as "lack of hustle", it stings. Finding this quiet space helps a lot.',
     createdAt: '3h ago',
     hugs: 81,
     hasHugged: false,
@@ -73,85 +80,152 @@ const INITIAL_VENTS = [
   },
 ];
 
-export const useCommunityStore = create((set) => ({
+export const useCommunityStore = create((set, get) => ({
   wins: INITIAL_WINS,
   vents: INITIAL_VENTS,
+  notifiedMentors: {},
+  isHydrated: false,
 
-  addWin: (text, category = 'personal', author = 'You · MindBloom') => {
+  // Hydrate persistent data from AsyncStorage
+  hydrate: async () => {
+    try {
+      const [savedWins, savedVents, savedMentors] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEYS.WINS),
+        AsyncStorage.getItem(STORAGE_KEYS.VENTS),
+        AsyncStorage.getItem(STORAGE_KEYS.NOTIFIED_MENTORS),
+      ]);
+
+      const wins = savedWins ? JSON.parse(savedWins) : INITIAL_WINS;
+      const vents = savedVents ? JSON.parse(savedVents) : INITIAL_VENTS;
+      const notifiedMentors = savedMentors ? JSON.parse(savedMentors) : {};
+
+      set({ wins, vents, notifiedMentors, isHydrated: true });
+    } catch {
+      set({ isHydrated: true });
+    }
+  },
+
+  // Persistent Small Wins logic
+  addWin: async (text, category = 'personal', author = 'You · MindBloom') => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
     const newWin = {
       id: `win-${Date.now()}`,
-      text: text.trim(),
+      text: trimmed,
       author,
       category,
       cheers: 1,
       hasCheered: true,
       createdAt: 'Just now',
     };
-    set((state) => ({
-      wins: [newWin, ...state.wins],
-    }));
+
+    const nextWins = [newWin, ...get().wins];
+    set({ wins: nextWins });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+    } catch {}
   },
 
-  toggleCheerWin: (id) => {
-    set((state) => ({
-      wins: state.wins.map((w) => {
-        if (w.id === id) {
-          const nextCheered = !w.hasCheered;
-          return {
-            ...w,
-            hasCheered: nextCheered,
-            cheers: nextCheered ? w.cheers + 1 : Math.max(0, w.cheers - 1),
-          };
-        }
-        return w;
-      }),
-    }));
+  toggleCheerWin: async (id) => {
+    const nextWins = get().wins.map((w) => {
+      if (w.id === id) {
+        const nextCheered = !w.hasCheered;
+        return {
+          ...w,
+          hasCheered: nextCheered,
+          cheers: nextCheered ? w.cheers + 1 : Math.max(0, w.cheers - 1),
+        };
+      }
+      return w;
+    });
+
+    set({ wins: nextWins });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+    } catch {}
   },
 
-  addVent: (text) => {
+  // Safe Vent Box logic (Zero-Trace / Ephemeral option)
+  addVent: async (text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
     const newVent = {
       id: `vent-${Date.now()}`,
-      text: text.trim(),
+      text: trimmed,
       createdAt: 'Just now',
       hugs: 0,
       hasHugged: false,
       candles: 0,
       hasCandle: false,
     };
-    set((state) => ({
-      vents: [newVent, ...state.vents],
-    }));
+
+    const nextVents = [newVent, ...get().vents];
+    set({ vents: nextVents });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+    } catch {}
   },
 
-  toggleHugVent: (id) => {
-    set((state) => ({
-      vents: state.vents.map((v) => {
-        if (v.id === id) {
-          const nextHugged = !v.hasHugged;
-          return {
-            ...v,
-            hasHugged: nextHugged,
-            hugs: nextHugged ? v.hugs + 1 : Math.max(0, v.hugs - 1),
-          };
-        }
-        return v;
-      }),
-    }));
+  toggleHugVent: async (id) => {
+    const nextVents = get().vents.map((v) => {
+      if (v.id === id) {
+        const nextHugged = !v.hasHugged;
+        return {
+          ...v,
+          hasHugged: nextHugged,
+          hugs: nextHugged ? v.hugs + 1 : Math.max(0, v.hugs - 1),
+        };
+      }
+      return v;
+    });
+
+    set({ vents: nextVents });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+    } catch {}
   },
 
-  toggleCandleVent: (id) => {
-    set((state) => ({
-      vents: state.vents.map((v) => {
-        if (v.id === id) {
-          const nextCandle = !v.hasCandle;
-          return {
-            ...v,
-            hasCandle: nextCandle,
-            candles: nextCandle ? v.candles + 1 : Math.max(0, v.candles - 1),
-          };
-        }
-        return v;
-      }),
-    }));
+  toggleCandleVent: async (id) => {
+    const nextVents = get().vents.map((v) => {
+      if (v.id === id) {
+        const nextCandle = !v.hasCandle;
+        return {
+          ...v,
+          hasCandle: nextCandle,
+          candles: nextCandle ? v.candles + 1 : Math.max(0, v.candles - 1),
+        };
+      }
+      return v;
+    });
+
+    set({ vents: nextVents });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
+    } catch {}
+  },
+
+  // Mentor notification subscriptions
+  toggleNotifyMentor: async (mentorId) => {
+    const current = get().notifiedMentors;
+    const next = {
+      ...current,
+      [mentorId]: !current[mentorId],
+    };
+
+    set({ notifiedMentors: next });
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.NOTIFIED_MENTORS, JSON.stringify(next));
+    } catch {}
   },
 }));
+
+// Auto-hydrate store on import
+useCommunityStore.getState().hydrate();

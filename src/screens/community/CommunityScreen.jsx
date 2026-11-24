@@ -1,6 +1,8 @@
 // src/screens/community/CommunityScreen.jsx
 // MindBloom Community Baraza Hub
-// Connects peer spaces, identity rooms, sharing circles, and daily encouragement.
+// Faithful implementation of react-frontend CommunityScreen with frontend theme tokens.
+// Safe, anonymous peer circles, matched older peer mentors, and dual action launchers.
+// (Memes and events belong strictly to Chill Space).
 
 import React, { useState } from 'react';
 import {
@@ -10,476 +12,49 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
-import { CommunitySpacesProvider, CommunitySpacesContext } from '../../features/community/context/CommunitySpacesContext';
-import { BarazaPresenceBar } from '../../features/community/baraza/BarazaPresenceBar';
-import { CommunityGreeting } from '../../features/community/baraza/CommunityGreeting';
-import { CommunitySpaceCard } from '../../features/community/baraza/CommunitySpaceCard';
 import { BackButton } from '../../features/community/baraza/BackButton';
-import { GroupSpaceView } from '../../features/community/groups/GroupSpaceView';
 import { SharingCircleView } from '../../features/community/circles/SharingCircleView';
+import { GroupSpaceView } from '../../features/community/groups/GroupSpaceView';
 import { IdentitySpaceView } from '../../features/community/identity/IdentitySpaceView';
-import { EncouragementPage } from '../../features/community/encouragement/EncouragementPage';
-import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSection';
-import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
-import { ChaiMemesSection } from '../../features/community/memes/ChaiMemesSection';
-import { peerMentors } from '../../features/community/data/communityData';
+import { useCommunityStore } from '../../features/community/store/communityStore';
+import { peerMentors, barazaCircles } from '../../features/community/data/communityData';
 
-const TABS = [
-  { id: 'spaces', label: 'All Spaces 🌿' },
-  { id: 'small_wins', label: 'Small Wins 🌟' },
-  { id: 'vent_box', label: 'Vent & Burn 🔥' },
-  { id: 'chai_memes', label: 'Chai & Memes ☕' },
-  { id: 'encouragement', label: 'Encouragement 🌸' },
-  { id: 'groups', label: 'Peer Pods 👥' },
-  { id: 'circles', label: 'Sharing Circles ⭕' },
-  { id: 'identity', label: 'Identity & Roots 🌍' },
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const CATEGORIES = [
+  'All Circles',
+  'Youth & Campus 🎓',
+  'Nairobi Hustle 💼',
+  'Healing & Tulia 🌿',
+  'Night Owls 🌙',
+  'Sisterhood 🌸',
+  "Men's Grounding 🦁",
 ];
-
-export const CommunityContent = ({
-  companionId = 'noodle',
-  onNavigateHome,
-  onNavigateSanctuary,
-  onNavigateJournal,
-  isWide = false,
-}) => {
-  const { theme } = useTheme();
-  const [activeSubTab, setActiveSubTab] = useState('spaces');
-  const [selectedSpace, setSelectedSpace] = useState(null);
-  const [notifiedMentors, setNotifiedMentors] = useState({});
-
-  const handleToggleNotify = (mentorId) => {
-    setNotifiedMentors((prev) => ({
-      ...prev,
-      [mentorId]: !prev[mentorId],
-    }));
-  };
-
-  // If viewing a detailed space
-  if (selectedSpace) {
-    return (
-      <View style={[styles.detailContainer, { backgroundColor: theme.bg }]}>
-        <View style={styles.detailHeader}>
-          <BackButton
-            label="‹ Back to Baraza"
-            onPress={() => setSelectedSpace(null)}
-          />
-        </View>
-        {selectedSpace.type === 'circle' ? (
-          <SharingCircleView circle={selectedSpace} onBack={() => setSelectedSpace(null)} />
-        ) : selectedSpace.type === 'identity' ? (
-          <IdentitySpaceView space={selectedSpace} onBack={() => setSelectedSpace(null)} />
-        ) : (
-          <GroupSpaceView group={selectedSpace} onBack={() => setSelectedSpace(null)} />
-        )}
-      </View>
-    );
-  }
-
-  return (
-    <CommunitySpacesContext.Consumer>
-      {(context) => {
-        const spaces = context?.spaces || [];
-        const joinSpace = context?.joinSpace;
-        const leaveSpace = context?.leaveSpace;
-
-        const filteredSpaces = spaces.filter((s) => {
-          if (activeSubTab === 'spaces') return true;
-          if (activeSubTab === 'groups') return s.type === 'group';
-          if (activeSubTab === 'circles') return s.type === 'circle';
-          if (activeSubTab === 'identity') return s.type === 'identity';
-          return true;
-        });
-
-        const primaryCircle =
-          spaces.find((s) => s.isPrimaryMatch) ||
-          spaces.find((s) => s.id === 'campus_grounding') ||
-          spaces[0];
-
-        return (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.scrollContainer,
-              isWide && styles.scrollContainerWide,
-              { backgroundColor: theme.bg },
-            ]}
-          >
-            <View style={[styles.maxWrapper, isWide && styles.maxWrapperWide]}>
-              {/* Top Greeting & Community Presence */}
-              <CommunityGreeting
-                companionId={companionId}
-                message="Karibu Baraza. You don't have to carry everything alone today."
-              />
-
-              <View style={styles.presenceWrap}>
-                <BarazaPresenceBar />
-              </View>
-
-              {/* Sub-tabs for Spaces */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tabScroll}
-              >
-                {TABS.map((tab) => {
-                  const isActive = activeSubTab === tab.id;
-                  return (
-                    <TouchableOpacity
-                      key={tab.id}
-                      style={[
-                        styles.subTabPill,
-                        { backgroundColor: theme.cardBg, borderColor: theme.divider },
-                        isActive && [
-                          styles.subTabPillActive,
-                          { backgroundColor: theme.accent, borderColor: theme.accent },
-                        ],
-                      ]}
-                      onPress={() => setActiveSubTab(tab.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.subTabText,
-                          { color: theme.textSecondary },
-                          isActive && [styles.subTabTextActive, { color: '#FFFFFF' }],
-                        ]}
-                      >
-                        {tab.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {/* View Content */}
-              {activeSubTab === 'small_wins' ? (
-                <SmallWinsSection companionId={companionId} />
-              ) : activeSubTab === 'vent_box' ? (
-                <VentBoxSection />
-              ) : activeSubTab === 'chai_memes' ? (
-                <ChaiMemesSection />
-              ) : activeSubTab === 'encouragement' ? (
-                <EncouragementPage companionId={companionId} />
-              ) : (
-                <View style={styles.mainFeedStack}>
-                  {/* 1. DUAL ACTION LAUNCHERS (Small Wins Wall & Safe Vent Box) */}
-                  {activeSubTab === 'spaces' && (
-                    <View style={styles.launcherDeck}>
-                      <TouchableOpacity
-                        style={[
-                          styles.launcherCard,
-                          {
-                            backgroundColor: theme.cardBg,
-                            borderColor: theme.divider,
-                            borderLeftColor: '#F59E0B',
-                            borderLeftWidth: 4,
-                          },
-                        ]}
-                        activeOpacity={0.85}
-                        onPress={() => setActiveSubTab('small_wins')}
-                      >
-                        <View style={styles.launcherTop}>
-                          <View style={[styles.launcherIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                            <Text style={styles.launcherEmoji}>🌟</Text>
-                          </View>
-                          <Text style={[styles.launcherArrow, { color: theme.textMuted }]}>➔</Text>
-                        </View>
-                        <Text style={[styles.launcherTitle, { color: theme.textPrimary }]}>
-                          Small Wins Wall 🏆
-                        </Text>
-                        <Text style={[styles.launcherSub, { color: theme.textSecondary }]}>
-                          Celebrate tiny acts of daily courage with the Baraza
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.launcherCard,
-                          {
-                            backgroundColor: theme.cardBg,
-                            borderColor: theme.divider,
-                            borderLeftColor: '#EF4444',
-                            borderLeftWidth: 4,
-                          },
-                        ]}
-                        activeOpacity={0.85}
-                        onPress={() => setActiveSubTab('vent_box')}
-                      >
-                        <View style={styles.launcherTop}>
-                          <View style={[styles.launcherIconCircle, { backgroundColor: '#FEE2E2' }]}>
-                            <Text style={styles.launcherEmoji}>🔥</Text>
-                          </View>
-                          <Text style={[styles.launcherArrow, { color: theme.textMuted }]}>➔</Text>
-                        </View>
-                        <Text style={[styles.launcherTitle, { color: theme.textPrimary }]}>
-                          Safe Vent Box 💨
-                        </Text>
-                        <Text style={[styles.launcherSub, { color: theme.textSecondary }]}>
-                          Release heavy thoughts & watch them burn to ashes
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {/* 2. MATCHED PEER MENTORS CAROUSEL */}
-                  {activeSubTab === 'spaces' && (
-                    <View style={styles.sectionBlock}>
-                      <View style={styles.sectionTitleRow}>
-                        <View style={styles.sectionHeaderLeft}>
-                          <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-                            🌟 Matched Peer Mentors
-                          </Text>
-                          <View style={[styles.badgePill, { backgroundColor: '#FEF3C7' }]}>
-                            <Text style={styles.badgePillText}>COMING SOON</Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.sectionSubText, { color: theme.textMuted }]}>
-                          Trained older guides (25–34) who walked this road
-                        </Text>
-                      </View>
-
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.mentorsScroll}
-                      >
-                        {peerMentors.map((mentor) => {
-                          const isNotified = notifiedMentors[mentor.id];
-                          return (
-                            <View
-                              key={mentor.id}
-                              style={[
-                                styles.mentorCard,
-                                {
-                                  backgroundColor: theme.cardBg,
-                                  borderColor: theme.divider,
-                                },
-                              ]}
-                            >
-                              <View style={styles.mentorTopRow}>
-                                <View style={styles.mentorAvatarCircle}>
-                                  <Text style={styles.mentorEmoji}>{mentor.emoji}</Text>
-                                  {mentor.status === 'online' && (
-                                    <View style={styles.mentorOnlineDot} />
-                                  )}
-                                </View>
-                                <View
-                                  style={[
-                                    styles.mentorScorePill,
-                                    { backgroundColor: '#DCFCE7' },
-                                  ]}
-                                >
-                                  <Text style={styles.mentorScoreText}>
-                                    {mentor.matchScore}% Match
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <View style={styles.mentorInfoCol}>
-                                <Text style={[styles.mentorName, { color: theme.textPrimary }]}>
-                                  {mentor.name}, {mentor.age}
-                                </Text>
-                                <Text style={[styles.mentorBadge, { color: theme.accent }]}>
-                                  {mentor.badge}
-                                </Text>
-                                <Text
-                                  style={[styles.mentorSpecialty, { color: theme.textSecondary }]}
-                                  numberOfLines={2}
-                                >
-                                  {mentor.specialty}
-                                </Text>
-                              </View>
-
-                              <View style={styles.mentorTagsRow}>
-                                {mentor.sharedInterests.map((interest, idx) => (
-                                  <View
-                                    key={idx}
-                                    style={[
-                                      styles.mentorTagPill,
-                                      { backgroundColor: theme.bg, borderColor: theme.divider },
-                                    ]}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.mentorTagText,
-                                        { color: theme.textSecondary },
-                                      ]}
-                                    >
-                                      {interest}
-                                    </Text>
-                                  </View>
-                                ))}
-                              </View>
-
-                              <TouchableOpacity
-                                style={[
-                                  styles.mentorNotifyBtn,
-                                  {
-                                    backgroundColor: isNotified
-                                      ? '#16A34A'
-                                      : 'transparent',
-                                    borderColor: isNotified ? '#16A34A' : theme.accent,
-                                  },
-                                ]}
-                                activeOpacity={0.85}
-                                onPress={() => handleToggleNotify(mentor.id)}
-                              >
-                                <Text
-                                  style={[
-                                    styles.mentorNotifyBtnText,
-                                    { color: isNotified ? '#FFFFFF' : theme.accent },
-                                  ]}
-                                >
-                                  {isNotified ? 'Subscribed ✓' : 'Notify When Live 🔔'}
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        })}
-                      </ScrollView>
-                    </View>
-                  )}
-
-                  {/* 3. PRIMARY MATCHED SANCTUARY CIRCLE HERO */}
-                  {activeSubTab === 'spaces' && primaryCircle && (
-                    <View style={styles.sectionBlock}>
-                      <View style={styles.sectionTitleRow}>
-                        <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-                          💬 Your Matched Sanctuary Circle
-                        </Text>
-                        <Text style={[styles.sectionSubText, { color: theme.textMuted }]}>
-                          Locked to Age 18–24 • Shared Struggles • Max 12 Peers
-                        </Text>
-                      </View>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.heroCircleCard,
-                          {
-                            backgroundColor: theme.cardBg,
-                            borderColor: theme.accent,
-                          },
-                        ]}
-                        activeOpacity={0.9}
-                        onPress={() => setSelectedSpace(primaryCircle)}
-                      >
-                        <View style={[styles.heroBanner, { backgroundColor: '#FFF7ED' }]}>
-                          <Text style={styles.heroBannerText}>
-                            🎯 98% Resonance Match • Shared Anxiety & Body Peace • 2 Passions
-                          </Text>
-                        </View>
-
-                        <View style={styles.heroCircleBody}>
-                          <View style={styles.heroCircleTop}>
-                            <View style={styles.heroCircleTitleRow}>
-                              <Text style={styles.heroCircleIcon}>
-                                {primaryCircle.icon || '🎓'}
-                              </Text>
-                              <View style={styles.heroCircleTextCol}>
-                                <Text
-                                  style={[styles.heroCircleTitle, { color: theme.textPrimary }]}
-                                >
-                                  {primaryCircle.title}
-                                </Text>
-                                <Text
-                                  style={[styles.heroCircleMeta, { color: theme.textSecondary }]}
-                                >
-                                  {primaryCircle.memberCount || 10}/12 members · 7 active now
-                                </Text>
-                              </View>
-                            </View>
-
-                            <TouchableOpacity
-                              style={[
-                                styles.enterCircleBtn,
-                                { backgroundColor: theme.accent },
-                              ]}
-                              onPress={() => setSelectedSpace(primaryCircle)}
-                            >
-                              <Text style={styles.enterCircleBtnText}>Enter Circle 🚪</Text>
-                            </TouchableOpacity>
-                          </View>
-
-                          {primaryCircle.lastMessage && (
-                            <View
-                              style={[
-                                styles.heroSnippetBox,
-                                { backgroundColor: theme.bg, borderColor: theme.divider },
-                              ]}
-                            >
-                              <Text style={styles.heroSnippetSender}>
-                                {primaryCircle.lastMessage.emoji} {primaryCircle.lastMessage.sender}:
-                              </Text>
-                              <Text
-                                style={[styles.heroSnippetText, { color: theme.textSecondary }]}
-                                numberOfLines={2}
-                              >
-                                "{primaryCircle.lastMessage.text}"
-                              </Text>
-                              <Text style={[styles.heroSnippetTime, { color: theme.textMuted }]}>
-                                {primaryCircle.lastMessage.time}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {/* 4. ALL SPACES CARDS GRID */}
-                  <View style={styles.sectionBlock}>
-                    <View style={styles.sectionTitleRow}>
-                      <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-                        🌿 Explore All Baraza Spaces
-                      </Text>
-                      <Text style={[styles.sectionSubText, { color: theme.textMuted }]}>
-                        {filteredSpaces.length} warm, moderated peer environments
-                      </Text>
-                    </View>
-
-                    <View style={styles.cardsGrid}>
-                      {filteredSpaces.map((space) => (
-                        <CommunitySpaceCard
-                          key={space.id}
-                          type={space.type}
-                          title={space.title}
-                          description={space.description}
-                          meta={`${space.memberCount || 12} members · ${space.category || 'Peer Space'}`}
-                          preview={space.preview}
-                          joined={space.joined}
-                          onPress={() => setSelectedSpace(space)}
-                          quickLabel={space.joined ? 'Leave' : 'Join'}
-                          onQuick={() => {
-                            if (space.joined) {
-                              leaveSpace?.(space.id);
-                            } else {
-                              joinSpace?.(space.id);
-                            }
-                          }}
-                        />
-                      ))}
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
-          </ScrollView>
-        );
-      }}
-    </CommunitySpacesContext.Consumer>
-  );
-};
 
 export const CommunityScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
   const companionId = route?.params?.companion || 'noodle';
+
+  const { notifiedMentors, toggleNotifyMentor } = useCommunityStore();
+  const [selectedCategory, setSelectedCategory] = useState('All Circles');
+  const [selectedMentorId, setSelectedMentorId] = useState('mentor_amani');
+  const [selectedCircle, setSelectedCircle] = useState(null);
+
+  const filteredCircles =
+    selectedCategory === 'All Circles'
+      ? barazaCircles
+      : barazaCircles.filter((c) => c.category === selectedCategory);
+
+  const primaryMatch =
+    barazaCircles.find((c) => c.isPrimaryMatch) || barazaCircles[0];
 
   const handleNavigate = (routeId) => {
     if (routeId === 'home') {
@@ -490,43 +65,515 @@ export const CommunityScreen = ({ navigation, route }) => {
       navigation.navigate('Arcade');
     } else if (routeId === 'sanctuary') {
       navigation.navigate('Profile');
-    } else if (routeId === 'baraza' || routeId === 'community') {
-      // already on community screen
     }
   };
 
-  return (
-    <CommunitySpacesProvider>
+  // If viewing a detailed circle space
+  if (selectedCircle) {
+    return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
-        <View style={[styles.rootContainer, { backgroundColor: theme.bg }]}>
-          {isWide && (
-            <SidebarNav
-              activeRoute="baraza"
+        <View style={[styles.detailContainer, { backgroundColor: theme.bg }]}>
+          <View style={styles.detailHeader}>
+            <BackButton
+              label="‹ Back to Baraza"
+              onPress={() => setSelectedCircle(null)}
+            />
+          </View>
+          {selectedCircle.type === 'circle' ? (
+            <SharingCircleView
+              circle={selectedCircle}
+              onBack={() => setSelectedCircle(null)}
+            />
+          ) : selectedCircle.type === 'identity' ? (
+            <IdentitySpaceView
+              space={selectedCircle}
+              onBack={() => setSelectedCircle(null)}
+            />
+          ) : (
+            <GroupSpaceView
+              group={selectedCircle}
+              onBack={() => setSelectedCircle(null)}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
+      <View style={[styles.rootContainer, { backgroundColor: theme.bg }]}>
+        {isWide && (
+          <SidebarNav
+            activeRoute="baraza"
+            onNavigate={handleNavigate}
+            companionId={companionId}
+          />
+        )}
+
+        <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContainer,
+              isWide && styles.scrollContainerWide,
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.maxWrapper, isWide && styles.maxWrapperWide]}>
+              {/* ── 1. HEADER ────────────────────────────────────────── */}
+              <View style={styles.header}>
+                <View>
+                  <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+                    Baraza Community 👥
+                  </Text>
+                  <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                    Safe, Anonymous & Live • East Africa
+                  </Text>
+                </View>
+                <View style={[styles.privacyBadge, { backgroundColor: 'rgba(138, 154, 134, 0.15)' }]}>
+                  <Text style={styles.privacyLockEmoji}>🔒</Text>
+                  <Text style={[styles.privacyBadgeText, { color: '#5B7057' }]}>
+                    Encrypted
+                  </Text>
+                </View>
+              </View>
+
+              {/* ── 2. DUAL ACTION LAUNCHER BUTTONS ──────────────────── */}
+              <View style={styles.actionLauncherDeck}>
+                {/* Small Wins Wall Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.actionButtonCard,
+                    {
+                      backgroundColor: theme.cardBg,
+                      borderColor: 'rgba(234, 160, 35, 0.35)',
+                    },
+                  ]}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('SmallWins')}
+                >
+                  <View style={styles.actionButtonTop}>
+                    <View style={[styles.actionIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={styles.actionIconEmoji}>✨</Text>
+                    </View>
+                    <View style={[styles.arrowMiniCircle, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={[styles.arrowMiniText, { color: '#D97706' }]}>➔</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.actionButtonTitle, { color: theme.textPrimary }]}>
+                    Small Wins Wall 🏆
+                  </Text>
+                  <Text style={[styles.actionButtonSub, { color: theme.textSecondary }]}>
+                    Celebrate tiny acts of daily courage
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Safe Vent Box Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.actionButtonCard,
+                    {
+                      backgroundColor: theme.cardBg,
+                      borderColor: 'rgba(217, 107, 67, 0.3)',
+                    },
+                  ]}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('Vent')}
+                >
+                  <View style={styles.actionButtonTop}>
+                    <View style={[styles.actionIconCircle, { backgroundColor: '#FFEDE6' }]}>
+                      <Text style={styles.actionIconEmoji}>💨</Text>
+                    </View>
+                    <View style={[styles.arrowMiniCircle, { backgroundColor: '#FFEDE6' }]}>
+                      <Text style={[styles.arrowMiniText, { color: '#D96B43' }]}>➔</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.actionButtonTitle, { color: theme.textPrimary }]}>
+                    Safe Vent Box 💨
+                  </Text>
+                  <Text style={[styles.actionButtonSub, { color: theme.textSecondary }]}>
+                    Release emotional weight anonymously
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* ── 3. VERIFIED OLDER PEER SUPPORT MENTORS ───────────── */}
+              <View style={styles.sectionHeaderRow}>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.sectionTitleWithBadge}>
+                    <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+                      🌟 Matched Peer Mentors
+                    </Text>
+                    <View style={[styles.badgePill, { backgroundColor: 'rgba(217, 107, 67, 0.12)', borderColor: 'rgba(217, 107, 67, 0.3)' }]}>
+                      <Text style={[styles.badgePillText, { color: '#D96B43' }]}>
+                        COMING SOON
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.sectionSub, { color: theme.textMuted }]}>
+                    Trained guides (25–34) who walked this road · Launching Q1 2025
+                  </Text>
+                </View>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.mentorsScroll}
+              >
+                {peerMentors.map((m) => {
+                  const isSelected = selectedMentorId === m.id;
+                  const isNotified = Boolean(notifiedMentors[m.id]);
+
+                  return (
+                    <View
+                      key={m.id}
+                      style={[
+                        styles.mentorCard,
+                        {
+                          backgroundColor: theme.cardBg,
+                          borderColor: isSelected ? theme.accent : theme.divider,
+                        },
+                      ]}
+                    >
+                      <View style={styles.mentorTopRow}>
+                        <View style={styles.mentorAvatarCircle}>
+                          <Text style={styles.mentorEmoji}>{m.emoji}</Text>
+                          {m.status === 'online' && <View style={styles.onlineDot} />}
+                        </View>
+                        <View style={[styles.matchScorePill, { backgroundColor: 'rgba(22, 163, 74, 0.12)' }]}>
+                          <Text style={[styles.matchScoreText, { color: '#16A34A' }]}>
+                            {m.matchScore}% Match
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.mentorInfoCol}>
+                        <View style={styles.mentorNameRow}>
+                          <Text style={[styles.mentorName, { color: theme.textPrimary }]}>
+                            {m.name}, {m.age}
+                          </Text>
+                          <Text style={{ fontSize: 13, color: '#D96B43' }}>🛡️</Text>
+                        </View>
+                        <Text style={[styles.mentorBadge, { color: theme.accent }]}>
+                          {m.badge}
+                        </Text>
+                        <Text
+                          style={[styles.mentorSpecialty, { color: theme.textSecondary }]}
+                          numberOfLines={2}
+                        >
+                          {m.specialty}
+                        </Text>
+                      </View>
+
+                      <View style={styles.mentorTagsRow}>
+                        {m.sharedInterests.map((t, idx) => (
+                          <View
+                            key={idx}
+                            style={[
+                              styles.mentorTagPill,
+                              { backgroundColor: theme.bg, borderColor: theme.divider },
+                            ]}
+                          >
+                            <Text style={[styles.mentorTagText, { color: theme.textSecondary }]}>
+                              {t}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.connectMentorBtn,
+                          {
+                            backgroundColor: isNotified
+                              ? '#16A34A'
+                              : 'rgba(217, 107, 67, 0.1)',
+                            borderColor: isNotified ? '#16A34A' : '#D96B43',
+                          },
+                        ]}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          setSelectedMentorId(m.id);
+                          toggleNotifyMentor(m.id);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.connectMentorBtnText,
+                            { color: isNotified ? '#FFFFFF' : '#D96B43' },
+                          ]}
+                        >
+                          {isNotified ? 'Subscribed ✓' : 'Coming Soon · Notify Me 🔔'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* ── 4. PRIMARY MATCHED SANCTUARY CIRCLE ─────────────── */}
+              <View style={styles.sectionHeaderRow}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+                    💬 Your Matched Sanctuary Circle
+                  </Text>
+                  <Text style={[styles.sectionSub, { color: theme.textMuted }]}>
+                    Locked to Age 18–24 • Shared Issues • 2 Shared Interests • Max 12
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryCircleCard,
+                  {
+                    backgroundColor: theme.cardBg,
+                    borderColor: 'rgba(217, 107, 67, 0.35)',
+                  },
+                ]}
+                activeOpacity={0.9}
+                onPress={() => setSelectedCircle(primaryMatch)}
+              >
+                {/* Match Banner */}
+                <View style={[styles.primaryMatchBanner, { backgroundColor: '#FFF0E8' }]}>
+                  <Text style={[styles.primaryMatchBannerText, { color: '#B8532D' }]}>
+                    🎯 {primaryMatch.matchResonance || 98}% Resonance Match • Shared Anxiety & Body Peace • 2 Interests
+                  </Text>
+                </View>
+
+                <View style={styles.primaryCircleBody}>
+                  <View style={styles.circleHeaderRow}>
+                    <View
+                      style={[
+                        styles.circleIconBox,
+                        { backgroundColor: primaryMatch.iconBg || '#E8F0FF' },
+                      ]}
+                    >
+                      <Text style={styles.circleIcon}>{primaryMatch.icon || '🌀'}</Text>
+                    </View>
+                    <View style={styles.circleTitleCol}>
+                      <Text style={[styles.circleTitle, { color: theme.textPrimary }]}>
+                        {primaryMatch.title}
+                      </Text>
+                      <View style={styles.circleMetaRow}>
+                        <View style={[styles.capacityBadge, { backgroundColor: 'rgba(217, 107, 67, 0.1)' }]}>
+                          <Text style={[styles.capacityText, { color: '#D96B43' }]}>
+                            {primaryMatch.memberCount || 10}/{primaryMatch.maxMembers || 12} members (2 spots left)
+                          </Text>
+                        </View>
+                        <View style={styles.onlineBadge}>
+                          <View style={styles.liveGreenDot} />
+                          <Text style={[styles.onlineText, { color: '#16A34A' }]}>
+                            {primaryMatch.activeNow || 7} in discussion
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Live Message Snippet */}
+                  {primaryMatch.lastMessage && (
+                    <View
+                      style={[
+                        styles.lastMessagePreview,
+                        { backgroundColor: theme.bg, borderColor: theme.divider },
+                      ]}
+                    >
+                      <Text style={styles.lastMessageEmoji}>
+                        {primaryMatch.lastMessage.emoji}
+                      </Text>
+                      <View style={styles.lastMessageCol}>
+                        <View style={styles.lastMessageTopRow}>
+                          <Text style={[styles.lastMessageSender, { color: theme.textPrimary }]}>
+                            {primaryMatch.lastMessage.sender}
+                          </Text>
+                          <Text style={[styles.lastMessageTime, { color: theme.textMuted }]}>
+                            {primaryMatch.lastMessage.time}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[styles.lastMessageText, { color: theme.textSecondary }]}
+                          numberOfLines={2}
+                        >
+                          "{primaryMatch.lastMessage.text}"
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Enter Button */}
+                  <View style={[styles.enterCircleBtn, { backgroundColor: theme.accent }]}>
+                    <Text style={styles.enterCircleBtnText}>Enter Circle Chat</Text>
+                    <Text style={styles.enterCircleArrow}>➔</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {/* ── 5. OTHER CIRCLES IN YOUR AGE GROUP ──────────────── */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+                  Other Circles in Your Age Group (18–24)
+                </Text>
+              </View>
+
+              {/* Filter Pills */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesScroll}
+              >
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat;
+                  return (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[
+                        styles.categoryPill,
+                        { backgroundColor: theme.cardBg, borderColor: theme.divider },
+                        isSelected && [
+                          styles.categoryPillActive,
+                          { backgroundColor: theme.accent, borderColor: theme.accent },
+                        ],
+                      ]}
+                      onPress={() => setSelectedCategory(cat)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryPillText,
+                          { color: theme.textSecondary },
+                          isSelected && [styles.categoryPillTextActive, { color: '#FFFFFF' }],
+                        ]}
+                      >
+                        {cat}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Circles Feed */}
+              <View style={styles.circlesFeed}>
+                {filteredCircles.map((circle) => {
+                  const isFull =
+                    (circle.memberCount || 10) >= (circle.maxMembers || 12);
+
+                  return (
+                    <TouchableOpacity
+                      key={circle.id}
+                      style={[
+                        styles.circleItemCard,
+                        {
+                          backgroundColor: theme.cardBg,
+                          borderColor: theme.divider,
+                        },
+                      ]}
+                      activeOpacity={0.85}
+                      onPress={() => setSelectedCircle(circle)}
+                    >
+                      <View
+                        style={[
+                          styles.circleItemIcon,
+                          { backgroundColor: circle.iconBg || '#E8F0FF' },
+                        ]}
+                      >
+                        <Text style={styles.circleItemIconText}>
+                          {circle.icon || '🌿'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.circleItemContent}>
+                        <View style={styles.circleItemTitleRow}>
+                          <Text
+                            style={[
+                              styles.circleItemTitle,
+                              { color: theme.textPrimary },
+                            ]}
+                          >
+                            {circle.title}
+                          </Text>
+                          <View
+                            style={[
+                              styles.memberCapBadge,
+                              isFull
+                                ? styles.memberCapBadgeFull
+                                : { backgroundColor: 'rgba(217, 107, 67, 0.1)' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.memberCapText,
+                                isFull
+                                  ? styles.memberCapTextFull
+                                  : { color: '#D96B43' },
+                              ]}
+                            >
+                              {isFull
+                                ? 'FULL 12/12'
+                                : `${circle.memberCount || 10}/${circle.maxMembers || 12}`}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {circle.lastMessage && (
+                          <Text
+                            style={[
+                              styles.circleItemSnippet,
+                              { color: theme.textSecondary },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {circle.lastMessage.emoji} {circle.lastMessage.sender}: "{circle.lastMessage.text}"
+                          </Text>
+                        )}
+
+                        <View style={styles.circleItemBottomRow}>
+                          <View style={styles.circleActiveNowBadge}>
+                            <View style={styles.liveGreenDotSmall} />
+                            <Text
+                              style={[
+                                styles.circleActiveNowText,
+                                { color: '#16A34A' },
+                              ]}
+                            >
+                              {circle.activeNow || 5} online
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.circleTimeText,
+                              { color: theme.textMuted },
+                            ]}
+                          >
+                            {circle.lastMessage?.time || 'Live'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {circle.unreadCount && (
+                        <View style={styles.unreadBadgePill}>
+                          <Text style={styles.unreadBadgeText}>
+                            {circle.unreadCount}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </ScrollView>
+
+          {!isWide && (
+            <BottomNavBar
+              activeRoute="community"
               onNavigate={handleNavigate}
               companionId={companionId}
             />
           )}
-
-          <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
-            <CommunityContent
-              companionId={companionId}
-              onNavigateHome={() => navigation.navigate('Home')}
-              onNavigateSanctuary={() => navigation.navigate('Profile')}
-              onNavigateJournal={() => navigation.navigate('Journal')}
-              isWide={isWide}
-            />
-
-            {!isWide && (
-              <BottomNavBar
-                activeRoute="community"
-                onNavigate={handleNavigate}
-                companionId={companionId}
-              />
-            )}
-          </View>
         </View>
-      </SafeAreaView>
-    </CommunitySpacesProvider>
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -560,137 +607,137 @@ const styles = StyleSheet.create({
   maxWrapperWide: {
     gap: 20,
   },
-  presenceWrap: {
-    marginVertical: 4,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  tabScroll: {
-    gap: 8,
-    paddingVertical: 8,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
-  subTabPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  subTabPillActive: {
-    borderWidth: 1,
-  },
-  subTabText: {
+  headerSubtitle: {
     fontSize: 13,
-    fontWeight: '600',
+    marginTop: 2,
   },
-  subTabTextActive: {
+  privacyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  privacyLockEmoji: {
+    fontSize: 12,
+  },
+  privacyBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
   },
-  cardsGrid: {
-    gap: 12,
-    marginTop: 8,
-  },
-  detailContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  detailHeader: {
-    marginBottom: 12,
-  },
-  mainFeedStack: {
-    gap: 20,
-  },
-  launcherDeck: {
+  actionLauncherDeck: {
     flexDirection: 'row',
     gap: 12,
   },
-  launcherCard: {
+  actionButtonCard: {
     flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1.2,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 6,
   },
-  launcherTop: {
+  actionButtonTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  launcherIconCircle: {
+  actionIconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  launcherEmoji: {
+  actionIconEmoji: {
     fontSize: 18,
   },
-  launcherArrow: {
+  arrowMiniCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowMiniText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  actionButtonTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    marginBottom: 3,
   },
-  launcherTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
+  actionButtonSub: {
+    fontSize: 11,
+    lineHeight: 15,
   },
-  launcherSub: {
-    fontSize: 11.5,
-    lineHeight: 16,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
   },
-  sectionBlock: {
-    gap: 10,
-  },
-  sectionTitleRow: {
-    marginBottom: 2,
-  },
-  sectionHeaderLeft: {
+  sectionTitleWithBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  sectionHeading: {
+  sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontWeight: '800',
+  },
+  sectionSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   badgePill: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   badgePillText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#D97706',
-  },
-  sectionSubText: {
-    fontSize: 12,
-    marginTop: 2,
+    letterSpacing: 0.5,
   },
   mentorsScroll: {
     gap: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   mentorCard: {
-    width: 250,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    width: SCREEN_WIDTH * 0.72 > 290 ? 290 : SCREEN_WIDTH * 0.72,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.2,
     gap: 10,
-    elevation: 1,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
   },
   mentorTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   mentorAvatarCircle: {
     width: 44,
@@ -704,7 +751,7 @@ const styles = StyleSheet.create({
   mentorEmoji: {
     fontSize: 22,
   },
-  mentorOnlineDot: {
+  onlineDot: {
     position: 'absolute',
     bottom: 0,
     right: 0,
@@ -715,26 +762,30 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  mentorScorePill: {
+  matchScorePill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
   },
-  mentorScoreText: {
+  matchScoreText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#16A34A',
   },
   mentorInfoCol: {
     gap: 2,
   },
+  mentorNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   mentorName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   mentorBadge: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   mentorSpecialty: {
     fontSize: 11.5,
@@ -747,102 +798,271 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   mentorTagPill: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
   },
   mentorTagText: {
     fontSize: 10.5,
   },
-  mentorNotifyBtn: {
-    paddingVertical: 7,
-    borderRadius: 8,
+  connectMentorBtn: {
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
-  mentorNotifyBtnText: {
+  connectMentorBtnText: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  heroCircleCard: {
-    borderRadius: 14,
+  primaryCircleCard: {
+    borderRadius: 22,
     borderWidth: 1.5,
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
-  heroBanner: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  primaryMatchBanner: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  heroBannerText: {
+  primaryMatchBannerText: {
     fontSize: 11.5,
-    fontWeight: '700',
-    color: '#C2410C',
+    fontWeight: '800',
   },
-  heroCircleBody: {
-    padding: 14,
+  primaryCircleBody: {
+    padding: 16,
     gap: 12,
   },
-  heroCircleTop: {
+  circleHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  circleIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleIcon: {
+    fontSize: 22,
+  },
+  circleTitleCol: {
+    flex: 1,
+    gap: 3,
+  },
+  circleTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  circleMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  capacityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  capacityText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  onlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  liveGreenDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#16A34A',
+  },
+  onlineText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  lastMessagePreview: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  lastMessageEmoji: {
+    fontSize: 18,
+    marginTop: 2,
+  },
+  lastMessageCol: {
+    flex: 1,
+    gap: 2,
+  },
+  lastMessageTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  heroCircleTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  heroCircleIcon: {
-    fontSize: 28,
-  },
-  heroCircleTextCol: {
-    flex: 1,
-  },
-  heroCircleTitle: {
-    fontSize: 15,
+  lastMessageSender: {
+    fontSize: 11.5,
     fontWeight: '700',
   },
-  heroCircleMeta: {
+  lastMessageTime: {
+    fontSize: 10,
+  },
+  lastMessageText: {
     fontSize: 12,
-    marginTop: 2,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   enterCircleBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   enterCircleBtnText: {
     color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  enterCircleArrow: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  categoriesScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  categoryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  categoryPillActive: {
+    borderWidth: 1,
+  },
+  categoryPillText: {
     fontSize: 12,
     fontWeight: '700',
   },
-  heroSnippetBox: {
-    padding: 10,
-    borderRadius: 8,
+  categoryPillTextActive: {
+    fontWeight: '800',
+  },
+  circlesFeed: {
+    gap: 10,
+    marginTop: 6,
+  },
+  circleItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 18,
     borderWidth: 1,
+    gap: 12,
+  },
+  circleItemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleItemIconText: {
+    fontSize: 20,
+  },
+  circleItemContent: {
+    flex: 1,
     gap: 3,
   },
-  heroSnippetSender: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#D97706',
+  circleItemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  heroSnippetText: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    lineHeight: 16,
+  circleItemTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    flex: 1,
   },
-  heroSnippetTime: {
+  memberCapBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  memberCapBadgeFull: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  memberCapText: {
     fontSize: 10,
-    textAlign: 'right',
+    fontWeight: '800',
+  },
+  memberCapTextFull: {
+    color: '#EF4444',
+  },
+  circleItemSnippet: {
+    fontSize: 11.5,
+    fontStyle: 'italic',
+  },
+  circleItemBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  circleActiveNowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveGreenDotSmall: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16A34A',
+  },
+  circleActiveNowText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  circleTimeText: {
+    fontSize: 10,
+  },
+  unreadBadgePill: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#D96B43',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  detailContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  detailHeader: {
+    marginBottom: 12,
   },
 });

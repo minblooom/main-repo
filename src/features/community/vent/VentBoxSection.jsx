@@ -150,7 +150,7 @@ export const VentBoxSection = () => {
           >
             <View style={styles.cardHeader}>
               <Text style={[styles.anonTag, { color: theme.textMuted }]}>
-                🕊️ Anonymous Sanctuary Voice · {v.time}
+                🕊️ Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
               </Text>
             </View>
 
