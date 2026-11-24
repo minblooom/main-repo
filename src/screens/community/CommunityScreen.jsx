@@ -1,8 +1,8 @@
 // src/screens/community/CommunityScreen.jsx
 // MindBloom Community Baraza Hub
-// Features WhatsApp-style persistent navbar across all circle chats & views,
-// sleek slide-up modal popups for Small Wins & Safe Vent Box,
-// and clean focus on matched sanctuary circles without unlaunched mentor clutter.
+// Floating dialog popup modals (matching Notification preferences screenshot),
+// real live interactive chat groups for all circles with persistent bottom navbar,
+// and real-time somatic emotion-matching release box.
 
 import React, { useState } from 'react';
 import {
@@ -21,10 +21,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
-import { BackButton } from '../../features/community/baraza/BackButton';
-import { SharingCircleView } from '../../features/community/circles/SharingCircleView';
-import { GroupSpaceView } from '../../features/community/groups/GroupSpaceView';
-import { IdentitySpaceView } from '../../features/community/identity/IdentitySpaceView';
+import { BarazaGroupChatView } from '../../features/community/circles/BarazaGroupChatView';
 import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSection';
 import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
 import { barazaCircles } from '../../features/community/data/communityData';
@@ -85,34 +82,12 @@ export const CommunityScreen = ({ navigation, route }) => {
         )}
 
         <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
-          {/* If viewing a detailed circle chat, keep BottomNavBar visible (WhatsApp style) */}
+          {/* Real Live Group Chat (keeps BottomNavBar visible WhatsApp-style) */}
           {selectedCircle ? (
-            <View style={[styles.detailContainer, { backgroundColor: theme.bg }]}>
-              <View style={styles.detailHeader}>
-                <BackButton
-                  label="‹ Back to Baraza"
-                  onPress={() => setSelectedCircle(null)}
-                />
-              </View>
-              <View style={styles.detailInnerView}>
-                {selectedCircle.type === 'circle' ? (
-                  <SharingCircleView
-                    circle={selectedCircle}
-                    onBack={() => setSelectedCircle(null)}
-                  />
-                ) : selectedCircle.type === 'identity' ? (
-                  <IdentitySpaceView
-                    space={selectedCircle}
-                    onBack={() => setSelectedCircle(null)}
-                  />
-                ) : (
-                  <GroupSpaceView
-                    group={selectedCircle}
-                    onBack={() => setSelectedCircle(null)}
-                  />
-                )}
-              </View>
-            </View>
+            <BarazaGroupChatView
+              circle={selectedCircle}
+              onBack={() => setSelectedCircle(null)}
+            />
           ) : (
             <ScrollView
               contentContainerStyle={[
@@ -468,10 +443,10 @@ export const CommunityScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* ── 5. SLIDE-UP MODAL POPUP: SMALL WINS WALL ───────────── */}
+      {/* ── 5. EXACT NOTIFICATION-STYLE CENTERED DIALOG MODAL: SMALL WINS WALL ── */}
       <Modal
         visible={activeModal === 'small_wins'}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setActiveModal(null)}
       >
@@ -483,31 +458,44 @@ export const CommunityScreen = ({ navigation, route }) => {
             <View style={styles.modalBackdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={[styles.bottomSheetCard, { backgroundColor: theme.bg, borderColor: theme.divider }]}>
-            {/* Sheet Drag Handle & Close */}
-            <View style={styles.sheetTopBar}>
-              <View style={[styles.sheetHandle, { backgroundColor: theme.divider }]} />
+          <View style={[styles.floatingModalCard, { backgroundColor: theme.cardBg }, isWide && styles.floatingModalCardWide]}>
+            {/* Modal Top Header (matching screenshot) */}
+            <View style={styles.modalTopHeader}>
               <TouchableOpacity
-                style={[styles.closeIconBtn, { backgroundColor: theme.cardBg }]}
                 onPress={() => setActiveModal(null)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.modalBackBtn}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.closeIconText, { color: theme.textPrimary }]}>✕</Text>
+                <Text style={[styles.modalBackBtnText, { color: theme.textMuted }]}>
+                  ‹ Back to Baraza
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseCircle}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCloseCircleText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalHeaderTitleBlock}>
-              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-                Small Wins Wall 🏆
+            {/* Modal Title Block */}
+            <View style={styles.modalTitleBlock}>
+              <Text style={[styles.modalKickerTag, { color: theme.textMuted }]}>
+                A LITTLE PROGRESS, ON YOUR TERMS
               </Text>
-              <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                Acknowledge and honor your progress. Every step counts.
+              <Text style={[styles.modalMainTitle, { color: theme.textPrimary }]}>
+                Small Wins Wall.
+              </Text>
+              <Text style={[styles.modalSubTitle, { color: theme.textSecondary }]}>
+                Celebrate the daily acts of courage. A hint of encouragement, never pressure.
               </Text>
             </View>
 
+            {/* Modal Scrollable Content */}
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.modalScrollContent}
+              contentContainerStyle={styles.modalInnerScroll}
             >
               <SmallWinsSection companionId={companionId} />
             </ScrollView>
@@ -515,10 +503,10 @@ export const CommunityScreen = ({ navigation, route }) => {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ── 6. SLIDE-UP MODAL POPUP: SAFE VENT BOX ─────────────── */}
+      {/* ── 6. EXACT NOTIFICATION-STYLE CENTERED DIALOG MODAL: SAFE VENT BOX ── */}
       <Modal
         visible={activeModal === 'vent_box'}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setActiveModal(null)}
       >
@@ -530,31 +518,44 @@ export const CommunityScreen = ({ navigation, route }) => {
             <View style={styles.modalBackdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={[styles.bottomSheetCard, { backgroundColor: theme.bg, borderColor: theme.divider }]}>
-            {/* Sheet Drag Handle & Close */}
-            <View style={styles.sheetTopBar}>
-              <View style={[styles.sheetHandle, { backgroundColor: theme.divider }]} />
+          <View style={[styles.floatingModalCard, { backgroundColor: theme.cardBg }, isWide && styles.floatingModalCardWide]}>
+            {/* Modal Top Header (matching screenshot) */}
+            <View style={styles.modalTopHeader}>
               <TouchableOpacity
-                style={[styles.closeIconBtn, { backgroundColor: theme.cardBg }]}
                 onPress={() => setActiveModal(null)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.modalBackBtn}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.closeIconText, { color: theme.textPrimary }]}>✕</Text>
+                <Text style={[styles.modalBackBtnText, { color: theme.textMuted }]}>
+                  ‹ Back to Baraza
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseCircle}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCloseCircleText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalHeaderTitleBlock}>
-              <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-                Safe Vent Box 💨
+            {/* Modal Title Block */}
+            <View style={styles.modalTitleBlock}>
+              <Text style={[styles.modalKickerTag, { color: theme.textMuted }]}>
+                SOMATIC PRIVATE RELEASE · ZERO LOGGING
               </Text>
-              <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                Release emotional weight anonymously or dissolve it to embers.
+              <Text style={[styles.modalMainTitle, { color: theme.textPrimary }]}>
+                Safe Vent Box.
+              </Text>
+              <Text style={[styles.modalSubTitle, { color: theme.textSecondary }]}>
+                Your space breathes with your emotion. Release anonymously or burn to embers.
               </Text>
             </View>
 
+            {/* Modal Scrollable Content */}
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.modalScrollContent}
+              contentContainerStyle={styles.modalInnerScroll}
             >
               <VentBoxSection />
             </ScrollView>
@@ -930,82 +931,81 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  detailContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  detailHeader: {
-    marginBottom: 8,
-  },
-  detailInnerView: {
-    flex: 1,
-  },
 
-  // Modal / Bottom Sheet Styles
+  // ── Exact Centered Floating Modal Dialog (matches Notification modal screenshot) ──
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(26, 16, 36, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  bottomSheetCard: {
-    height: '88%',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  floatingModalCard: {
+    width: '100%',
+    maxWidth: 780,
+    maxHeight: '92%',
+    borderRadius: 26,
+    padding: 24,
     borderWidth: 1,
-    borderBottomWidth: 0,
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    borderColor: 'rgba(73, 37, 66, 0.08)',
+    shadowColor: '#492542',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 20,
+    shadowRadius: 20,
+    elevation: 10,
+    gap: 12,
   },
-  sheetTopBar: {
+  floatingModalCardWide: {
+    padding: 32,
+  },
+  modalTopHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    marginBottom: 10,
-    position: 'relative',
+    alignItems: 'center',
   },
-  sheetHandle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    alignSelf: 'center',
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -22,
+  modalBackBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
-  closeIconBtn: {
+  modalBackBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  modalCloseCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
+    backgroundColor: '#FAF5EE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 'auto',
   },
-  closeIconText: {
+  modalCloseCircleText: {
     fontSize: 14,
+    color: '#8B6DA8',
+    fontWeight: '700',
+  },
+  modalTitleBlock: {
+    gap: 4,
+    marginBottom: 6,
+  },
+  modalKickerTag: {
+    fontSize: 9.5,
     fontWeight: '800',
+    letterSpacing: 0.9,
   },
-  modalHeaderTitleBlock: {
-    marginBottom: 12,
-    gap: 2,
-  },
-  modalTitle: {
-    fontSize: 20,
+  modalMainTitle: {
+    fontSize: 26,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  modalSubtitle: {
-    fontSize: 12.5,
+  modalSubTitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
-  modalScrollContent: {
-    paddingBottom: 40,
+  modalInnerScroll: {
+    paddingVertical: 4,
   },
 });
