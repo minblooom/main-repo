@@ -35,7 +35,7 @@ export const SanctuaryHeroCard = ({
           </View>
         </TouchableOpacity>
 
-        {/* Name + location + focus chip */}
+        {/* Name + location + personal energy bio */}
         <View style={styles.infoBlock}>
           <Text style={[styles.nickname, { color: theme.textPrimary }]}>
             {profile.nickname || 'friend'}
@@ -43,12 +43,10 @@ export const SanctuaryHeroCard = ({
           <Text style={[styles.location, { color: theme.textMuted }]}>
             {profile.location || 'Kenya · East Africa'}
           </Text>
-          {profile.focusAreas && profile.focusAreas.length > 0 && (
-            <View style={[styles.focusChip, { backgroundColor: theme.accentSoft, borderColor: theme.accentBorder }]}>
-              <Text style={[styles.focusChipText, { color: theme.pillText }]}>
-                {profile.focusAreas[0]}
-              </Text>
-            </View>
+          {Boolean(profile.bio) && (
+            <Text style={[styles.bioText, { color: theme.textSecondary }]} numberOfLines={2}>
+              "{profile.bio}"
+            </Text>
           )}
         </View>
 

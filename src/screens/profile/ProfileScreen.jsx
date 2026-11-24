@@ -16,6 +16,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { AuthService } from '../../core/api/authService';
+import { apiClient, AUTH_STORAGE_KEYS } from '../../core/api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -106,6 +108,27 @@ export const ProfileContent = ({
         ...newProfile,
         companionId,
       });
+
+      // Update local auth session so all screens see the new nickname and bio immediately
+      const storedUser = await AuthService.getStoredUser();
+      if (storedUser) {
+        const updatedUser = {
+          ...storedUser,
+          nickname: newProfile.nickname,
+          bio: newProfile.bio,
+        };
+        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
+      }
+
+      // Sync with Supabase backend database
+      try {
+        await apiClient.patch('/users/profile', {
+          nickname: newProfile.nickname,
+          bio: newProfile.bio,
+        });
+      } catch (backendErr) {
+        // Backend offline or local fallback
+      }
     } catch { }
     setActiveModal(null);
   };
