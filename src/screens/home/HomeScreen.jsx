@@ -3,6 +3,7 @@
 // Responsive: Desktop sidebar on wide screens, bottom navigation bar on mobile
 // Fully integrated with dynamic app-wide themes & dark mode.
 
+// src/screens/home/HomeScreen.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -13,12 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { useTheme } from '../../theme/ThemeContext';
+import { CommunityContent } from '../../screens/community/CommunityContent';
 
-// Modular Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 
-// Modular Home Screen Sections
 import { HomeHeader } from './components/HomeHeader';
 import { GreetingSection } from './components/GreetingSection';
 import { MoodCheckIn } from './components/MoodCheckIn';
@@ -45,9 +45,6 @@ export const HomeScreen = ({ navigation, route }) => {
       try {
         const saved = await onboardingStorage.getPreferences();
         if (saved) {
-          if (saved.companion && !route?.params?.companion) {
-            setCompanionId(saved.companion);
-          }
           if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
             setUserFocusAreas(saved.focusAreas);
           }
@@ -73,9 +70,7 @@ export const HomeScreen = ({ navigation, route }) => {
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza') {
-      Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
-    } else if (routeId === 'acacia') {
-      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
+      setActiveTab('baraza');
     } else if (routeId === 'sanctuary') {
       setActiveTab('sanctuary');
     }
@@ -84,7 +79,6 @@ export const HomeScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.bg }]}>
       <View style={[styles.rootContainer, { backgroundColor: theme.bg }]}>
-        {/* Desktop Sidebar Navigation */}
         {isWide && (
           <SidebarNav
             activeRoute={activeTab}
@@ -93,7 +87,6 @@ export const HomeScreen = ({ navigation, route }) => {
           />
         )}
 
-        {/* Main Content Area */}
         <View style={[styles.mainContent, { backgroundColor: theme.bg }]}>
           {activeTab === 'arcade' ? (
             <ArcadeContent
@@ -127,21 +120,22 @@ export const HomeScreen = ({ navigation, route }) => {
                   onSignOut={() => navigation.reset({ index: 0, routes: [{ name: 'Splash' }] })}
                   isWide={isWide}
                 />
+              ) : activeTab === 'baraza' ? (
+                <CommunityContent
+                  onOpenProfile={() => handleNavigate('sanctuary')}
+                  onNavigateHome={() => setActiveTab('home')}
+                />
               ) : (
                 <View style={[styles.contentMaxWrapper, isWide && styles.contentMaxWrapperWide]}>
-                  {/* Header with Breadcrumb & Weather */}
                   <HomeHeader
                     companionId={companionId}
                     onProfilePress={() => handleNavigate('sanctuary')}
                   />
 
-                  {/* Welcoming Greeting */}
                   <GreetingSection userName="soso" />
 
-                  {/* Gentle Mood Check-in */}
                   <MoodCheckIn onOpenAnalytics={() => setMoodAnalyticsVisible(true)} />
 
-                  {/* Hero Twin Banners: Aurora & Animated Companion Mascot + Tulia Breath */}
                   <HeroBanners
                     isWide={isWide}
                     companionId={companionId}
@@ -149,7 +143,6 @@ export const HomeScreen = ({ navigation, route }) => {
                     onBreathPress={() => handleNavigate('breath')}
                   />
 
-                  {/* "A Moment for You" 3 Activities */}
                   <MomentsSection
                     isWide={isWide}
                     userFocusAreas={userFocusAreas}
@@ -160,7 +153,6 @@ export const HomeScreen = ({ navigation, route }) => {
             </ScrollView>
           )}
 
-          {/* Mobile Bottom Navigation Bar */}
           {!isWide && (
             <BottomNavBar
               activeRoute={activeTab}
@@ -169,7 +161,6 @@ export const HomeScreen = ({ navigation, route }) => {
             />
           )}
 
-          {/* Interactive Mood Analytics Modal */}
           <MoodAnalyticsModal
             visible={moodAnalyticsVisible}
             theme={theme}

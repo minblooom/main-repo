@@ -2,13 +2,23 @@
 // Sanctuary top header with breadcrumb, peaceful weather widget, language toggle, and profile.
 // Fully integrated with dynamic theme context.
 
+// src/screens/home/components/HomeHeader.jsx
+// Sanctuary top header with breadcrumb, peaceful weather widget, language toggle, and profile.
+// Fully integrated with dynamic theme context.
+
+// src/screens/home/components/HomeHeader.jsx
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { useTheme } from '../../../theme/ThemeContext';
 import { styles } from '../styles/HomeHeader.styles';
 
-export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => {
+export const HomeHeader = ({
+  companionId: propCompanionId,
+  onProfilePress,
+  currentPage = 'Home',
+  onBackPress,
+}) => {
   const { theme, companionId: globalCompanionId } = useTheme();
   const [language, setLanguage] = useState('EN');
   const companionKey = propCompanionId || globalCompanionId || 'noodle';
@@ -20,19 +30,30 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
 
   return (
     <View style={styles.header}>
-      {/* Breadcrumb / Location Indicator */}
       <View style={styles.breadcrumb}>
-        <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>My sanctuary  /  Home</Text>
+        {onBackPress ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Back to My sanctuary"
+            onPress={onBackPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+              My sanctuary  /  <Text style={{ color: theme.textPrimary }}>{currentPage}</Text>
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+            My sanctuary  /  {currentPage}
+          </Text>
+        )}
       </View>
 
-      {/* Right Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill */}
         <View style={[styles.weatherPill, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
           <Text style={[styles.weatherText, { color: theme.textPrimary }]}>☀️ Warm & Calm · 25°C</Text>
         </View>
 
-        {/* Language Toggle */}
         <TouchableOpacity
           onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
           style={styles.langBtn}
@@ -45,7 +66,6 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
           </Text>
         </TouchableOpacity>
 
-        {/* Notification Bell */}
         <TouchableOpacity
           style={[styles.iconBtn, { backgroundColor: theme.heroBg }]}
           onPress={handleNotifications}
@@ -54,7 +74,6 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
           <Text style={styles.iconEmoji}>🔔</Text>
         </TouchableOpacity>
 
-        {/* Profile Avatar with Chosen Companion */}
         <TouchableOpacity
           style={[styles.avatarCircle, { backgroundColor: companion.accent || theme.accentSoft, borderColor: theme.cardBg }]}
           onPress={onProfilePress}
