@@ -269,31 +269,20 @@ export const CommunityScreen = ({ navigation, route }) => {
                       </View>
                     </View>
 
-                    {/* Live Message Snippet */}
-                    {primaryMatch.lastMessage && (
+                    {/* Circle Description */}
+                    {primaryMatch.description && (
                       <View
                         style={[
                           styles.lastMessagePreview,
                           { backgroundColor: theme.bg, borderColor: theme.divider },
                         ]}
                       >
-                        <Text style={styles.lastMessageEmoji}>
-                          {primaryMatch.lastMessage.emoji}
-                        </Text>
                         <View style={styles.lastMessageCol}>
-                          <View style={styles.lastMessageTopRow}>
-                            <Text style={[styles.lastMessageSender, { color: theme.textPrimary }]}>
-                              {primaryMatch.lastMessage.sender}
-                            </Text>
-                            <Text style={[styles.lastMessageTime, { color: theme.textMuted }]}>
-                              {primaryMatch.lastMessage.time}
-                            </Text>
-                          </View>
                           <Text
                             style={[styles.lastMessageText, { color: theme.textSecondary }]}
                             numberOfLines={2}
                           >
-                            "{primaryMatch.lastMessage.text}"
+                            {primaryMatch.description}
                           </Text>
                         </View>
                       </View>
@@ -412,7 +401,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                             </View>
                           </View>
 
-                          {circle.lastMessage && (
+                          {circle.description && (
                             <Text
                               style={[
                                 styles.circleItemSnippet,
@@ -420,7 +409,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                               ]}
                               numberOfLines={1}
                             >
-                              {circle.lastMessage.emoji} {circle.lastMessage.sender}: "{circle.lastMessage.text}"
+                              {circle.description}
                             </Text>
                           )}
 
