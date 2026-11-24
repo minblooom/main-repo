@@ -432,6 +432,10 @@ export const JournalScreen = ({ navigation, route }) => {
   const handleNavigate = (routeId) => {
     if (routeId === 'home') {
       navigation?.navigate?.('Home');
+    } else if (routeId === 'arcade') {
+      navigation?.navigate?.('Arcade');
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation?.navigate?.('Community');
     } else if (routeId === 'sanctuary') {
       navigation?.navigate?.('Profile', {
         companion: companionId,

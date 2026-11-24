@@ -30,12 +30,14 @@ import { RecentlyPlayedSection } from './components/RecentlyPlayedSection';
 import { FavouritesSection } from './components/FavouritesSection';
 
 // Game Engine & Modals
-import { GAMES_CATALOG } from './engine/gameRegistry';
+import { GAMES_CATALOG, getCatalogForUser } from './engine/gameRegistry';
 import { getGameOfTheDay } from './engine/dailyRotationService';
 import { gameSessionManager } from './engine/gameSessionManager';
 import { GamePreviewModal } from './components/modals/GamePreviewModal';
 import { GameShell } from './engine/GameShell';
 import { soundService } from './audio/soundService';
+import { ArcadeApiService } from '../../services/arcadeApiService';
+import { ArcadeSyncService } from '../../core/api/arcadeSyncService';
 
 // Styles
 import { styles } from './styles/ArcadeScreen.styles';
@@ -68,6 +70,7 @@ export const ArcadeContent = ({
   const [favourites, setFavourites] = useState([]);
   const [dailyGame, setDailyGame] = useState(getGameOfTheDay());
   const [displayName, setDisplayName] = useState(userName || 'friend');
+  const [userFocusAreas, setUserFocusAreas] = useState([]);
 
   // Load user data, recents, and favourites on mount
   useEffect(() => {
@@ -81,18 +84,38 @@ export const ArcadeContent = ({
         if (name) {
           setDisplayName(name);
         }
+        if (savedPrefs?.focusAreas && savedPrefs.focusAreas.length > 0) {
+          setUserFocusAreas(savedPrefs.focusAreas);
+        } else if (storedUser?.primaryStruggles && storedUser.primaryStruggles.length > 0) {
+          setUserFocusAreas(storedUser.primaryStruggles);
+        }
+
+        // Check backend database for cloud-synced struggles and tailored catalog
+        try {
+          const backendCatalog = await ArcadeSyncService.getCatalog();
+          if (backendCatalog?.primaryStruggles && backendCatalog.primaryStruggles.length > 0) {
+            setUserFocusAreas(backendCatalog.primaryStruggles);
+          }
+        } catch { }
         const recents = await gameSessionManager.getRecentlyPlayed();
         setRecentlyPlayed(recents);
 
         const favs = await gameSessionManager.getFavourites();
         setFavourites(favs);
+
+        // Fetch optional external public mindfulness games in background
+        ArcadeApiService.fetchExternalMindfulnessGames().catch(() => {});
       } catch { }
     })();
   }, [userName]);
 
-  // Filtered games list
+  // Filtered games list tailored specifically for this user
+  const userCatalog = useMemo(() => {
+    return getCatalogForUser(userFocusAreas);
+  }, [userFocusAreas]);
+
   const filteredGames = useMemo(() => {
-    return GAMES_CATALOG.filter((g) => {
+    return userCatalog.filter((g) => {
       // Category filter
       if (activeCategory !== 'all' && g.category !== activeCategory) {
         return false;
@@ -117,7 +140,7 @@ export const ArcadeContent = ({
       }
       return true;
     });
-  }, [searchQuery, activeCategory, activeTag]);
+  }, [userCatalog, searchQuery, activeCategory, activeTag]);
 
   const handleToggleFavourite = async (gameId) => {
     soundService.playClick();
@@ -214,6 +237,32 @@ export const ArcadeContent = ({
           onPlayToday={() => handlePlayGame(dailyGame)}
         />
 
+        {/* Curated for Your Heart: Issue-based Therapeutic Recommendations */}
+        {userFocusAreas.length > 0 && (
+          <View style={styles.focusCurationSection}>
+            <View style={styles.focusCurationHeader}>
+              <Text style={styles.focusCurationEmoji}>🌿</Text>
+              <View>
+                <Text style={[styles.focusCurationTitle, { color: theme.textPrimary }]}>
+                  Crafted for What's on Your Heart
+                </Text>
+                <Text style={[styles.focusCurationSub, { color: theme.textMuted }]}>
+                  Evidence-based tools selected for {userFocusAreas.slice(0, 2).map((a) => a.replace('_', ' ')).join(' & ')}
+                </Text>
+              </View>
+            </View>
+            <MadeForYourMomentSection
+              games={GAMES_CATALOG.filter((g) =>
+                g.issues?.some((i) => userFocusAreas.includes(i))
+              ).slice(0, 3)}
+              favourites={favourites}
+              isWide={isWide}
+              onPlayGame={handlePlayGame}
+              onToggleFavourite={handleToggleFavourite}
+            />
+          </View>
+        )}
+
         {/* "Find your kind of play" Search & Filters */}
         <PlayFilterSection
           searchQuery={searchQuery}
@@ -291,6 +340,8 @@ export const ArcadeScreen = ({ navigation, route }) => {
       navigation?.navigate?.('Journal', { companion: companionId });
     } else if (routeId === 'sanctuary') {
       navigation?.navigate?.('Profile', { companion: companionId });
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation?.navigate?.('Community');
     } else if (routeId === 'arcade' || routeId === 'acacia') {
       // Already on arcade
     } else if (routeId === 'soundscapes') {

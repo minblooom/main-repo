@@ -81,8 +81,8 @@ export const HomeScreen = ({ navigation, route }) => {
       );
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
-    } else if (routeId === 'baraza') {
-      Alert.alert('Community Baraza', 'Peer circles and shared encouragement in a moderated safe space.');
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation.navigate('Community');
     } else if (routeId === 'acacia') {
       Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {

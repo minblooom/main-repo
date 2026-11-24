@@ -5,6 +5,18 @@ import { apiClient } from './client';
 
 export class ArcadeSyncService {
   /**
+   * Fetches tailored game catalog from the server based on the user's struggles
+   */
+  static async getCatalog() {
+    try {
+      const res = await apiClient.get('/arcade/catalog');
+      return res.data?.success ? res.data.data : null;
+    } catch {
+      return null; // Fall back to local catalog when offline
+    }
+  }
+
+  /**
    * Fetches active paused sessions from the server
    */
   static async getSessions() {
