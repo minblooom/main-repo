@@ -431,18 +431,10 @@ export const CommunityScreen = ({ navigation, route }) => {
                                 { color: theme.textMuted },
                               ]}
                             >
-                              {circle.lastMessage?.time || 'Live'}
+                              Active
                             </Text>
                           </View>
                         </View>
-
-                        {circle.unreadCount && (
-                          <View style={styles.unreadBadgePill}>
-                            <Text style={styles.unreadBadgeText}>
-                              {circle.unreadCount}
-                            </Text>
-                          </View>
-                        )}
                       </TouchableOpacity>
                     );
                   })}
