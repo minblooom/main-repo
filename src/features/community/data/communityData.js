@@ -1,5 +1,5 @@
 // src/features/community/data/communityData.js
-// Joinable spaces (groups, circles, identity), peer mentors, and informational resources.
+// Baraza Peer Spaces with Age Cohorts, Clinical Issues, and Youth Passions.
 
 export const peerMentors = [
   {
@@ -47,6 +47,7 @@ export const peerMentors = [
 ];
 
 export const barazaCircles = [
+  // ── 1. YOUNG ADULTS COHORT (18–24) ──────────────────────────────────
   {
     id: 'campus_grounding',
     type: 'circle',
@@ -54,12 +55,13 @@ export const barazaCircles = [
     category: 'Youth & Campus 🎓',
     icon: '🌀',
     iconBg: '#E8F0FF',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['anxiety', 'overwhelm', 'body', 'self_doubt'],
+    interests: ['music', 'nature', 'writing'],
     memberCount: 10,
     maxMembers: 12,
     activeNow: 7,
     matchResonance: 98,
-    sharedTags: ['Shared Anxiety & Body Peace', 'Music 🎵', 'Nature 🌿'],
     description: 'A cozy peer space for navigating campus workloads, family expectations, and personal peace.',
     lastMessage: {
       sender: 'Simba',
@@ -68,8 +70,6 @@ export const barazaCircles = [
       time: '2m ago',
     },
     unreadCount: 3,
-    isPrimaryMatch: true,
-    joined: false,
   },
   {
     id: 'hustle_purpose',
@@ -78,11 +78,13 @@ export const barazaCircles = [
     category: 'Nairobi Hustle 💼',
     icon: '🔥',
     iconBg: '#FFF0E8',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['burnout', 'hustle', 'stress', 'exhaustion'],
+    interests: ['tech', 'fashion', 'music', 'community'],
     memberCount: 11,
     maxMembers: 12,
     activeNow: 5,
-    sharedTags: ['Hustle Burnout', 'Career Pressure'],
+    matchResonance: 94,
     description: 'Grounding for side-hustlers, freelancers, and job seekers keeping hope alive.',
     lastMessage: {
       sender: 'Zawadi Zebra',
@@ -91,7 +93,6 @@ export const barazaCircles = [
       time: '6m ago',
     },
     unreadCount: 1,
-    joined: false,
   },
   {
     id: 'night_owls',
@@ -100,11 +101,13 @@ export const barazaCircles = [
     category: 'Night Owls 🌙',
     icon: '🦉',
     iconBg: '#F3E8FF',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['sleep', 'anxiety', 'feeling_off'],
+    interests: ['music', 'reading', 'gaming'],
     memberCount: 9,
     maxMembers: 12,
     activeNow: 6,
-    sharedTags: ['Night Insomnia', 'Quiet Reflection'],
+    matchResonance: 91,
     description: 'When the city sleeps and thoughts feel loudest, gather for calm unhurried reflection.',
     lastMessage: {
       sender: 'Kobi',
@@ -112,7 +115,6 @@ export const barazaCircles = [
       text: 'Tulia breath mode is on. Who else is resting their thoughts?',
       time: '11m ago',
     },
-    joined: false,
   },
   {
     id: 'sisterhood_sanctuary',
@@ -121,11 +123,13 @@ export const barazaCircles = [
     category: 'Sisterhood 🌸',
     icon: '🪷',
     iconBg: '#FDF2F8',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['body', 'relationships', 'self_doubt'],
+    interests: ['art', 'diy', 'reading', 'fashion'],
     memberCount: 11,
     maxMembers: 12,
     activeNow: 8,
-    sharedTags: ['Body Peace', 'Healing Boundaries'],
+    matchResonance: 95,
     description: 'A warm sanctuary for young women honoring bodily peace, safety, and self-worth.',
     lastMessage: {
       sender: 'Lulu Flamingo',
@@ -134,7 +138,6 @@ export const barazaCircles = [
       time: '18m ago',
     },
     unreadCount: 2,
-    joined: false,
   },
   {
     id: 'mens_grounding',
@@ -143,11 +146,13 @@ export const barazaCircles = [
     category: "Men's Grounding 🦁",
     icon: '🛡️',
     iconBg: '#FEF3C7',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['strong_one', 'burnout', 'emptiness'],
+    interests: ['football', 'sports', 'fitness', 'gaming'],
     memberCount: 8,
     maxMembers: 12,
     activeNow: 4,
-    sharedTags: ['Strong One Burden', 'Vulnerability'],
+    matchResonance: 89,
     description: 'Brothers dismantling the burden of carrying everything alone in stoic silence.',
     lastMessage: {
       sender: 'Brave Simba',
@@ -155,7 +160,6 @@ export const barazaCircles = [
       text: 'Checking in on the brothers. You do not have to carry it all alone.',
       time: '24m ago',
     },
-    joined: false,
   },
   {
     id: 'tulia_healing',
@@ -164,11 +168,13 @@ export const barazaCircles = [
     category: 'Healing & Tulia 🌿',
     icon: '🍃',
     iconBg: '#EAF2E8',
-    ageGroup: '18–24',
+    ageGroup: '18-24',
+    issues: ['trauma', 'anxiety', 'feeling_off'],
+    interests: ['nature', 'music', 'wellness'],
     memberCount: 12,
     maxMembers: 12,
     activeNow: 9,
-    sharedTags: ['Nervous System', 'Meditation'],
+    matchResonance: 92,
     description: 'Somatic grounding, shared breathing exercises, and nervous system ease.',
     lastMessage: {
       sender: 'Twiga Giraffe',
@@ -176,7 +182,78 @@ export const barazaCircles = [
       text: 'Circle at full capacity. Next cohort opens tonight at 8pm.',
       time: '35m ago',
     },
-    joined: false,
+  },
+
+  // ── 2. TEENS COHORT (13–17) ─────────────────────────────────────────
+  {
+    id: 'teen_exam_calm',
+    type: 'circle',
+    title: 'High School Calm & Exam Peace 🎒',
+    category: 'Youth & Campus 🎓',
+    icon: '📚',
+    iconBg: '#E8F0FF',
+    ageGroup: '13-17',
+    issues: ['anxiety', 'overwhelm', 'self_doubt'],
+    interests: ['gaming', 'music', 'reading'],
+    memberCount: 9,
+    maxMembers: 12,
+    activeNow: 6,
+    matchResonance: 97,
+    description: 'Safe space for high school students feeling the pressure of grades, exams, and expectations.',
+    lastMessage: {
+      sender: 'Kip Cheetah',
+      emoji: '🐆',
+      text: 'Physics revision was overwhelming today, taking a 15-minute breather.',
+      time: '5m ago',
+    },
+    unreadCount: 2,
+  },
+  {
+    id: 'teen_creative_roots',
+    type: 'circle',
+    title: 'Teen Creative Expressions 🎨',
+    category: 'Healing & Tulia 🌿',
+    icon: '🎨',
+    iconBg: '#FFF7ED',
+    ageGroup: '13-17',
+    issues: ['identity', 'isolation', 'self_doubt'],
+    interests: ['art', 'diy', 'writing', 'photography'],
+    memberCount: 10,
+    maxMembers: 12,
+    activeNow: 7,
+    matchResonance: 94,
+    description: 'Expressing who you are without fear through doodles, stanzas, and shared creativity.',
+    lastMessage: {
+      sender: 'Malaika Dove',
+      emoji: '🕊️',
+      text: 'Just finished a small sketch of the jacaranda trees outside my window.',
+      time: '14m ago',
+    },
+  },
+
+  // ── 3. ADULTS COHORT (25+) ──────────────────────────────────────────
+  {
+    id: 'career_life_anchor',
+    type: 'circle',
+    title: 'Career, Family & Life Balance 🧭',
+    category: 'Nairobi Hustle 💼',
+    icon: '🧭',
+    iconBg: '#FEF3C7',
+    ageGroup: '25+',
+    issues: ['burnout', 'relationships', 'strong_one'],
+    interests: ['nature', 'reading', 'wellness'],
+    memberCount: 10,
+    maxMembers: 12,
+    activeNow: 6,
+    matchResonance: 96,
+    description: 'Navigating late-20s career transitions, parenting balance, and emotional boundaries.',
+    lastMessage: {
+      sender: 'Elder Kobi',
+      emoji: '🐢',
+      text: 'Remembering that rest is part of the work, not a reward for burning out.',
+      time: '8m ago',
+    },
+    unreadCount: 1,
   },
 ];
 
@@ -212,30 +289,6 @@ export const circles = [
     availability: '3 spots left',
     joined: false,
   },
-  {
-    id: 'listening-session',
-    type: 'circle',
-    title: 'Listening Session',
-    description: 'Come to listen and hear others share.',
-    expect: 'Settle in and listen. You don’t need to speak, and anything you share is optional.',
-    dateLabel: 'Fridays',
-    timeLabel: '7:00 PM',
-    duration: 'About 45 minutes',
-    availability: '5 spots left',
-    joined: false,
-  },
-  {
-    id: 'sharing-at-your-pace',
-    type: 'circle',
-    title: 'Sharing at Your Own Pace',
-    description: 'Share when you feel ready, and pass whenever you need to.',
-    expect: 'No one is asked to speak. Each person decides what, if anything, to share.',
-    dateLabel: 'Sundays',
-    timeLabel: '10:00 AM',
-    duration: 'About 60 minutes',
-    availability: 'Open spots',
-    joined: false,
-  },
 ];
 
 export const identitySpaces = [
@@ -246,28 +299,6 @@ export const identitySpaces = [
     description: 'Connect with others navigating a new place and new routines.',
     memberCount: 52,
     hasMeetupSpots: true,
-    joined: false,
-  },
-  {
-    id: 'language-and-culture',
-    type: 'identity',
-    title: 'Language & culture',
-    description: 'Connect through shared language or cultural experiences.',
-    joined: false,
-  },
-  {
-    id: 'lgbtq-community',
-    type: 'identity',
-    title: 'LGBTQ+ community',
-    description: 'A peer space for connection, support and sharing, at your own pace.',
-    privateMembership: true,
-    joined: false,
-  },
-  {
-    id: 'life-stages',
-    type: 'identity',
-    title: 'Life stages',
-    description: 'Find peers navigating similar seasons of life.',
     joined: false,
   },
 ];

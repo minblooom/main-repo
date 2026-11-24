@@ -4,7 +4,7 @@
 // real live interactive chat groups for all circles with persistent bottom navbar,
 // and real-time somatic emotion-matching release box.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,8 @@ import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 import { BarazaGroupChatView } from '../../features/community/circles/BarazaGroupChatView';
 import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSection';
 import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
-import { barazaCircles } from '../../features/community/data/communityData';
+import { getMatchingCirclesForUser } from '../../features/community/services/circleMatchingService';
+import { onboardingStorage } from '../../services/onboardingStorage';
 
 const CATEGORIES = [
   'All Circles',
@@ -45,14 +46,43 @@ export const CommunityScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState('All Circles');
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [activeModal, setActiveModal] = useState(null); // 'small_wins' | 'vent_box' | null
+  const [userProfile, setUserProfile] = useState({
+    age: '18-24',
+    focusAreas: [],
+    interests: [],
+  });
+
+  useEffect(() => {
+    async function loadUserPreferences() {
+      try {
+        const prefs = await onboardingStorage.getPreferences();
+        if (prefs) {
+          setUserProfile({
+            age: prefs.age || prefs.ageBand || '18-24',
+            focusAreas: prefs.focusAreas || prefs.primaryStruggles || [],
+            interests: prefs.interests || [],
+          });
+        }
+      } catch {}
+    }
+    loadUserPreferences();
+  }, []);
+
+  // Compute 4-Invariant Dynamic Grouping & Resonance Matching
+  const { primaryMatch, eligibleCircles, userAgeBand } = useMemo(
+    () =>
+      getMatchingCirclesForUser({
+        age: userProfile.age,
+        focusAreas: userProfile.focusAreas,
+        interests: userProfile.interests,
+      }),
+    [userProfile]
+  );
 
   const filteredCircles =
     selectedCategory === 'All Circles'
-      ? barazaCircles
-      : barazaCircles.filter((c) => c.category === selectedCategory);
-
-  const primaryMatch =
-    barazaCircles.find((c) => c.isPrimaryMatch) || barazaCircles[0];
+      ? eligibleCircles
+      : eligibleCircles.filter((c) => c.category === selectedCategory);
 
   const handleNavigate = (routeId) => {
     setActiveModal(null);
@@ -186,7 +216,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                       💬 Your Matched Sanctuary Circle
                     </Text>
                     <Text style={[styles.sectionSub, { color: theme.textMuted }]}>
-                      Locked to Age 18–24 • Shared Issues • 2 Shared Interests • Max 12
+                      Locked to Age {userAgeBand} • Shared Struggles & Passions • Max 12
                     </Text>
                   </View>
                 </View>
@@ -205,7 +235,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                   {/* Match Banner */}
                   <View style={[styles.primaryMatchBanner, { backgroundColor: '#FFF0E8' }]}>
                     <Text style={[styles.primaryMatchBannerText, { color: '#B8532D' }]}>
-                      🎯 {primaryMatch.matchResonance || 98}% Resonance Match • Shared Anxiety & Body Peace • 2 Interests
+                      🎯 {primaryMatch.matchResonance || 98}% Resonance Match • Tailored to {userAgeBand} Cohort
                     </Text>
                   </View>
 
@@ -280,7 +310,7 @@ export const CommunityScreen = ({ navigation, route }) => {
                 {/* ── 4. OTHER CIRCLES IN YOUR AGE GROUP ──────────────── */}
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-                    Other Circles in Your Age Group (18–24)
+                    Other Circles in Your Age Group ({userAgeBand})
                   </Text>
                 </View>
 
