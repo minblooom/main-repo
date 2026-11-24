@@ -93,6 +93,7 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
         companion: chosenCompanion,
         companionId: chosenCompanion,
         focusAreas: params.focusAreas || [],
+        interests: params.interests || [],
         rhythm: params.rhythm || '2',
         nudges: Boolean(params.nudges),
         country: params.country || 'ke',
