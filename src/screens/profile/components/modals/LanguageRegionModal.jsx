@@ -26,7 +26,7 @@ const COUNTRIES = [
 export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
   const { theme: ctxTheme } = useTheme();
   const theme = propTheme || ctxTheme;
-  const { country, language, setCountry, setLanguage, availableLanguages } = useI18n();
+  const { country, language, setCountry, setLanguage, availableLanguages, countryData } = useI18n();
 
   const handleSelectCountry = (cId) => {
     setCountry(cId);
