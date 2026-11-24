@@ -74,25 +74,6 @@ export const JournalHeader = ({
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Language Toggle (shown only when country supports multiple languages) */}
-        {availableLanguages.length > 1 && (
-          <TouchableOpacity
-            onPress={cycleLanguage}
-            style={styles.langBtn}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.langText}>
-              {availableLanguages.map((l, idx) => (
-                <React.Fragment key={l.id}>
-                  {idx > 0 ? ' · ' : ''}
-                  <Text style={language === l.id ? styles.langActive : styles.langInactive}>
-                    {l.code}
-                  </Text>
-                </React.Fragment>
-              ))}
-            </Text>
-          </TouchableOpacity>
-        )}
 
         {/* Notification Bell */}
         <TouchableOpacity

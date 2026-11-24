@@ -15,14 +15,23 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Mic, MoreHorizontal, Send } from 'lucide-react-native';
 import { encryptedStorage } from '../../../services/encryptedStorage';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { onboardingStorage } from '../../../services/onboardingStorage';
 import { useCommunityStore } from '../store/communityStore';
-import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
 import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
+import {
+  MAX_VOICE_NOTE_SECONDS,
+  formatVoiceDuration,
+  startVoiceRecording,
+  stopVoiceRecording,
+  cancelVoiceRecording,
+  isSpeechRecognitionSupported,
+  createDictationSession,
+} from '../../../services/voiceNoteService';
 
 function formatTimestamp(date = new Date()) {
   const hours = date.getHours();
@@ -57,7 +66,99 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
   const [userName, setUserName] = useState('You');
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [showCircleInfo, setShowCircleInfo] = useState(false);
+  const [activeMsgMenu, setActiveMsgMenu] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [isDictating, setIsDictating] = useState(false);
+
+  const recordingRef = useRef(null);
+  const timerRef = useRef(null);
+  const dictationRef = useRef(null);
   const scrollRef = useRef(null);
+  const speechSupported = isSpeechRecognitionSupported();
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (recordingRef.current) cancelVoiceRecording(recordingRef.current);
+      if (dictationRef.current) {
+        try {
+          dictationRef.current.stop();
+        } catch {}
+      }
+    };
+  }, []);
+
+  const handleStartRecording = async () => {
+    if (isDictating) handleStopDictation();
+    try {
+      const rec = await startVoiceRecording();
+      recordingRef.current = rec;
+      setElapsedSec(0);
+      setIsRecording(true);
+      timerRef.current = setInterval(() => {
+        setElapsedSec((prev) => {
+          const next = prev + 1;
+          if (next >= MAX_VOICE_NOTE_SECONDS) handleStopRecording();
+          return next;
+        });
+      }, 1000);
+    } catch (err) {
+      Alert.alert('Microphone Needed', err?.message || 'Unable to access microphone.');
+    }
+  };
+
+  const handleStopRecording = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsRecording(false);
+    try {
+      const result = await stopVoiceRecording(recordingRef.current);
+      recordingRef.current = null;
+      if (result) setDraftVoiceNote(result);
+    } catch {
+      recordingRef.current = null;
+    }
+  };
+
+  const handleCancelRecording = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsRecording(false);
+    setElapsedSec(0);
+    await cancelVoiceRecording(recordingRef.current);
+    recordingRef.current = null;
+  };
+
+  const handleStartDictation = () => {
+    if (!speechSupported) return;
+    const session = createDictationSession({
+      onTranscript: (chunk) => setInputText((prev) => (prev ? `${prev} ${chunk}` : chunk)),
+      onEnd: () => setIsDictating(false),
+      onError: () => setIsDictating(false),
+    });
+    if (session) {
+      dictationRef.current = session;
+      setIsDictating(true);
+      try {
+        session.start();
+      } catch {
+        setIsDictating(false);
+      }
+    }
+  };
+
+  const handleStopDictation = () => {
+    try {
+      dictationRef.current?.stop();
+    } catch {}
+    dictationRef.current = null;
+    setIsDictating(false);
+  };
 
   // Load chat history & user profile
   useEffect(() => {
@@ -313,13 +414,29 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                         </View>
                       )}
                       <View style={styles.myBubbleRow}>
-                        <View style={[styles.myBubble, { backgroundColor: theme.accent }]}>
-                          {item.replyTo && (
-                            <View style={styles.myReplyQuote}>
-                              <Text style={styles.myReplySender}>{item.replyTo.sender}</Text>
-                              <Text style={styles.myReplySnippet} numberOfLines={1}>{item.replyTo.snippet}</Text>
+                        <TouchableOpacity
+                          activeOpacity={0.92}
+                          onLongPress={() => setActiveMsgMenu(item)}
+                          style={[styles.myBubble, { backgroundColor: theme.accent }]}
+                        >
+                          <View style={styles.bubbleTopMenuRow}>
+                            <View style={{ flex: 1 }}>
+                              {item.replyTo && (
+                                <View style={styles.myReplyQuote}>
+                                  <Text style={styles.myReplySender}>{item.replyTo.sender}</Text>
+                                  <Text style={styles.myReplySnippet} numberOfLines={1}>{item.replyTo.snippet}</Text>
+                                </View>
+                              )}
                             </View>
-                          )}
+                            <TouchableOpacity
+                              onPress={() => setActiveMsgMenu(item)}
+                              style={styles.bubbleMenuIconBtn}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              activeOpacity={0.7}
+                            >
+                              <MoreHorizontal size={14} color="rgba(255,255,255,0.8)" />
+                            </TouchableOpacity>
+                          </View>
                           {item.voiceNote && (
                             <View style={{ marginBottom: item.text ? 8 : 2 }}>
                               <VoiceNotePlayer voiceNote={item.voiceNote} inverted compact />
@@ -327,28 +444,11 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                           )}
                           {!!item.text && <Text style={styles.myBubbleText}>{item.text}</Text>}
                           <View style={styles.myBubbleMetaRow}>
-                            <TouchableOpacity onPress={() => setReplyingTo(item)} activeOpacity={0.7}>
-                              <Text style={styles.myBubbleAction}>↩ Reply</Text>
-                            </TouchableOpacity>
-                            {!!item.text && (
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setEditingMsgId(item.id);
-                                  setInputText(item.text);
-                                }}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.myBubbleAction}>✏️ Edit</Text>
-                              </TouchableOpacity>
-                            )}
-                            <TouchableOpacity onPress={() => handleDeleteMessage(item.id)} activeOpacity={0.7}>
-                              <Text style={styles.myBubbleAction}>🗑️ Delete</Text>
-                            </TouchableOpacity>
                             <Text style={styles.myBubbleTime}>
                               {item.edited ? `Edited · ${item.time}` : item.time}
                             </Text>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       </View>
                     </React.Fragment>
                   );
@@ -373,8 +473,17 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                           <Text style={[styles.peerTimeText, { color: theme.textMuted }]}>
                             {item.time}
                           </Text>
+                          <TouchableOpacity
+                            onPress={() => setActiveMsgMenu(item)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            activeOpacity={0.7}
+                          >
+                            <MoreHorizontal size={14} color={theme.textMuted} />
+                          </TouchableOpacity>
                         </View>
-                        <View
+                        <TouchableOpacity
+                          activeOpacity={0.92}
+                          onLongPress={() => setActiveMsgMenu(item)}
                           style={[
                             styles.peerBubble,
                             { backgroundColor: theme.cardBg, borderColor: theme.divider },
@@ -396,9 +505,9 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                               {item.text}
                             </Text>
                           )}
-                        </View>
+                        </TouchableOpacity>
 
-                        {/* Quick Support Reactions, Reply & Safety Flag */}
+                        {/* Quick Support Reactions */}
                         <View style={styles.reactionRow}>
                           {[
                             { key: 'hugs', emoji: '🫂' },
@@ -420,20 +529,6 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
                               )}
                             </TouchableOpacity>
                           ))}
-                          <TouchableOpacity
-                            style={[styles.reactBtn, { borderColor: theme.divider }]}
-                            onPress={() => setReplyingTo(item)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>↩ Reply</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.reactBtn, { borderColor: theme.divider }]}
-                            onPress={() => handleReportMessage(item.id)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>⚑ Hide</Text>
-                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -477,45 +572,184 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
             </TouchableOpacity>
           </View>
         )}
-        <VoiceInputControls
-          voiceNote={draftVoiceNote}
-          onVoiceNoteChange={setDraftVoiceNote}
-          onAppendTranscript={(chunk) =>
-            setInputText((prev) => (prev ? `${prev} ${chunk}` : chunk))
-          }
-          compact
-        />
-        <View style={styles.inputRow}>
-          <TextInput
-            underlineColorAndroid="transparent"
-            style={[
-              styles.inputField,
-              { color: theme.textPrimary, backgroundColor: theme.bg, borderColor: theme.divider },
-              Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
-            ]}
-            placeholder={editingMsgId ? 'Edit your message...' : 'Share with the circle gently...'}
-            placeholderTextColor={theme.textMuted}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={300}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              {
-                backgroundColor: theme.accent,
-                opacity: inputText.trim() || draftVoiceNote ? 1 : 0.5,
-              },
-            ]}
-            onPress={handleSendMessage}
-            disabled={!inputText.trim() && !draftVoiceNote}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.sendBtnArrow}>➔</Text>
-          </TouchableOpacity>
-        </View>
+        {draftVoiceNote && !isRecording && (
+          <View style={{ marginBottom: 4 }}>
+            <VoiceNotePlayer
+              voiceNote={draftVoiceNote}
+              compact
+              onRemove={() => setDraftVoiceNote(null)}
+            />
+          </View>
+        )}
+
+        {isRecording ? (
+          <View style={styles.inlineRecordingRow}>
+            <View style={styles.inlineRecordingLeft}>
+              <View style={styles.liveRedDot} />
+              <Text style={styles.inlineRecordingLabel}>
+                Recording {formatVoiceDuration(elapsedSec)} / {formatVoiceDuration(MAX_VOICE_NOTE_SECONDS)}
+              </Text>
+            </View>
+            <View style={styles.inlineRecordingActions}>
+              <TouchableOpacity onPress={handleCancelRecording} style={styles.inlineCancelRecBtn} activeOpacity={0.7}>
+                <Text style={styles.inlineCancelRecText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleStopRecording}
+                style={[styles.inlineSaveRecBtn, { backgroundColor: theme.accent }]}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.inlineSaveRecText}>Attach</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.inputRow}>
+            <View
+              style={[
+                styles.composerPill,
+                { backgroundColor: theme.bg, borderColor: theme.divider },
+              ]}
+            >
+              <TextInput
+                underlineColorAndroid="transparent"
+                style={[
+                  styles.composerInput,
+                  { color: theme.textPrimary },
+                  Platform.OS === 'web' && { outlineStyle: 'none', outlineWidth: 0 },
+                ]}
+                placeholder={editingMsgId ? 'Edit your message...' : 'Share with the circle gently...'}
+                placeholderTextColor={theme.textMuted}
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                maxLength={300}
+              />
+              {speechSupported && (
+                <TouchableOpacity
+                  onPress={isDictating ? handleStopDictation : handleStartDictation}
+                  style={[
+                    styles.inlineDictateBtn,
+                    isDictating && { backgroundColor: 'rgba(217, 107, 67, 0.14)' },
+                  ]}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.inlineDictateText,
+                      { color: isDictating ? theme.accent : theme.textMuted },
+                    ]}
+                  >
+                    {isDictating ? 'Stop' : 'Dictate'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {inputText.trim() || draftVoiceNote ? (
+              <TouchableOpacity
+                style={[styles.sendBtn, { backgroundColor: theme.accent }]}
+                onPress={handleSendMessage}
+                activeOpacity={0.8}
+              >
+                <Send size={17} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.sendBtn, { backgroundColor: theme.accent }]}
+                onPress={handleStartRecording}
+                activeOpacity={0.8}
+              >
+                <Mic size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
+
+      {/* ── WHATSAPP-STYLE MESSAGE ACTION MENU ───────────────── */}
+      <Modal
+        visible={!!activeMsgMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveMsgMenu(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setActiveMsgMenu(null)}
+        >
+          <View style={[styles.msgMenuCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            {!!activeMsgMenu?.text && (
+              <Text style={[styles.msgMenuPreview, { color: theme.textMuted }]} numberOfLines={2}>
+                "{activeMsgMenu.text}"
+              </Text>
+            )}
+            <TouchableOpacity
+              style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+              onPress={() => {
+                const msg = activeMsgMenu;
+                setActiveMsgMenu(null);
+                if (msg) setReplyingTo(msg);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>Reply</Text>
+            </TouchableOpacity>
+
+            {activeMsgMenu?.isMe && !!activeMsgMenu?.text && (
+              <TouchableOpacity
+                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                onPress={() => {
+                  const msg = activeMsgMenu;
+                  setActiveMsgMenu(null);
+                  if (msg) {
+                    setEditingMsgId(msg.id);
+                    setInputText(msg.text);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>Edit</Text>
+              </TouchableOpacity>
+            )}
+
+            {activeMsgMenu?.isMe ? (
+              <TouchableOpacity
+                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                onPress={() => {
+                  const msg = activeMsgMenu;
+                  setActiveMsgMenu(null);
+                  if (msg) handleDeleteMessage(msg.id);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>Let go</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                onPress={() => {
+                  const msg = activeMsgMenu;
+                  setActiveMsgMenu(null);
+                  if (msg) handleReportMessage(msg.id);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>Hide & report</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.msgMenuItem, { borderBottomWidth: 0 }]}
+              onPress={() => setActiveMsgMenu(null)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.msgMenuText, { color: theme.textMuted }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── CIRCLE INFO MODAL (WhatsApp-style Group Info) ─────── */}
       <Modal
@@ -988,5 +1222,117 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
+  },
+  bubbleTopMenuRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  bubbleMenuIconBtn: {
+    padding: 2,
+    marginLeft: 'auto',
+  },
+  composerPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    maxHeight: 110,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  composerInput: {
+    flex: 1,
+    fontSize: 13.5,
+    paddingVertical: 4,
+    maxHeight: 90,
+  },
+  inlineDictateBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+  },
+  inlineDictateText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  inlineRecordingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+    borderWidth: 1,
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  inlineRecordingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveRedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#DC2626',
+  },
+  inlineRecordingLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  inlineRecordingActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inlineCancelRecBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  inlineCancelRecText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  inlineSaveRecBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  inlineSaveRecText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  msgMenuCard: {
+    width: '100%',
+    maxWidth: 280,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  msgMenuPreview: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  msgMenuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+  },
+  msgMenuText: {
+    fontSize: 14.5,
+    fontWeight: '700',
   },
 });

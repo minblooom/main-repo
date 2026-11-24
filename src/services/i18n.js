@@ -27,7 +27,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '1199',
     secondaryCallNum: '+254722178177',
     regionName: 'Kenya · East Africa',
-    supportedLanguages: ['en', 'sw', 'sheng'],
+    supportedLanguages: ['en'],
   },
   ug: {
     code: 'UG',
@@ -40,7 +40,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '0800212121',
     secondaryCallNum: null,
     regionName: 'Uganda · East Africa',
-    supportedLanguages: ['en', 'sw'],
+    supportedLanguages: ['en'],
   },
   tz: {
     code: 'TZ',
@@ -53,7 +53,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '116',
     secondaryCallNum: null,
     regionName: 'Tanzania · East Africa',
-    supportedLanguages: ['sw', 'en'],
+    supportedLanguages: ['en'],
   },
   et: {
     code: 'ET',
@@ -79,7 +79,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '114',
     secondaryCallNum: null,
     regionName: 'Rwanda · East Africa',
-    supportedLanguages: ['en', 'sw'],
+    supportedLanguages: ['en'],
   },
   global: {
     code: 'GL',
@@ -239,16 +239,7 @@ export const I18nProvider = ({ children }) => {
         }
         setCountryState(resolvedCountry);
 
-        if (savedLang) {
-          setLanguageState(savedLang);
-        } else if (prefs?.language) {
-          const l = prefs.language.toLowerCase();
-          if (l.includes('swa')) setLanguageState('sw');
-          else if (l.includes('sheng')) setLanguageState('sheng');
-          else setLanguageState('en');
-        } else if (resolvedCountry === 'tz') {
-          setLanguageState('sw');
-        }
+        setLanguageState('en');
       } catch (err) {
         console.warn('[I18nProvider] Failed to load preferences:', err);
       }

@@ -174,24 +174,6 @@ export const SignupScreen = ({ navigation }) => {
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
-              {availableLanguages.length > 1 && (
-                <TouchableOpacity
-                  onPress={cycleLanguage}
-                  style={s.langBtn}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.langText}>
-                    {availableLanguages.map((l, idx) => (
-                      <React.Fragment key={l.id}>
-                        {idx > 0 ? ' | ' : ''}
-                        <Text style={language === l.id ? s.langActive : s.langInactive}>
-                          {l.code}
-                        </Text>
-                      </React.Fragment>
-                    ))}
-                  </Text>
-                </TouchableOpacity>
-              )}
               <TouchableOpacity onPress={handleUrgentSupport} activeOpacity={0.7}>
                 <Text style={s.urgentLink}>Need urgent support?</Text>
               </TouchableOpacity>

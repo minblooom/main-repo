@@ -10,7 +10,6 @@ import { styles } from '../styles/ProfileHeader.styles';
 
 export const ProfileHeader = ({ onHomePress, onNotificationPress }) => {
   const { theme } = useTheme();
-  const { language, availableLanguages, cycleLanguage } = useI18n();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -27,19 +26,8 @@ export const ProfileHeader = ({ onHomePress, onNotificationPress }) => {
         </Text>
       </View>
 
-      {/* Right side: lang + bell */}
+      {/* Right side: bell */}
       <View style={styles.rightRow}>
-        {availableLanguages.length > 1 && (
-          <TouchableOpacity
-            style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
-            onPress={cycleLanguage}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.langText, { color: theme.textSecondary }]}>
-              {(availableLanguages.find((l) => l.id === language) || availableLanguages[0])?.code || 'EN'}
-            </Text>
-          </TouchableOpacity>
-        )}
 
         <TouchableOpacity
           style={[styles.bellBtn, { backgroundColor: theme.heroBg }]}
