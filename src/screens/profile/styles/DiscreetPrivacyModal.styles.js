@@ -1,5 +1,5 @@
 // src/screens/profile/styles/DiscreetPrivacyModal.styles.js
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 export const styles = StyleSheet.create({
   overlay: {
@@ -142,6 +142,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     fontWeight: '600',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
   },
   previewCard: {
     borderRadius: 16,

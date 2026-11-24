@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -10,22 +8,27 @@ import {
   ScrollView,
   Animated,
   Alert,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { AuthService } from '../../core/api/authService';
+import { onboardingStorage } from '../../services/onboardingStorage';
+import { useI18n } from '../../services/i18n';
 
 export const LoginScreen = ({ navigation }) => {
   const { isTablet, isDesktop } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+  const { language, setLanguage, countryData, t } = useI18n();
 
-  const [language, setLanguage] = useState('EN');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Gentle float animation for the sloth mascot
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -49,9 +52,9 @@ export const LoginScreen = ({ navigation }) => {
 
   const handleUrgentSupport = () => {
     Alert.alert(
-      'Urgent Support',
-      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.',
-      [{ text: 'Understood', style: 'default' }]
+      t('need_support'),
+      t('urgent_support_alert'),
+      [{ text: t('understood'), style: 'default' }]
     );
   };
 
@@ -80,21 +83,51 @@ export const LoginScreen = ({ navigation }) => {
     return errs;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setSubmitted(true);
     const errs = validateLogin();
     setErrors(errs);
 
-    if (Object.keys(errs).length > 0) {
-      return;
-    }
+    if (Object.keys(errs).length > 0) return;
 
-    if (navigation) {
-      if (typeof navigation.replace === 'function') {
-        navigation.replace('Home');
-      } else {
-        navigation.navigate('Home');
+    setLoading(true);
+    try {
+      const session = await AuthService.login({ identifier: identifier.trim(), password });
+      if (session?.user?.nickname) {
+        await onboardingStorage.savePreferences({ nickname: session.user.nickname });
+      } else if (!identifier.includes('@')) {
+        await onboardingStorage.savePreferences({ nickname: identifier.trim() });
       }
+      // Success — go home
+      if (navigation) {
+        if (typeof navigation.replace === 'function') {
+          navigation.replace('Home');
+        } else {
+          navigation.navigate('Home');
+        }
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Sign-in failed. Please try again.';
+      // Friendly error messages with seamless offline entry
+      if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused') || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('err_connection')) {
+        // Safe offline entry: ensure user isn't locked out of their personal sanctuary
+        const nick = identifier.includes('@') ? identifier.split('@')[0] : identifier.trim();
+        await onboardingStorage.savePreferences({ nickname: nick });
+        if (navigation) {
+          if (typeof navigation.replace === 'function') {
+            navigation.replace('Home');
+          } else {
+            navigation.navigate('Home');
+          }
+        }
+        return;
+      } else if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
+        setErrors({ general: 'Hmm, those details don\'t match. Double-check and try again.' });
+      } else {
+        setErrors({ general: msg });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,18 +155,23 @@ export const LoginScreen = ({ navigation }) => {
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
               <TouchableOpacity
-                onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+                onPress={() => {
+                  const nextLang = language === 'en' ? 'sw' : language === 'sw' ? 'sheng' : 'en';
+                  setLanguage(nextLang);
+                }}
                 style={s.langBtn}
                 activeOpacity={0.7}
               >
                 <Text style={s.langText}>
-                  <Text style={language === 'EN' ? s.langActive : s.langInactive}>EN</Text>
+                  <Text style={language === 'en' ? s.langActive : s.langInactive}>EN</Text>
                   {' | '}
-                  <Text style={language === 'SW' ? s.langActive : s.langInactive}>SW</Text>
+                  <Text style={language === 'sw' ? s.langActive : s.langInactive}>SW</Text>
+                  {' | '}
+                  <Text style={language === 'sheng' ? s.langActive : s.langInactive}>SH</Text>
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleUrgentSupport} activeOpacity={0.7}>
-                <Text style={s.urgentLink}>Need urgent support?</Text>
+                <Text style={s.urgentLink}>{t('need_support')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -143,10 +181,10 @@ export const LoginScreen = ({ navigation }) => {
 
             {/* -- LEFT: COMPANION HERO CARD --------------- */}
             <View style={[s.companionCard, isWide && s.companionCardWide]}>
-              <Text style={s.tagText}>KARIBU TENA · WELCOME BACK</Text>
+              <Text style={s.tagText}>{t('welcome_back')}</Text>
 
               <Text style={s.heroHeading}>
-                {'Big feelings.\nSmall steps.\nStill you.'}
+                {t('hero_heading')}
               </Text>
 
               <Animated.View
@@ -168,16 +206,16 @@ export const LoginScreen = ({ navigation }) => {
 
               <View style={s.speechBubbleCard}>
                 <Text style={s.speechQuote}>
-                  "No catching up needed. Just come as you are."
+                  {t('sloth_quote')}
                 </Text>
-                <Text style={s.speechAuthor}>Pole · your quiet pocket of calm</Text>
+                <Text style={s.speechAuthor}>{t('companion_sub')}</Text>
               </View>
             </View>
 
             {/* -- RIGHT: LOGIN FORM ----------------------- */}
             <View style={[s.formContainer, isWide && s.formContainerWide]}>
-              <Text style={s.formTitle}>Good to see you.</Text>
-              <Text style={s.formSubhead}>Pick up wherever you are today.</Text>
+              <Text style={s.formTitle}>{t('good_to_see_you')}</Text>
+              <Text style={s.formSubhead}>{t('pick_up_where')}</Text>
 
               {/* Segmented tab switcher */}
               <View style={s.segmentedTabsContainer}>
@@ -186,19 +224,27 @@ export const LoginScreen = ({ navigation }) => {
                   onPress={goToSignup}
                   activeOpacity={0.85}
                 >
-                  <Text style={[s.tabText, s.tabTextInactive]}>Create account</Text>
+                  <Text style={[s.tabText, s.tabTextInactive]}>{t('create_account')}</Text>
                 </TouchableOpacity>
                 <View style={[s.tabButton, s.tabButtonActive]}>
-                  <Text style={[s.tabText, s.tabTextActive]}>Sign in</Text>
+                  <Text style={[s.tabText, s.tabTextActive]}>{t('sign_in')}</Text>
                 </View>
               </View>
+
+              {/* General error banner */}
+              {errors.general ? (
+                <View style={s.errorBanner}>
+                  <Text style={s.errorBannerText}>{errors.general}</Text>
+                </View>
+              ) : null}
 
               {/* Fields */}
               <View style={s.fieldsBlock}>
 
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Email, phone or nickname *</Text>
+                  <Text style={s.fieldLabel}>{t('email_or_nickname')}</Text>
                   <TextInput
+                    underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.identifier) && s.inputError]}
                     value={identifier}
                     onChangeText={(text) => {
@@ -212,6 +258,7 @@ export const LoginScreen = ({ navigation }) => {
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
+                    editable={!loading}
                   />
                   {submitted && errors.identifier ? (
                     <Text style={s.errorText}>{errors.identifier}</Text>
@@ -219,9 +266,10 @@ export const LoginScreen = ({ navigation }) => {
                 </View>
 
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>Your password *</Text>
+                  <Text style={s.fieldLabel}>{t('password')}</Text>
                   <View style={[s.passwordInputWrapper, (submitted && errors.password) && s.inputError]}>
                     <TextInput
+                      underlineColorAndroid="transparent"
                       style={s.passwordInput}
                       value={password}
                       onChangeText={(text) => {
@@ -230,9 +278,10 @@ export const LoginScreen = ({ navigation }) => {
                           setErrors(validateLogin(undefined, text));
                         }
                       }}
-                      placeholder="••••••••••••"
+                      placeholder="············"
                       placeholderTextColor="#76648E"
                       secureTextEntry={!showPassword}
+                      editable={!loading}
                     />
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -248,16 +297,21 @@ export const LoginScreen = ({ navigation }) => {
                     onPress={handleForgotPassword}
                     style={s.forgotBtn}
                   >
-                    <Text style={s.forgotBtnText}>Forgot password?</Text>
+                    <Text style={s.forgotBtnText}>{t('forgot_password')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
-                  style={s.primaryBtn}
+                  style={[s.primaryBtn, loading && { opacity: 0.7 }]}
                   onPress={handleLogin}
                   activeOpacity={0.88}
+                  disabled={loading}
                 >
-                  <Text style={s.primaryBtnText}>Come on in ➔</Text>
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={s.primaryBtnText}>{t('come_on_in')}</Text>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -265,8 +319,8 @@ export const LoginScreen = ({ navigation }) => {
                   style={s.switchLinkWrapper}
                 >
                   <Text style={s.switchLinkText}>
-                    New here?{' '}
-                    <Text style={s.switchLinkBold}>Create your space</Text>
+                    {t('new_here')}{' '}
+                    <Text style={s.switchLinkBold}>{t('create_your_space')}</Text>
                   </Text>
                 </TouchableOpacity>
 
@@ -274,7 +328,7 @@ export const LoginScreen = ({ navigation }) => {
 
               <View style={s.footerBrandRow}>
                 <Text style={s.footerBrandText}>
-                  Your space. Your pace. Your kind of brave.
+                  {t('your_space_pace')}
                 </Text>
               </View>
             </View>

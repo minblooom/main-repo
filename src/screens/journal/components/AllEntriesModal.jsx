@@ -10,9 +10,8 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/AllEntriesModal.styles';
 
 export const AllEntriesModal = ({
@@ -44,6 +43,13 @@ export const AllEntriesModal = ({
   }, [entries, searchQuery, filterMood]);
 
   const confirmDelete = (item) => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to let go of "${item.title || 'this reflection'}"? This cannot be undone.`)) {
+        onDeleteEntry?.(item.id);
+      }
+      return;
+    }
+
     Alert.alert(
       'Delete Moment',
       `Are you sure you want to let go of "${item.title || 'this reflection'}"? This cannot be undone.`,
@@ -90,6 +96,7 @@ export const AllEntriesModal = ({
           <View style={styles.searchBar}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
+                    underlineColorAndroid="transparent"
               style={styles.searchInput}
               placeholder="Search across all your moments..."
               placeholderTextColor="#A89BB5"
@@ -228,4 +235,4 @@ export const AllEntriesModal = ({
     </Modal>
   );
 };
-
+

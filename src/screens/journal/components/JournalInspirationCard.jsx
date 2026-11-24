@@ -4,8 +4,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { styles } from '../styles/JournalInspirationCard.styles';
-import { colors } from '../../../theme/colors';
-
 export const JournalInspirationCard = ({ companionName = 'Noodle' }) => {
   return (
     <View style={styles.card}>
@@ -19,4 +17,4 @@ export const JournalInspirationCard = ({ companionName = 'Noodle' }) => {
     </View>
   );
 };
-
+

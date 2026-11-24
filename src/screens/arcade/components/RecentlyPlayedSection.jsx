@@ -1,12 +1,13 @@
 // src/screens/arcade/components/RecentlyPlayedSection.jsx
 // "Pick up where you paused" recently played games section matching Figma.
-// Styles extracted to src/screens/arcade/styles/RecentlyPlayedSection.styles.js.
+// Consistent grid sizing, strict deduplication, and high-visibility dismiss (X) handling.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { GameCard } from './GameCard';
@@ -15,23 +16,35 @@ import { styles } from '../styles/RecentlyPlayedSection.styles';
 export const RecentlyPlayedSection = ({
   games = [],
   favourites = [],
-  isWide = false,
   onPlayGame,
   onToggleFavourite,
   onRemoveGame,
 }) => {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
 
-  // Deduplicate games by id so no game appears twice
-  const uniqueGames = React.useMemo(() => {
+  // Unified responsive breakpoints matching MadeForYourMomentSection
+  const isDesktop = width >= 900;
+  const isTablet = width >= 640 && width < 900;
+  const isWide = isDesktop || isTablet;
+
+  const PADDING = 32; // 16px each side
+  const GAP = isDesktop ? 16 : 14;
+  const COLS = isDesktop ? 3 : 2;
+  const cardWidth = (width - PADDING - GAP * (COLS - 1)) / COLS;
+
+  // Strict deduplication by game id: a game can only appear once!
+  const uniqueGames = useMemo(() => {
     if (!games || !Array.isArray(games)) return [];
-    const map = new Map();
-    games.forEach((g) => {
-      if (g?.id && !map.has(g.id)) {
-        map.set(g.id, g);
+    const seen = new Set();
+    const result = [];
+    for (const g of games) {
+      if (g?.id && !seen.has(g.id)) {
+        seen.add(g.id);
+        result.push(g);
       }
-    });
-    return Array.from(map.values());
+    }
+    return result;
   }, [games]);
 
   if (uniqueGames.length === 0) return null;
@@ -43,37 +56,40 @@ export const RecentlyPlayedSection = ({
       </Text>
 
       {isWide ? (
-        <View style={styles.wideGrid}>
+        // Unified grid layout: 3-column desktop, 2-column tablet
+        <View style={isDesktop ? styles.wideGrid : styles.tabletGrid}>
           {uniqueGames.map((g) => (
-            <GameCard
-              key={`recent_${g.id}`}
-              game={g}
-              isFavourited={favourites.some((f) => f.id === g.id)}
-              buttonLabel="Continue playing"
-              onPlay={() => onPlayGame(g, { resume: true })}
-              onToggleFavourite={() => onToggleFavourite(g.id)}
-              onRemove={() => onRemoveGame?.(g.id)}
-              isWide={true}
-            />
+            <View key={`recent_${g.id}`} style={{ width: cardWidth }}>
+              <GameCard
+                game={g}
+                isFavourited={favourites.some((f) => f.id === g.id)}
+                buttonLabel="Continue playing"
+                onPlay={() => onPlayGame(g, { resume: true })}
+                onToggleFavourite={() => onToggleFavourite(g.id)}
+                onRemove={() => onRemoveGame?.(g.id)}
+                isWide={true}
+              />
+            </View>
           ))}
         </View>
       ) : (
+        // Horizontal scroll on mobile
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollRow}
         >
           {uniqueGames.map((g) => (
-            <GameCard
-              key={`recent_${g.id}`}
-              game={g}
-              isFavourited={favourites.some((f) => f.id === g.id)}
-              buttonLabel="Continue playing"
-              onPlay={() => onPlayGame(g, { resume: true })}
-              onToggleFavourite={() => onToggleFavourite(g.id)}
-              onRemove={() => onRemoveGame?.(g.id)}
-              isWide={true}
-            />
+            <View key={`recent_${g.id}`} style={{ width: 220 }}>
+              <GameCard
+                game={g}
+                isFavourited={favourites.some((f) => f.id === g.id)}
+                buttonLabel="Continue playing"
+                onPlay={() => onPlayGame(g, { resume: true })}
+                onToggleFavourite={() => onToggleFavourite(g.id)}
+                onRemove={() => onRemoveGame?.(g.id)}
+              />
+            </View>
           ))}
         </ScrollView>
       )}

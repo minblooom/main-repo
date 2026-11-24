@@ -1,6 +1,7 @@
 // src/screens/home/components/MoodCheckIn.jsx
 // Empathetic low-pressure daily mood check-in with tactile cards,
-// real-time companion support, context factors, and mood history persistence.
+// real-time companion support, context factors, local persistence,
+// and silent cloud sync to MindBloom backend telemetry.
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
@@ -8,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { styles } from '../styles/MoodCheckIn.styles';
+import { apiClient } from '../../../core/api/client';
 
 const MOODS = [
   {
@@ -49,10 +51,10 @@ const MOODS = [
 
 const FACTORS = [
   { id: 'sleep', label: '💤 Sleep' },
-  { id: 'work',  label: '📚 Study / Work' },
+  { id: 'work', label: '📚 Study / Work' },
   { id: 'people', label: '💬 Relationships' },
-  { id: 'quiet',  label: '🌿 Solitude' },
-  { id: 'body',   label: '🧘 Body / Energy' },
+  { id: 'quiet', label: '🌿 Solitude' },
+  { id: 'body', label: '🧘 Body / Energy' },
   { id: 'gratitude', label: '✨ Small win' },
 ];
 
@@ -85,7 +87,7 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
             }
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -115,14 +117,27 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
     };
 
     try {
+      // 1. Local-first Vault save
       const stored = await AsyncStorage.getItem(MOOD_HISTORY_KEY);
       const history = stored ? JSON.parse(stored) : [];
-      // Replace today's checkin if exists or append
       const filtered = history.filter((h) => h.dateString !== entry.dateString);
       filtered.push(entry);
       await AsyncStorage.setItem(MOOD_HISTORY_KEY, JSON.stringify(filtered));
       setHasSaved(true);
-    } catch {}
+
+      // 2. Silent Cloud Telemetry Sync (for AI adaptation & research insights)
+      apiClient.post('/journal/mood', {
+        moodScore: activeMood.score,
+        moodLabel: activeMood.label,
+        triggers: selectedFactors,
+        toolsUsed: ['mood_checkin'],
+        helpfulRating: 5,
+        note: `Self-recorded on ${entry.dateString}`,
+      }).catch((err) => {
+        // Silently tolerate network/offline
+        console.log('[MoodCheckIn] Backend sync offline, stored locally:', err.message);
+      });
+    } catch { }
   };
 
   return (

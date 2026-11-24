@@ -17,6 +17,7 @@ import { LocalSetupScreen }      from '../screens/onboarding/LocalSetupScreen';
 import { CompanionSelectScreen } from '../screens/onboarding/CompanionSelectScreen';
 import { AgeSelectScreen }       from '../screens/onboarding/AgeSelectScreen';
 import { FocusAreasScreen }      from '../screens/onboarding/FocusAreasScreen';
+import { InterestsSelectScreen }  from '../screens/onboarding/InterestsSelectScreen';
 import { RhythmSelectScreen }    from '../screens/onboarding/RhythmSelectScreen';
 import { ReadyToBloomScreen }    from '../screens/onboarding/ReadyToBloomScreen';
 
@@ -25,6 +26,7 @@ import { HomeScreen }            from '../screens/home/HomeScreen';
 import { JournalScreen }         from '../screens/journal/JournalScreen';
 import { ProfileScreen }         from '../screens/profile/ProfileScreen';
 import { ArcadeScreen }          from '../screens/arcade/ArcadeScreen';
+import { CommunityScreen }       from '../screens/community/CommunityScreen';
 import { LegalScreen }           from '../screens/legal/LegalScreen';
 
 const Stack = createNativeStackNavigator();
@@ -52,6 +54,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="CompanionSelect" component={CompanionSelectScreen} />
         <Stack.Screen name="AgeSelect"       component={AgeSelectScreen} />
         <Stack.Screen name="FocusAreas"      component={FocusAreasScreen} />
+        <Stack.Screen name="InterestsSelect" component={InterestsSelectScreen} />
         <Stack.Screen name="RhythmSelect"    component={RhythmSelectScreen} />
         <Stack.Screen name="ReadyToBloom"    component={ReadyToBloomScreen} />
 
@@ -60,6 +63,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="Journal"         component={JournalScreen} />
         <Stack.Screen name="Profile"         component={ProfileScreen} />
         <Stack.Screen name="Arcade"          component={ArcadeScreen} />
+        <Stack.Screen name="Community"       component={CommunityScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -241,8 +241,8 @@ export const ThemeProvider = ({ children }) => {
           }
         }
 
-        // Also check onboarding storage for initial companion if not in theme settings
-        const onb = await AsyncStorage.getItem('@mindbloom_onboarding_prefs');
+        // Also check canonical onboarding preferences if not in theme settings
+        const onb = await AsyncStorage.getItem('@mindbloom:user_preferences');
         if (onb) {
           const parsedOnb = JSON.parse(onb);
           const comp = parsedOnb.companionId || parsedOnb.companion;
@@ -280,11 +280,11 @@ export const ThemeProvider = ({ children }) => {
     setCompanionIdState(newId);
     saveSettings(themeId, isDark, privacyShield, newId);
     try {
-      const onb = await AsyncStorage.getItem('@mindbloom_onboarding_prefs');
+      const onb = await AsyncStorage.getItem('@mindbloom:user_preferences');
       const parsed = onb ? JSON.parse(onb) : {};
       parsed.companion = newId;
       parsed.companionId = newId;
-      await AsyncStorage.setItem('@mindbloom_onboarding_prefs', JSON.stringify(parsed));
+      await AsyncStorage.setItem('@mindbloom:user_preferences', JSON.stringify(parsed));
     } catch {}
   };
 

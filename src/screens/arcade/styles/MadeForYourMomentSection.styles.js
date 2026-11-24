@@ -1,5 +1,5 @@
 // src/screens/arcade/styles/MadeForYourMomentSection.styles.js
-// Figma-matching grid: 3-col desktop, 2-col tablet, horizontal scroll mobile.
+
 
 import { StyleSheet, Dimensions } from 'react-native';
 

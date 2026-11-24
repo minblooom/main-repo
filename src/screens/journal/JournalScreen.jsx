@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -30,7 +31,9 @@ import { AllEntriesModal } from './components/AllEntriesModal';
 import { JournalPrivacyModal } from './components/JournalPrivacyModal';
 import { LegalModal } from '../legal/LegalScreen';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { journalStorage } from '../../services/journalStorage';
 import { COMPANION_MAP } from '../../constants/companions';
+import { useI18n } from '../../services/i18n';
 
 const FOCUS_SPARKS = {
   anxiety: [
@@ -69,39 +72,6 @@ const FOCUS_SPARKS = {
   ],
 };
 
-const INITIAL_ENTRIES = [
-  {
-    id: 'entry-1',
-    dayNumber: '16',
-    badgeBg: '#EDF5EE',
-    badgeColor: '#2C5A38',
-    title: 'A small, softer moment',
-    feelingLabel: 'A little lighter',
-    body: 'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.',
-    dateString: 'TODAY, 16 NOVEMBER',
-  },
-  {
-    id: 'entry-2',
-    dayNumber: '14',
-    badgeBg: '#FFF5E8',
-    badgeColor: '#8A531C',
-    title: 'Overthinking during lunch',
-    feelingLabel: 'Somewhere in between',
-    body: 'Noticed my shoulders creeping up to my ears again. Took three deep breaths with Kovu and watched the trees move.',
-    dateString: 'SATURDAY, 14 NOVEMBER',
-  },
-  {
-    id: 'entry-3',
-    dayNumber: '09',
-    badgeBg: '#F2EDFA',
-    badgeColor: '#6E5D87',
-    title: 'Morning stillness',
-    feelingLabel: 'A little heavy',
-    body: 'A warm cup of tea and five minutes of absolute silence before the rush of the world began.',
-    dateString: 'MONDAY, 09 NOVEMBER',
-  },
-];
-
 export const JournalContent = ({
   companionId: initialCompanionId,
   userFocusAreas = ['anxiety'],
@@ -110,23 +80,36 @@ export const JournalContent = ({
   isWide = false,
 }) => {
   const { theme, companionId: globalCompanionId } = useTheme();
+  const { countryData, t } = useI18n();
   const companionId = initialCompanionId || globalCompanionId || 'noodle';
   const activeSparks = FOCUS_SPARKS[userFocusAreas?.[0]] || FOCUS_SPARKS.default;
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
 
   // State Management
-  const [entries, setEntries] = useState(INITIAL_ENTRIES);
+  const [entries, setEntries] = useState([]);
   const [sparkIndex, setSparkIndex] = useState(0);
   const [isSparkVisible, setIsSparkVisible] = useState(true);
 
   // Active Draft / Editor State
   const [editingEntryId, setEditingEntryId] = useState(null);
-  const [title, setTitle] = useState('A small, softer moment');
-  const [body, setBody] = useState(
-    'Today I stepped outside for a few minutes. The air was cool, and for a moment, I didn\'t need to figure anything out.\n\nI think I needed that reminder: a little pause counts, too.'
-  );
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
   const [feeling, setFeeling] = useState('lighter');
-  const [draftState, setDraftState] = useState('Unsaved draft');
+  const [draftState, setDraftState] = useState('New entry');
+
+  // Load real saved entries from local device storage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await journalStorage.getEntries();
+        if (saved && Array.isArray(saved)) {
+          setEntries(saved);
+        }
+      } catch (err) {
+        console.warn('Failed to load journal entries:', err);
+      }
+    })();
+  }, []);
 
   // Modals
   const [selectedEntry, setSelectedEntry] = useState(null);
@@ -175,21 +158,21 @@ export const JournalContent = ({
 
     if (editingEntryId) {
       // Update existing entry
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.id === editingEntryId
-            ? {
-                ...e,
-                title: title.trim() || 'A quiet thought',
-                body: body.trim(),
-                feelingLabel: feelingInfo.label,
-                badgeBg: feelingInfo.bg,
-                badgeColor: feelingInfo.color,
-                dateString: `UPDATED, ${dayStr} NOVEMBER`,
-              }
-            : e
-        )
+      const updatedEntries = entries.map((e) =>
+        e.id === editingEntryId
+          ? {
+            ...e,
+            title: title.trim() || 'A quiet thought',
+            body: body.trim(),
+            feelingLabel: feelingInfo.label,
+            badgeBg: feelingInfo.bg,
+            badgeColor: feelingInfo.color,
+            dateString: `UPDATED, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
+          }
+          : e
       );
+      setEntries(updatedEntries);
+      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert('Updated', 'Your changes have been quietly saved to this moment.');
     } else {
@@ -202,9 +185,11 @@ export const JournalContent = ({
         title: title.trim() || 'A quiet thought',
         feelingLabel: feelingInfo.label,
         body: body.trim(),
-        dateString: `TODAY, ${dayStr} NOVEMBER`,
+        dateString: `TODAY, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
       };
-      setEntries((prev) => [newEntry, ...prev]);
+      const updatedEntries = [newEntry, ...entries];
+      setEntries(updatedEntries);
+      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert(
         'Saved in Your Sanctuary',
@@ -214,7 +199,9 @@ export const JournalContent = ({
   };
 
   const handleDeleteEntry = (id) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    const updated = entries.filter((e) => e.id !== id);
+    setEntries(updated);
+    journalStorage.saveEntries(updated);
     if (editingEntryId === id) {
       handleNewEntry();
     }
@@ -237,6 +224,56 @@ export const JournalContent = ({
 
   const handlePrivacyInfo = () => {
     setPrivacyModalVisible(true);
+  };
+
+  const handleExportEntries = () => {
+    if (!entries || entries.length === 0) {
+      Alert.alert('Archive Empty', 'You have no saved moments yet to export.');
+      return;
+    }
+
+    const header = [
+      '======================================================',
+      '        MINDBLOOM PRIVATE JOURNAL ARCHIVE             ',
+      '        Exported: ' + new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }),
+      '        Sanctuary: Polepole · your pace                ',
+      '======================================================\n\n',
+    ].join('\n');
+
+    const formattedMoments = entries
+      .map((e, index) => {
+        return [
+          `[#${entries.length - index}] ${e.title || 'Untitled Moment'}`,
+          `Date: ${e.dateString || 'Undated'} | Mood: ${e.feelingLabel || 'Neutral'}`,
+          '------------------------------------------------------',
+          e.body || '(No reflection text saved)',
+          '\n\n',
+        ].join('\n');
+      })
+      .join('\n');
+
+    const fullArchiveText = header + formattedMoments;
+
+    if (Platform.OS === 'web') {
+      try {
+        const blob = new Blob([fullArchiveText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `mindbloom_journal_backup_${new Date().toISOString().slice(0, 10)}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Export download failed:', err);
+      }
+    } else {
+      Alert.alert(
+        'Archive Exported',
+        'Your moments have been formatted into an encrypted local text archive.'
+      );
+    }
   };
 
   return (
@@ -302,10 +339,18 @@ export const JournalContent = ({
             <View style={styles.editorFooterRow}>
               <Text style={[styles.footerWordsPace, { color: theme.textMuted }]}>Your words. Your pace.</Text>
               <TouchableOpacity
-                onPress={() => Alert.alert('Helpline', 'Call 1199 (Kenya) or reach out to local emergency support.')}
+                onPress={() => {
+                  const title = t('need_support');
+                  const msg = `${countryData?.helplineName || 'Local Support'}: ${countryData?.helplinePhone || 'Dial local emergency services'}. You are never alone.`;
+                  if (Platform.OS === 'web') {
+                    window.alert(`${title}\n\n${msg}`);
+                  } else {
+                    Alert.alert(title, msg);
+                  }
+                }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.footerHelpline, { color: theme.textSecondary }]}>Need urgent support?</Text>
+                <Text style={[styles.footerHelpline, { color: theme.textSecondary }]}>{t('need_support')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -315,6 +360,7 @@ export const JournalContent = ({
             <JournalArchive
               entries={entries}
               onSelectEntry={handleOpenEntry}
+              onDeleteEntry={handleDeleteEntry}
               onViewAll={() => setAllEntriesVisible(true)}
             />
 
@@ -346,6 +392,7 @@ export const JournalContent = ({
         visible={privacyModalVisible}
         onClose={() => setPrivacyModalVisible(false)}
         onOpenPrivacyPolicy={() => setLegalModalTab('privacy')}
+        onExportEntries={handleExportEntries}
       />
 
       {/* In-App Legal Modal Popup for Privacy Policy */}
@@ -378,13 +425,17 @@ export const JournalScreen = ({ navigation, route }) => {
             setUserFocusAreas(saved.focusAreas);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [route?.params]);
 
   const handleNavigate = (routeId) => {
     if (routeId === 'home') {
       navigation?.navigate?.('Home');
+    } else if (routeId === 'arcade') {
+      navigation?.navigate?.('Arcade');
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation?.navigate?.('Community');
     } else if (routeId === 'sanctuary') {
       navigation?.navigate?.('Profile', {
         companion: companionId,

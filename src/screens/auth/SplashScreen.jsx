@@ -1,4 +1,4 @@
-// src/screens/auth/SplashScreen.jsx
+﻿// src/screens/auth/SplashScreen.jsx
 // Exact implementation of Figma splash screen for MindBloom
 // Responsive: 2-column on desktop/tablet, bottom sheet on mobile
 
@@ -12,7 +12,6 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../../theme/colors';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export const SplashScreen = ({ onFinish, navigation }) => {
@@ -88,8 +87,8 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     }
   };
 
-  const archWidth = isWide ? 260 : Math.min(containerMaxWidth * 0.72, 280);
-  const archHeight = isWide ? 340 : Math.min(height * 0.44, 380);
+  const archWidth = isWide ? 280 : Math.min(containerMaxWidth * 0.65, 250);
+  const archHeight = isWide ? 340 : Math.min(height * 0.35, 300);
 
   const progressInterpolate = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -135,7 +134,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
                   <Image
                     source={require('../../../assets/images/splashscreen.jpg')}
                     style={styles.heroImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
               </Animated.View>
@@ -181,3 +180,5 @@ export const SplashScreen = ({ onFinish, navigation }) => {
 };
 
 import { styles } from './styles/SplashScreen.styles';
+
+

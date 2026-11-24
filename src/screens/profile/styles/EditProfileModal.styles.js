@@ -1,7 +1,5 @@
 // src/screens/profile/styles/EditProfileModal.styles.js
 import { StyleSheet, Platform } from 'react-native';
-import { colors } from '../../../theme/colors';
-
 export const styles = StyleSheet.create({
   overlay: {
     flex: 1,

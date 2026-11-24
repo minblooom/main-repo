@@ -17,8 +17,6 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { COMPANIONS } from '../../constants/companions';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
-import { colors } from '../../theme/colors';
-
 export const CompanionSelectScreen = ({ navigation, route }) => {
   const { width, isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;

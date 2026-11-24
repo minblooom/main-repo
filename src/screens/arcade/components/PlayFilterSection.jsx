@@ -56,7 +56,11 @@ export const PlayFilterSection = ({
             onChangeText={onSearchChange}
             placeholder="Search games, moods, focus spaces..."
             placeholderTextColor={theme.textMuted || '#8B6DA8'}
-            style={[styles.searchInput, { color: theme.textPrimary }]}
+            underlineColorAndroid="transparent"
+            style={[
+              styles.searchInput,
+              { color: theme.textPrimary },
+            ]}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => onSearchChange('')} style={styles.clearBtn}>

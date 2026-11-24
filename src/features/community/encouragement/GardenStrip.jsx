@@ -112,6 +112,13 @@ export const GardenStrip = ({ garden = [], streak = 0 }) => {
   };
 
   const info = selected ? STAGE_INFO[selected.stage] ?? STAGE_INFO.soil : null;
+import React from 'react';
+import { View, Text } from 'react-native';
+import { useTheme } from '../../../theme/ThemeContext';
+import { styles } from './styles/GardenStrip.styles';
+
+export const GardenStrip = ({ plants = [], streak = 0 }) => {
+  const { theme } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -167,6 +174,25 @@ export const GardenStrip = ({ garden = [], streak = 0 }) => {
       {streak > 1 && (
         <Text style={[styles.streak, { color: '#2C5A38' }]}>
           🌱 {streak} quiet days tended in a row
+        {plants.map((p, idx) => (
+          <View key={p.id || idx} style={styles.plantWrap}>
+            <View style={styles.plantArea}>
+              {p.stage === 'blooming' ? (
+                <>
+                  <View style={[styles.stem, { height: 20, backgroundColor: theme.accent || '#5B8A72' }]} />
+                  <View style={[styles.bloom, { backgroundColor: '#E07A5F' }]} />
+                </>
+              ) : (
+                <View style={[styles.seed, { backgroundColor: theme.accent || '#8A7A6B' }]} />
+              )}
+            </View>
+            <View style={[styles.soil, { backgroundColor: theme.cardBg, borderColor: theme.divider }]} />
+          </View>
+        ))}
+      </View>
+      {streak > 0 && (
+        <Text style={[styles.streak, { color: theme.accent }]}>
+          {streak} gentle day streak in the garden 🌿
         </Text>
       )}
     </View>

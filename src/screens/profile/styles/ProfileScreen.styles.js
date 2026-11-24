@@ -1,7 +1,5 @@
 // src/screens/profile/styles/ProfileScreen.styles.js
-import { StyleSheet, Platform } from 'react-native';
-import { colors } from '../../../theme/colors';
-
+import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

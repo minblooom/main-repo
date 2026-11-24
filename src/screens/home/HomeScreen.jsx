@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 import { useTheme } from '../../theme/ThemeContext';
 import { CommunityContent } from '../../screens/community/CommunityContent';
 
@@ -31,25 +32,33 @@ import { MoodAnalyticsModal } from '../profile/components/modals/MoodAnalyticsMo
 import { styles } from './styles/HomeScreen.styles';
 
 export const HomeScreen = ({ navigation, route }) => {
-  const { theme, companionId: themeCompanionId } = useTheme();
+  const { theme, companionId: themeCompanionId, setCompanionId } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
   const [activeTab, setActiveTab] = useState(route?.params?.tab || 'home');
   const companionId = themeCompanionId || route?.params?.companion || 'noodle';
+  const [userName, setUserName] = useState('');
   const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
   const [moodAnalyticsVisible, setMoodAnalyticsVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const saved = await onboardingStorage.getPreferences();
+        const [saved, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        const name = storedUser?.nickname || saved?.nickname || '';
+        if (name) {
+          setUserName(name);
+        }
         if (saved) {
           if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
             setUserFocusAreas(saved.focusAreas);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [route?.params]);
 
@@ -71,6 +80,10 @@ export const HomeScreen = ({ navigation, route }) => {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza') {
       setActiveTab('baraza');
+    } else if (routeId === 'baraza' || routeId === 'community') {
+      navigation.navigate('Community');
+    } else if (routeId === 'acacia') {
+      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
       setActiveTab('sanctuary');
     }
@@ -91,6 +104,7 @@ export const HomeScreen = ({ navigation, route }) => {
           {activeTab === 'arcade' ? (
             <ArcadeContent
               companionId={companionId}
+              userName={userName}
               onNavigateHome={() => setActiveTab('home')}
               isWide={isWide}
             />
@@ -133,6 +147,8 @@ export const HomeScreen = ({ navigation, route }) => {
                   />
 
                   <GreetingSection userName="soso" />
+                  {/* Welcoming Greeting */}
+                  <GreetingSection userName={userName || 'friend'} />
 
                   <MoodCheckIn onOpenAnalytics={() => setMoodAnalyticsVisible(true)} />
 

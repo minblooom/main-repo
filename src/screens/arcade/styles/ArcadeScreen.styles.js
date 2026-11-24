@@ -53,4 +53,28 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: -0.1,
   },
+  focusCurationSection: {
+    marginBottom: 24,
+  },
+  focusCurationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  focusCurationEmoji: {
+    fontSize: 26,
+  },
+  focusCurationTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  focusCurationSub: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    textTransform: 'capitalize',
+    marginTop: 2,
+  },
 });

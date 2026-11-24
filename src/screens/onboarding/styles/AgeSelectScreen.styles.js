@@ -1,7 +1,5 @@
 // src/screens/onboarding/styles/AgeSelectScreen.styles.js
 import { StyleSheet, Platform } from 'react-native';
-import { colors } from '../../../theme/colors';
-
 export const styles = StyleSheet.create({
   inputCard: {
     backgroundColor: '#fff',
@@ -35,6 +33,9 @@ export const styles = StyleSheet.create({
     minWidth: 44,
     paddingVertical: 0,
     letterSpacing: -0.5,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
   },
   yearsSuffix: {
     fontSize: 15,

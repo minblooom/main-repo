@@ -14,6 +14,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { useI18n, COUNTRY_DATA } from '../../services/i18n';
 
 const COUNTRIES = [
   { id: 'ke', code: 'KE', name: 'Kenya', langs: 'Sheng, Kiswahili & English' },
@@ -28,15 +29,21 @@ const LANGUAGES = ['English', 'Kiswahili', 'Sheng'];
 export const LocalSetupScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const [country, setCountry] = useState(route?.params?.country || 'ke');
-  const [language, setLanguage] = useState(route?.params?.language || 'English');
-  const [elsewhere, setElsewhere] = useState(false);
+  const { country: globalCountry, language: globalLanguage, setCountry: setGlobalCountry, setLanguage: setGlobalLanguage } = useI18n();
+
+  const [country, setCountry] = useState(route?.params?.country || globalCountry || 'ke');
+  const [language, setLanguage] = useState(route?.params?.language || (globalLanguage === 'sw' ? 'Kiswahili' : globalLanguage === 'sheng' ? 'Sheng' : 'English'));
+  const [elsewhere, setElsewhere] = useState(country === 'global');
 
   const handleContinue = () => {
     if (!navigation) return;
+    const finalCountry = elsewhere ? 'global' : country;
+    setGlobalCountry(finalCountry);
+    setGlobalLanguage(language);
+
     navigation.navigate('CompanionSelect', {
       ...(route?.params ?? {}),
-      country,
+      country: finalCountry,
       language,
     });
   };

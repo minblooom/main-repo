@@ -6,6 +6,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { I18nProvider } from './src/services/i18n';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { CommunitySpacesProvider } from './src/features/community/context/CommunitySpacesContext';
 
@@ -28,6 +29,11 @@ export default function App() {
           <AppContent />
         </CommunitySpacesProvider>
       </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }

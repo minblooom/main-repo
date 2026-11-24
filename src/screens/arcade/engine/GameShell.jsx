@@ -26,6 +26,12 @@ import { CanopyRunnerGame } from '../games/CanopyRunnerGame';
 import { MemoryMatchGame } from '../games/MemoryMatchGame';
 import { StackAttackGame } from '../games/StackAttackGame';
 import { BlockPuzzleGame } from '../games/BlockPuzzleGame';
+import { BubbleBreathingGame } from '../games/BubbleBreathingGame';
+import { WorryTreeGame } from '../games/WorryTreeGame';
+import { ThoughtDetectiveGame } from '../games/ThoughtDetectiveGame';
+import { GroundingSensoryGame } from '../games/GroundingSensoryGame';
+import { NightStargazerGame } from '../games/NightStargazerGame';
+import { SmallSparksGame } from '../games/SmallSparksGame';
 
 export const GameShell = ({
   game,
@@ -52,7 +58,7 @@ export const GameShell = ({
           if (state) {
             setSavedState(state);
           }
-        } catch {}
+        } catch { }
         setLoadedState(true);
       })();
     } else {
@@ -214,6 +220,51 @@ export const GameShell = ({
               savedState={shouldResume ? savedState : null}
               onSaveState={handleSaveState}
               onFinishGame={handleFinishGame}
+            />
+          )}
+
+          {loadedState && game.id === 'bubble_breathing' && (
+            <BubbleBreathingGame
+              key={restartKey}
+              onVictory={handleFinishGame}
+              theme={theme}
+            />
+          )}
+
+          {loadedState && game.id === 'worry_tree' && (
+            <WorryTreeGame
+              key={restartKey}
+              onVictory={handleFinishGame}
+              theme={theme}
+            />
+          )}
+
+          {loadedState && game.id === 'thought_detective' && (
+            <ThoughtDetectiveGame
+              key={restartKey}
+              onVictory={handleFinishGame}
+              theme={theme}
+            />
+          )}
+
+          {loadedState && game.id === 'grounding_54321' && (
+            <GroundingSensoryGame
+              key={restartKey}
+              onFinish={handleFinishGame}
+            />
+          )}
+
+          {loadedState && game.id === 'night_stargazer' && (
+            <NightStargazerGame
+              key={restartKey}
+              onFinish={handleFinishGame}
+            />
+          )}
+
+          {loadedState && game.id === 'small_sparks' && (
+            <SmallSparksGame
+              key={restartKey}
+              onFinish={handleFinishGame}
             />
           )}
         </View>

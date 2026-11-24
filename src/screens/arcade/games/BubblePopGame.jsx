@@ -89,7 +89,7 @@ export const BubblePopGame = ({
       score,
       shotsRemaining,
     });
-  }, [currentLevel, grid, score, shotsRemaining]);
+  }, [currentLevel, grid, currentBubble, nextBubble, score, shotsRemaining]);
 
   // When level advances, re-initialize board with higher difficulty configuration
   const advanceToNextLevel = (nextLvl) => {

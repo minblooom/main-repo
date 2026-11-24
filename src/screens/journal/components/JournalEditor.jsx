@@ -8,9 +8,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalEditor.styles';
 import { JournalSparkBanner } from './JournalSparkBanner';
 
@@ -102,6 +101,7 @@ export const JournalEditor = ({
           ]}
         >
           <TextInput
+                    underlineColorAndroid="transparent"
             style={styles.titleInput}
             placeholder="Give your moment a title (e.g. A small, softer moment)..."
             placeholderTextColor="#A89BB5"
@@ -130,6 +130,7 @@ export const JournalEditor = ({
           ]}
         >
           <TextInput
+                    underlineColorAndroid="transparent"
             style={styles.bodyInput}
             placeholder="Click here to start writing... What is on your mind? What felt heavy or gentle today? Take all the space you need..."
             placeholderTextColor="#A89BB5"

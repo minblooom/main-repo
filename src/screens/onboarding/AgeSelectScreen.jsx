@@ -26,6 +26,14 @@ const AGE_GROUPS = [
   { id: '26-29+', min: 26, max: 99, defaultVal: '27', label: '26–29+', desc: 'Building life on your own terms' },
 ];
 
+
+const GENDER_OPTIONS = [
+  { id: 'female', label: 'Female', emoji: '🌸' },
+  { id: 'male', label: 'Male', emoji: '🌿' },
+  { id: 'non_binary', label: 'Non-Binary', emoji: '✨' },
+  { id: 'prefer_not', label: 'Prefer not to say', emoji: '🕊️' },
+];
+
 export const AgeSelectScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
@@ -34,6 +42,7 @@ export const AgeSelectScreen = ({ navigation, route }) => {
 
   const [typedAge, setTypedAge] = useState(route?.params?.age || '22');
   const [selectedGroup, setSelectedGroup] = useState(route?.params?.ageGroup || '22-25');
+  const [gender, setGender] = useState(route?.params?.gender || 'prefer_not');
 
   const ageNum = parseInt(typedAge, 10);
   const isUnderage = !isNaN(ageNum) && ageNum < 13 && typedAge.length > 0;
@@ -77,6 +86,7 @@ export const AgeSelectScreen = ({ navigation, route }) => {
       ...(route?.params ?? {}),
       age: finalAge,
       ageGroup: selectedGroup,
+      gender,
     });
   };
 
@@ -114,6 +124,7 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 <Text style={styles.inputCardLabel}>Your age</Text>
                 <View style={styles.inputRow}>
                   <TextInput
+                    underlineColorAndroid="transparent"
                     style={[
                       styles.ageNumberInput,
                       isUnderage && { color: '#BE123C' },
@@ -141,6 +152,37 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 </View>
               )}
 
+              
+              {/* Gender Identity Picker */}
+              <Text style={[styles.orGroupLabel, { marginTop: 18, marginBottom: 8 }]}>Your gender identity (optional):</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {GENDER_OPTIONS.map((item) => {
+                  const isSel = gender === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={{
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: 14,
+                        borderWidth: 1.5,
+                        borderColor: isSel ? '#2C5A38' : '#EAE3F7',
+                        backgroundColor: isSel ? '#EDF5EE' : '#FFFFFF',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      onPress={() => setGender(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: isSel ? '700' : '500', color: isSel ? '#2C5A38' : '#574C68' }}>
+                        {item.emoji} {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+  
               <Text style={styles.orGroupLabel}>Or choose your age group:</Text>
 
               {/* Age Bracket Options */}

@@ -9,15 +9,15 @@ import { COMPANION_MAP } from '../../constants/companions';
 import { useTheme } from '../../theme/ThemeContext';
 
 const NAV_ITEMS = [
-  { id: 'home',        label: 'Home' },
-  { id: 'journal',     label: 'Journal' },
-  { id: 'aurora',      label: 'Aurora AI' },
+  { id: 'home', label: 'Home' },
+  { id: 'journal', label: 'Journal' },
+  { id: 'aurora', label: 'Aurora AI' },
   { id: 'soundscapes', label: 'Chill & Soundscapes' },
-  { id: 'baraza',      label: 'Community Baraza' },
+  { id: 'baraza', label: 'Community Baraza' },
 ];
 
 const GROWTH_ITEMS = [
-  { id: 'arcade',    label: 'Blooms Arcade' },
+  { id: 'arcade', label: 'Blooms Arcade' },
   { id: 'sanctuary', label: 'My Profile' },
 ];
 

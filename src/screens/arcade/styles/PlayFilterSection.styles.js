@@ -1,7 +1,7 @@
 // src/screens/arcade/styles/PlayFilterSection.styles.js
 // Dedicated styles for PlayFilterSection component.
 
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
@@ -36,6 +36,11 @@ export const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
+    paddingVertical: 8,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none', outlineWidth: 0 } : {}),
   },
   clearBtn: {
     padding: 4,

@@ -8,14 +8,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Platform,
+  
 } from 'react-native';
-import { colors } from '../../../theme/colors';
 import { styles } from '../styles/JournalArchive.styles';
 
 export const JournalArchive = ({
   entries = [],
   onSelectEntry,
+  onDeleteEntry,
   onViewAll,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +45,7 @@ export const JournalArchive = ({
       <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
+                    underlineColorAndroid="transparent"
           style={styles.searchInput}
           placeholder="Find a moment..."
           placeholderTextColor="#A89BB5"
@@ -113,6 +114,33 @@ export const JournalArchive = ({
                 )}
               </View>
 
+              {/* Delete Quick Action */}
+              {onDeleteEntry && (
+                <TouchableOpacity
+                  style={{ padding: 6 }}
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    if (Platform.OS === 'web') {
+                      if (window.confirm(`Delete "${item.title || 'this reflection'}"?`)) {
+                        onDeleteEntry(item.id);
+                      }
+                    } else {
+                      Alert.alert(
+                        'Delete Moment',
+                        `Delete "${item.title || 'this reflection'}"?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteEntry(item.id) },
+                        ]
+                      );
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 13, color: '#C0392B' }}>🗑️</Text>
+                </TouchableOpacity>
+              )}
+
               {/* Arrow */}
               <Text style={styles.arrowIcon}>›</Text>
             </TouchableOpacity>
@@ -122,4 +150,4 @@ export const JournalArchive = ({
     </View>
   );
 };
-
+
