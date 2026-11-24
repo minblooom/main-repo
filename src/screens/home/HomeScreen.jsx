@@ -32,7 +32,7 @@ import { MoodAnalyticsModal } from '../profile/components/modals/MoodAnalyticsMo
 import { styles } from './styles/HomeScreen.styles';
 
 export const HomeScreen = ({ navigation, route }) => {
-  const { theme, companionId: themeCompanionId } = useTheme();
+  const { theme, companionId: themeCompanionId, setCompanionId } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 

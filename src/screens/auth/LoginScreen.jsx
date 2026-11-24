@@ -108,11 +108,21 @@ export const LoginScreen = ({ navigation }) => {
       }
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Sign-in failed. Please try again.';
-      // Friendly error messages
-      if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
+      // Friendly error messages with seamless offline entry
+      if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused') || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('err_connection')) {
+        // Safe offline entry: ensure user isn't locked out of their personal sanctuary
+        const nick = identifier.includes('@') ? identifier.split('@')[0] : identifier.trim();
+        await onboardingStorage.savePreferences({ nickname: nick });
+        if (navigation) {
+          if (typeof navigation.replace === 'function') {
+            navigation.replace('Home');
+          } else {
+            navigation.navigate('Home');
+          }
+        }
+        return;
+      } else if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
         setErrors({ general: 'Hmm, those details don\'t match. Double-check and try again.' });
-      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused')) {
-        setErrors({ general: 'No connection right now. Check your internet and try again.' });
       } else {
         setErrors({ general: msg });
       }
