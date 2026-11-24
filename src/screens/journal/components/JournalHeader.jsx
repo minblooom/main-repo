@@ -1,10 +1,12 @@
 // src/screens/journal/components/JournalHeader.jsx
 // Top sanctuary navigation bar for the Journal screen with breadcrumb, weather, and privacy toggle
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import { colors } from '../../../theme/colors';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import { styles } from '../styles/JournalHeader.styles';
 import { COMPANION_MAP } from '../../../constants/companions';
+import { WeatherService } from '../../../services/weatherService';
+import { useI18n } from '../../../services/i18n';
 
 export const JournalHeader = ({
   companionId = 'noodle',
@@ -12,8 +14,29 @@ export const JournalHeader = ({
   onProfilePress,
   onHomePress,
 }) => {
-  const [language, setLanguage] = useState('EN');
+  const { language, setLanguage, countryData, t } = useI18n();
+  const [weatherData, setWeatherData] = useState({
+    pillText: '☀️ Warm & Calm · 25°C',
+    hydrationTip: 'Stay refreshed with small sips of water today.',
+  });
+
   const companion = COMPANION_MAP[companionId] || COMPANION_MAP.noodle;
+
+  useEffect(() => {
+    let isMounted = true;
+    const lat = countryData?.lat ?? -1.2921;
+    const lon = countryData?.lon ?? 36.8219;
+    const capital = countryData?.capital || 'Nairobi';
+
+    WeatherService.getCurrentWeather(lat, lon, capital).then((data) => {
+      if (isMounted && data) {
+        setWeatherData(data);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [countryData?.code]);
 
   const handleNotifications = () => {
     Alert.alert('Quiet Sanctuary', 'Your journal notifications are muted. No pressure or streak reminders.');
@@ -30,6 +53,12 @@ export const JournalHeader = ({
     );
   };
 
+  const toggleLanguage = () => {
+    if (language === 'en') setLanguage('sw');
+    else if (language === 'sw') setLanguage('sheng');
+    else setLanguage('en');
+  };
+
   return (
     <View style={styles.container}>
       {/* Breadcrumb / Location Indicator */}
@@ -39,27 +68,24 @@ export const JournalHeader = ({
         activeOpacity={0.7}
       >
         <Text style={styles.breadcrumbText}>
-          <Text style={styles.breadcrumbLink}>My sanctuary</Text>  /  Journal
+          <Text style={styles.breadcrumbLink}>{t('sanctuary_journal')}</Text>
         </Text>
       </TouchableOpacity>
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Peaceful Weather Pill — Strictly Zero County Names */}
-        <View style={styles.weatherPill}>
-          <Text style={styles.weatherText}>☀️ Warm & Calm · 25°C</Text>
-        </View>
-
-        {/* Language Toggle */}
+        {/* Language Toggle with EN / SW / SH */}
         <TouchableOpacity
-          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
+          onPress={toggleLanguage}
           style={styles.langBtn}
           activeOpacity={0.7}
         >
           <Text style={styles.langText}>
-            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
-            {' / '}
-            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
+            <Text style={language === 'en' ? styles.langActive : styles.langInactive}>EN</Text>
+            {' · '}
+            <Text style={language === 'sw' ? styles.langActive : styles.langInactive}>SW</Text>
+            {' · '}
+            <Text style={language === 'sheng' ? styles.langActive : styles.langInactive}>SH</Text>
           </Text>
         </TouchableOpacity>
 
@@ -74,102 +100,17 @@ export const JournalHeader = ({
 
         {/* Profile Companion Avatar */}
         <TouchableOpacity
-          style={styles.avatarCircle}
+          style={[styles.avatarCircle, { backgroundColor: companion.accent || '#EAE3F7' }]}
           onPress={onProfilePress}
           activeOpacity={0.8}
         >
           <Image
-            source={companion.image}
+            source={companion.cutoutImage || companion.image}
             style={styles.avatarImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  breadcrumb: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  breadcrumbText: {
-    fontSize: 12,
-    color: '#8B6DA8',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  breadcrumbLink: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  weatherPill: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(73, 37, 66, 0.08)',
-    shadowColor: '#492542',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  weatherText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  langBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  langText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
-  langActive: {
-    color: colors.textPrimary,
-    fontWeight: '800',
-  },
-  langInactive: {
-    color: colors.textMuted,
-  },
-  iconBtn: {
-    padding: 6,
-  },
-  iconEmoji: {
-    fontSize: 16,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EAE3F7',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: 32,
-    height: 36,
-  },
-});
