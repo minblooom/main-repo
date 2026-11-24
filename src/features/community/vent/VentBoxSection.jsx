@@ -263,7 +263,7 @@ export const VentBoxSection = () => {
         <Text style={[styles.feedTitle, { color: theme.textSecondary }]}>Safe Anonymous Voices</Text>
         {vents.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-            <Text style={styles.emptyEmoji}>🕊️</Text>
+            <Text style={styles.emptyEmoji}>🍃</Text>
             <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Safe & Silent Sanctuary</Text>
             <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
               No anonymous notes shared yet. Write what is on your chest above to release it to the embers or place it gently here.
@@ -277,7 +277,7 @@ export const VentBoxSection = () => {
             >
               <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                 <Text style={[styles.anonTag, { color: theme.textMuted }]}>
-                  🕊️ Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
+                  🍃 Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {

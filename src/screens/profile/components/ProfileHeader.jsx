@@ -10,13 +10,7 @@ import { styles } from '../styles/ProfileHeader.styles';
 
 export const ProfileHeader = ({ onHomePress, onNotificationPress }) => {
   const { theme } = useTheme();
-  const { language, setLanguage } = useI18n();
-
-  const toggleLanguage = () => {
-    if (language === 'en') setLanguage('sw');
-    else if (language === 'sw') setLanguage('sheng');
-    else setLanguage('en');
-  };
+  const { language, availableLanguages, cycleLanguage } = useI18n();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -35,15 +29,17 @@ export const ProfileHeader = ({ onHomePress, onNotificationPress }) => {
 
       {/* Right side: lang + bell */}
       <View style={styles.rightRow}>
-        <TouchableOpacity
-          style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
-          onPress={toggleLanguage}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.langText, { color: theme.textSecondary }]}>
-            {language === 'en' ? 'EN' : language === 'sw' ? 'SW' : 'SH'}
-          </Text>
-        </TouchableOpacity>
+        {availableLanguages.length > 1 && (
+          <TouchableOpacity
+            style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
+            onPress={cycleLanguage}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.langText, { color: theme.textSecondary }]}>
+              {(availableLanguages.find((l) => l.id === language) || availableLanguages[0])?.code || 'EN'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.bellBtn, { backgroundColor: theme.heroBg }]}

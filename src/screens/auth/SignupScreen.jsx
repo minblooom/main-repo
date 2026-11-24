@@ -21,12 +21,12 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { LegalModal } from '../legal/LegalScreen';
 import { AuthService } from '../../core/api/authService';
+import { useI18n } from '../../services/i18n';
 
 export const SignupScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-
-  const [language, setLanguage] = useState('EN');
+  const { language, availableLanguages, cycleLanguage } = useI18n();
   const [nickname, setNickname] = useState('');
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
@@ -174,17 +174,24 @@ export const SignupScreen = ({ navigation }) => {
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
-              <TouchableOpacity
-                onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
-                style={s.langBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={s.langText}>
-                  <Text style={language === 'EN' ? s.langActive : s.langInactive}>EN</Text>
-                  {' | '}
-                  <Text style={language === 'SW' ? s.langActive : s.langInactive}>SW</Text>
-                </Text>
-              </TouchableOpacity>
+              {availableLanguages.length > 1 && (
+                <TouchableOpacity
+                  onPress={cycleLanguage}
+                  style={s.langBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.langText}>
+                    {availableLanguages.map((l, idx) => (
+                      <React.Fragment key={l.id}>
+                        {idx > 0 ? ' | ' : ''}
+                        <Text style={language === l.id ? s.langActive : s.langInactive}>
+                          {l.code}
+                        </Text>
+                      </React.Fragment>
+                    ))}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={handleUrgentSupport} activeOpacity={0.7}>
                 <Text style={s.urgentLink}>Need urgent support?</Text>
               </TouchableOpacity>

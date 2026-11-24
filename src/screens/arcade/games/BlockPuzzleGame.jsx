@@ -850,7 +850,7 @@ export const BlockPuzzleGame = ({
         <View style={styles.levelBanner}>
 
           <Text style={styles.levelBannerTag}>
-            ⭐ LEVEL ADVANCED!
+            🌿 LEVEL ADVANCED!
           </Text>
 
           <Text style={styles.levelBannerTitle}>

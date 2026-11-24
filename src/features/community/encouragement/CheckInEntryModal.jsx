@@ -51,7 +51,7 @@ export const CheckInEntryModal = ({ visible, entry, onClose, onSave, onDelete })
     const ok = await onDelete(entry.date);
     setBusy(false);
     if (ok) onClose();
-    else setError('We couldn’t delete that. Try again.');
+    else setError('We couldn’t let that go just yet. Take a breath and try again.');
   };
 
   return (
@@ -126,7 +126,7 @@ export const CheckInEntryModal = ({ visible, entry, onClose, onSave, onDelete })
               style={[styles.pill, { borderColor: theme.divider, backgroundColor: theme.cardBg }]}
             >
               <Text style={[styles.pillText, { color: theme.accent }]}>
-                {armed ? 'Tap again to delete' : 'Delete'}
+                {armed ? 'Tap again to let go' : 'Let go'}
               </Text>
             </Pressable>
 

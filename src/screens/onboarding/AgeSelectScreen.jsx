@@ -31,7 +31,7 @@ const GENDER_OPTIONS = [
   { id: 'female', label: 'Female', emoji: '🌸' },
   { id: 'male', label: 'Male', emoji: '🌿' },
   { id: 'non_binary', label: 'Non-Binary', emoji: '✨' },
-  { id: 'prefer_not', label: 'Prefer not to say', emoji: '🕊️' },
+  { id: 'prefer_not', label: 'Prefer not to say', emoji: '🌿' },
 ];
 
 export const AgeSelectScreen = ({ navigation, route }) => {

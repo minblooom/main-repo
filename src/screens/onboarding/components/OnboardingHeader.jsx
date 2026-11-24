@@ -1,12 +1,13 @@
 // src/screens/onboarding/components/OnboardingHeader.jsx
 // Unified header for all onboarding screens, matching the Signup header in Screenshot 2
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors } from '../../../theme/colors';
+import { useI18n } from '../../../services/i18n';
 
 export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
-  const [language, setLanguage] = useState('EN');
+  const { language, availableLanguages, cycleLanguage, t } = useI18n();
 
   const handleBack = () => {
     if (onBack) {
@@ -19,8 +20,8 @@ export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
   const handleSupportPress = () => {
     Alert.alert(
       'Urgent Support',
-      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.',
-      [{ text: 'Understood', style: 'default' }]
+      t('urgent_support_alert'),
+      [{ text: t('understood') || 'Understood', style: 'default' }]
     );
   };
 
@@ -40,17 +41,24 @@ export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          onPress={() => setLanguage(language === 'EN' ? 'SW' : 'EN')}
-          style={styles.langBtn}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.langText}>
-            <Text style={language === 'EN' ? styles.langActive : styles.langInactive}>EN</Text>
-            {' | '}
-            <Text style={language === 'SW' ? styles.langActive : styles.langInactive}>SW</Text>
-          </Text>
-        </TouchableOpacity>
+        {availableLanguages.length > 1 && (
+          <TouchableOpacity
+            onPress={cycleLanguage}
+            style={styles.langBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.langText}>
+              {availableLanguages.map((l, idx) => (
+                <React.Fragment key={l.id}>
+                  {idx > 0 ? ' | ' : ''}
+                  <Text style={language === l.id ? styles.langActive : styles.langInactive}>
+                    {l.code}
+                  </Text>
+                </React.Fragment>
+              ))}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={handleSupportPress} activeOpacity={0.7}>
           <Text style={styles.urgentLink}>Need urgent support?</Text>

@@ -149,14 +149,14 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       } catch {}
     };
     if (Platform.OS === 'web') {
-      if (window.confirm('Delete this message?')) {
+      if (window.confirm('Let go of this message?')) {
         doDelete();
       }
       return;
     }
-    Alert.alert('Delete Message', 'Remove this message from the circle?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: doDelete },
+    Alert.alert('Let Go of Message', 'Gently remove this message from the circle?', [
+      { text: 'Keep it', style: 'cancel' },
+      { text: 'Let go', style: 'destructive', onPress: doDelete },
     ]);
   };
 
@@ -289,7 +289,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
 
           {messages.filter((m) => !reportedMessageIds.includes(m.id)).length === 0 ? (
             <View style={[styles.emptyChatCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-              <Text style={styles.emptyChatEmoji}>🕊️</Text>
+              <Text style={styles.emptyChatEmoji}>🌿</Text>
               <Text style={[styles.emptyChatTitle, { color: theme.textPrimary }]}>The circle is calm and open</Text>
               <Text style={[styles.emptyChatSubtitle, { color: theme.textMuted }]}>
                 No messages have been sent here yet today. Be the first to share a quiet thought, dictate, or send a voice note below.

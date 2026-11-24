@@ -12,7 +12,7 @@ import { styles } from '../styles/HomeHeader.styles';
 
 export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => {
   const { theme, companionId: globalCompanionId } = useTheme();
-  const { language, setLanguage, countryData, t } = useI18n();
+  const { language, availableLanguages, cycleLanguage, countryData, t } = useI18n();
 
   const [weatherData, setWeatherData] = useState({
     pillText: '☀️ Warm & Calm · 25°C',
@@ -60,20 +60,31 @@ export const HomeHeader = ({ companionId: propCompanionId, onProfilePress }) => 
 
       {/* Right Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Language Toggle */}
-        <TouchableOpacity
-          onPress={toggleLanguage}
-          style={styles.langBtn}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.langText, { color: theme.textMuted }]}>
-            <Text style={language === 'en' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>EN</Text>
-            {' · '}
-            <Text style={language === 'sw' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SW</Text>
-            {' · '}
-            <Text style={language === 'sheng' ? [styles.langActive, { color: theme.textPrimary }] : [styles.langInactive, { color: theme.textMuted }]}>SH</Text>
-          </Text>
-        </TouchableOpacity>
+        {/* Language Toggle (shown only when country has multiple active languages) */}
+        {availableLanguages.length > 1 && (
+          <TouchableOpacity
+            onPress={cycleLanguage}
+            style={styles.langBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.langText, { color: theme.textMuted }]}>
+              {availableLanguages.map((l, idx) => (
+                <React.Fragment key={l.id}>
+                  {idx > 0 ? ' · ' : ''}
+                  <Text
+                    style={
+                      language === l.id
+                        ? [styles.langActive, { color: theme.textPrimary }]
+                        : [styles.langInactive, { color: theme.textMuted }]
+                    }
+                  >
+                    {l.code}
+                  </Text>
+                </React.Fragment>
+              ))}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Notification Bell */}
         <TouchableOpacity

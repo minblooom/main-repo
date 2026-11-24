@@ -412,7 +412,7 @@ export const ColourCrushGame = ({
       {/* Level Up Celebration Banner */}
       {levelUpBanner && (
         <View style={styles.levelBanner}>
-          <Text style={styles.levelBannerTag}>⭐ MISSION ACCOMPLISHED!</Text>
+          <Text style={styles.levelBannerTag}>🌿 MISSION ACCOMPLISHED!</Text>
           <Text style={styles.levelBannerTitle}>Level {levelUpBanner.level}</Text>
           <Text style={styles.levelBannerSub}>{levelUpBanner.name}</Text>
         </View>

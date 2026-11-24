@@ -25,7 +25,7 @@ export const JournalEntryModal = ({
 
   const handleDelete = () => {
     if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`)) {
+      if (window.confirm(`Ready to let go of "${entry.title || 'this reflection'}"? Once released, it won't come back.`)) {
         onDeleteEntry?.(entry.id);
         onClose();
       }
@@ -33,12 +33,12 @@ export const JournalEntryModal = ({
     }
 
     Alert.alert(
-      'Delete Moment',
-      `Are you sure you want to delete "${entry.title || 'this reflection'}"? This cannot be undone.`,
+      'Let Go of This Moment',
+      `Ready to let go of "${entry.title || 'this reflection'}"? Once released, it won't come back.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Keep entry', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Let go',
           style: 'destructive',
           onPress: () => {
             onDeleteEntry?.(entry.id);

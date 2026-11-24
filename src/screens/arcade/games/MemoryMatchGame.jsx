@@ -27,7 +27,7 @@ const ALL_PAIRS = [
   { pairId: 4, name: 'Kovu',   emoji: '🦁', trait: 'Courage' },
   { pairId: 5, name: 'Acacia', emoji: '🌿', trait: 'Growth' },
   { pairId: 6, name: 'Amani',  emoji: '☀️', trait: 'Peace' },
-  { pairId: 7, name: 'Nyota',  emoji: '⭐', trait: 'Wonder' },
+  { pairId: 7, name: 'Jua',  emoji: '☀️', trait: 'Warmth' },
   { pairId: 8, name: 'Bora',   emoji: '🌸', trait: 'Grace' },
 ];
 
@@ -216,7 +216,7 @@ export const MemoryMatchGame = ({
       {/* Level Up Celebration Banner */}
       {levelUpBanner && (
         <View style={styles.levelBanner}>
-          <Text style={styles.levelBannerTag}>⭐ LEVEL ADVANCED!</Text>
+          <Text style={styles.levelBannerTag}>🌿 LEVEL ADVANCED!</Text>
           <Text style={styles.levelBannerTitle}>Level {levelUpBanner.level}</Text>
           <Text style={styles.levelBannerSub}>{levelUpBanner.name}</Text>
         </View>

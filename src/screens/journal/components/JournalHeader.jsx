@@ -14,7 +14,7 @@ export const JournalHeader = ({
   onProfilePress,
   onHomePress,
 }) => {
-  const { language, setLanguage, countryData, t } = useI18n();
+  const { language, availableLanguages, cycleLanguage, countryData, t } = useI18n();
   const [weatherData, setWeatherData] = useState({
     pillText: '☀️ Warm & Calm · 25°C',
     hydrationTip: 'Stay refreshed with small sips of water today.',
@@ -74,20 +74,25 @@ export const JournalHeader = ({
 
       {/* Auxiliary Controls */}
       <View style={styles.controlsRow}>
-        {/* Language Toggle with EN / SW / SH */}
-        <TouchableOpacity
-          onPress={toggleLanguage}
-          style={styles.langBtn}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.langText}>
-            <Text style={language === 'en' ? styles.langActive : styles.langInactive}>EN</Text>
-            {' · '}
-            <Text style={language === 'sw' ? styles.langActive : styles.langInactive}>SW</Text>
-            {' · '}
-            <Text style={language === 'sheng' ? styles.langActive : styles.langInactive}>SH</Text>
-          </Text>
-        </TouchableOpacity>
+        {/* Language Toggle (shown only when country supports multiple languages) */}
+        {availableLanguages.length > 1 && (
+          <TouchableOpacity
+            onPress={cycleLanguage}
+            style={styles.langBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.langText}>
+              {availableLanguages.map((l, idx) => (
+                <React.Fragment key={l.id}>
+                  {idx > 0 ? ' · ' : ''}
+                  <Text style={language === l.id ? styles.langActive : styles.langInactive}>
+                    {l.code}
+                  </Text>
+                </React.Fragment>
+              ))}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Notification Bell */}
         <TouchableOpacity

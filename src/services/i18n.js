@@ -27,6 +27,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '1199',
     secondaryCallNum: '+254722178177',
     regionName: 'Kenya · East Africa',
+    supportedLanguages: ['en', 'sw', 'sheng'],
   },
   ug: {
     code: 'UG',
@@ -39,6 +40,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '0800212121',
     secondaryCallNum: null,
     regionName: 'Uganda · East Africa',
+    supportedLanguages: ['en', 'sw'],
   },
   tz: {
     code: 'TZ',
@@ -51,6 +53,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '116',
     secondaryCallNum: null,
     regionName: 'Tanzania · East Africa',
+    supportedLanguages: ['sw', 'en'],
   },
   et: {
     code: 'ET',
@@ -63,6 +66,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '952',
     secondaryCallNum: null,
     regionName: 'Ethiopia · Horn of Africa',
+    supportedLanguages: ['en'],
   },
   rw: {
     code: 'RW',
@@ -75,6 +79,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: '114',
     secondaryCallNum: null,
     regionName: 'Rwanda · East Africa',
+    supportedLanguages: ['en', 'sw'],
   },
   global: {
     code: 'GL',
@@ -87,6 +92,7 @@ export const COUNTRY_DATA = {
     primaryCallNum: null,
     secondaryCallNum: null,
     regionName: 'Global Citizen',
+    supportedLanguages: ['en'],
   },
 };
 
@@ -264,6 +270,18 @@ export const I18nProvider = ({ children }) => {
   const setCountry = async (newCountry) => {
     const norm = (newCountry || 'ke').toLowerCase();
     setCountryState(norm);
+    const nextCountryData = COUNTRY_DATA[norm] || COUNTRY_DATA.ke;
+    const allowed = nextCountryData.supportedLanguages || ['en'];
+
+    if (!allowed.includes(language)) {
+      const fallbackLang = allowed[0] || 'en';
+      setLanguageState(fallbackLang);
+      try {
+        await AsyncStorage.setItem(LANGUAGE_KEY, fallbackLang);
+        await onboardingStorage.savePreferences({ language: fallbackLang });
+      } catch {}
+    }
+
     try {
       await AsyncStorage.setItem(COUNTRY_KEY, norm);
       await onboardingStorage.savePreferences({ country: norm });
@@ -271,6 +289,17 @@ export const I18nProvider = ({ children }) => {
   };
 
   const activeCountryData = COUNTRY_DATA[country] || COUNTRY_DATA.ke;
+  const allowedLangIds = activeCountryData.supportedLanguages || ['en'];
+  const availableLanguages = allowedLangIds
+    .map((id) => SUPPORTED_LANGUAGES.find((l) => l.id === id))
+    .filter(Boolean);
+
+  const cycleLanguage = () => {
+    if (availableLanguages.length <= 1) return;
+    const idx = availableLanguages.findIndex((l) => l.id === language);
+    const next = availableLanguages[(idx + 1) % availableLanguages.length];
+    if (next) setLanguage(next.id);
+  };
 
   const t = (key) => {
     const langDict = TRANSLATIONS[language] || TRANSLATIONS.en;
@@ -288,7 +317,9 @@ export const I18nProvider = ({ children }) => {
         language,
         country,
         countryData: activeCountryData,
+        availableLanguages,
         setLanguage,
+        cycleLanguage,
         setCountry,
         t,
       }}

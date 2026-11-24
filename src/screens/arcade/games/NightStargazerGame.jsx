@@ -19,7 +19,7 @@ const PHASES = [
 ];
 
 const CONSTELLATIONS = [
-  { name: 'Star of Rest', coord: '⭐ (East Horizon)' },
+  { name: 'Star of Rest', coord: '✨ (East Horizon)' },
   { name: 'The Acacia Branch', coord: '🌿 (Mid Sky)' },
   { name: 'Savanna River', coord: '🌊 (Zenith)' },
   { name: 'Morning Star of Peace', coord: '✨ (Dawn Peak)' },

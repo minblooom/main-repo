@@ -26,14 +26,10 @@ const COUNTRIES = [
 export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
   const { theme: ctxTheme } = useTheme();
   const theme = propTheme || ctxTheme;
-  const { country, language, setCountry, setLanguage, countryData } = useI18n();
+  const { country, language, setCountry, setLanguage, availableLanguages } = useI18n();
 
   const handleSelectCountry = (cId) => {
     setCountry(cId);
-    // If switching to Tanzania, auto-select Swahili if current is Sheng
-    if (cId === 'tz' && language === 'sheng') {
-      setLanguage('sw');
-    }
   };
 
   const handleSelectLanguage = (lId) => {
@@ -115,39 +111,41 @@ export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
               </View>
             </View>
 
-            {/* Language Selection */}
-            <View>
-              <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Language & Tone</Text>
-              <View style={styles.langRow}>
-                {SUPPORTED_LANGUAGES.map((l) => {
-                  const isSelected = language === l.id;
-                  return (
-                    <TouchableOpacity
-                      key={l.id}
-                      style={[
-                        styles.langChip,
-                        {
-                          backgroundColor: isSelected ? theme.accentSoft : theme.cardBg,
-                          borderColor: isSelected ? theme.accent : theme.heroBorder,
-                        },
-                      ]}
-                      onPress={() => handleSelectLanguage(l.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
+            {/* Language Selection (only shown when selected country supports multiple languages) */}
+            {availableLanguages.length > 1 && (
+              <View>
+                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Language & Tone</Text>
+                <View style={styles.langRow}>
+                  {availableLanguages.map((l) => {
+                    const isSelected = language === l.id;
+                    return (
+                      <TouchableOpacity
+                        key={l.id}
                         style={[
-                          styles.langChipText,
-                          { color: isSelected ? theme.accent : theme.textPrimary },
-                          isSelected && { fontWeight: '800' },
+                          styles.langChip,
+                          {
+                            backgroundColor: isSelected ? theme.accentSoft : theme.cardBg,
+                            borderColor: isSelected ? theme.accent : theme.heroBorder,
+                          },
                         ]}
+                        onPress={() => handleSelectLanguage(l.id)}
+                        activeOpacity={0.8}
                       >
-                        {l.name} {isSelected ? '✓' : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text
+                          style={[
+                            styles.langChipText,
+                            { color: isSelected ? theme.accent : theme.textPrimary },
+                            isSelected && { fontWeight: '800' },
+                          ]}
+                        >
+                          {l.name} {isSelected ? '✓' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
+            )}
 
             {/* Live Regional Helpline Preview */}
             <View

@@ -21,7 +21,7 @@ import { VoiceInputControls } from '../../../components/voice/VoiceInputControls
 import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Wins 🌟' },
+  { id: 'all', label: 'All Wins 🌱' },
   { id: 'personal', label: 'Personal 🌿' },
   { id: 'school', label: 'Campus/School 📚' },
   { id: 'work', label: 'Hustle/Work 💼' },

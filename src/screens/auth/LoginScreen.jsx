@@ -21,7 +21,7 @@ import { useI18n } from '../../services/i18n';
 export const LoginScreen = ({ navigation }) => {
   const { isTablet, isDesktop } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const { language, setLanguage, countryData, t } = useI18n();
+  const { language, availableLanguages, cycleLanguage, countryData, t } = useI18n();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -107,7 +107,7 @@ export const LoginScreen = ({ navigation }) => {
         }
       }
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Sign-in failed. Please try again.';
+      const msg = err?.response?.data?.message || err?.message || 'We couldn’t quite get you in. Check your details and try again.';
       // Friendly error messages with seamless offline entry
       if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused') || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('err_connection')) {
         // Safe offline entry: ensure user isn't locked out of their personal sanctuary
@@ -154,22 +154,24 @@ export const LoginScreen = ({ navigation }) => {
           <View style={s.topHeader}>
             <Text style={s.brandTitle}>mindbloom</Text>
             <View style={s.headerRightLinks}>
-              <TouchableOpacity
-                onPress={() => {
-                  const nextLang = language === 'en' ? 'sw' : language === 'sw' ? 'sheng' : 'en';
-                  setLanguage(nextLang);
-                }}
-                style={s.langBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={s.langText}>
-                  <Text style={language === 'en' ? s.langActive : s.langInactive}>EN</Text>
-                  {' | '}
-                  <Text style={language === 'sw' ? s.langActive : s.langInactive}>SW</Text>
-                  {' | '}
-                  <Text style={language === 'sheng' ? s.langActive : s.langInactive}>SH</Text>
-                </Text>
-              </TouchableOpacity>
+              {availableLanguages.length > 1 && (
+                <TouchableOpacity
+                  onPress={cycleLanguage}
+                  style={s.langBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.langText}>
+                    {availableLanguages.map((l, idx) => (
+                      <React.Fragment key={l.id}>
+                        {idx > 0 ? ' | ' : ''}
+                        <Text style={language === l.id ? s.langActive : s.langInactive}>
+                          {l.code}
+                        </Text>
+                      </React.Fragment>
+                    ))}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={handleUrgentSupport} activeOpacity={0.7}>
                 <Text style={s.urgentLink}>{t('need_support')}</Text>
               </TouchableOpacity>

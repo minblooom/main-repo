@@ -51,12 +51,12 @@ export const AllEntriesModal = ({
     }
 
     Alert.alert(
-      'Delete Moment',
-      `Are you sure you want to let go of "${item.title || 'this reflection'}"? This cannot be undone.`,
+      'Let Go of This Moment',
+      `Are you sure you want to let go of "${item.title || 'this reflection'}"? Once released, it won't come back.`,
       [
         { text: 'Keep entry', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Let go',
           style: 'destructive',
           onPress: () => onDeleteEntry?.(item.id),
         },

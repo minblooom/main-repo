@@ -122,16 +122,16 @@ export const JournalArchive = ({
                   onPress={(e) => {
                     e?.stopPropagation?.();
                     if (Platform.OS === 'web') {
-                      if (window.confirm(`Delete "${item.title || 'this reflection'}"?`)) {
+                      if (window.confirm(`Let go of "${item.title || 'this reflection'}"?`)) {
                         onDeleteEntry(item.id);
                       }
                     } else {
                       Alert.alert(
-                        'Delete Moment',
-                        `Delete "${item.title || 'this reflection'}"?`,
+                        'Let Go of This Moment',
+                        `Let go of "${item.title || 'this reflection'}"?`,
                         [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteEntry(item.id) },
+                          { text: 'Keep it', style: 'cancel' },
+                          { text: 'Let go', style: 'destructive', onPress: () => onDeleteEntry(item.id) },
                         ]
                       );
                     }

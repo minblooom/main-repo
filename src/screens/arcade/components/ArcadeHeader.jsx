@@ -20,7 +20,7 @@ export const ArcadeHeader = ({
   onNotificationPress,
 }) => {
   const { theme } = useTheme();
-  const { language, setLanguage } = useI18n();
+  const { language, availableLanguages, cycleLanguage } = useI18n();
 
   const handleHome = () => {
     soundService.playClick();
@@ -39,9 +39,7 @@ export const ArcadeHeader = ({
 
   const toggleLanguage = () => {
     soundService.playClick();
-    if (language === 'en') setLanguage('sw');
-    else if (language === 'sw') setLanguage('sheng');
-    else setLanguage('en');
+    cycleLanguage();
   };
 
   return (
@@ -61,15 +59,17 @@ export const ArcadeHeader = ({
 
       {/* Right side controls */}
       <View style={styles.rightRow}>
-        <TouchableOpacity
-          style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
-          onPress={toggleLanguage}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.langText, { color: theme.textSecondary }]}>
-            {language === 'en' ? 'EN' : language === 'sw' ? 'SW' : 'SH'}
-          </Text>
-        </TouchableOpacity>
+        {availableLanguages.length > 1 && (
+          <TouchableOpacity
+            style={[styles.langPill, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}
+            onPress={toggleLanguage}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.langText, { color: theme.textSecondary }]}>
+              {(availableLanguages.find((l) => l.id === language) || availableLanguages[0])?.code || 'EN'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.bellBtn, { backgroundColor: theme.heroBg }]}
