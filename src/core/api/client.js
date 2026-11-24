@@ -3,6 +3,7 @@
 // Handles automatic Bearer token injection, session refresh, and offline-safe error handling.
 
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -20,18 +21,62 @@ export const apiClient = axios.create({
   },
 });
 
-// Keys for local session storage
+// Keys for session storage
 export const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: '@mindbloom_access_token',
   REFRESH_TOKEN: '@mindbloom_refresh_token',
   USER_PROFILE: '@mindbloom_user_profile',
 };
 
-// Request Interceptor: Attach Access Token if available
+/**
+ * Secure token storage helpers.
+ * On native (iOS/Android): tokens stored in encrypted SecureStore.
+ * On web: SecureStore is unavailable — falls back to AsyncStorage (web has no native keychain).
+ */
+const TokenStorage = {
+  async getItem(key) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.getItem(key);
+    }
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  async setItem(key, value) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.setItem(key, value);
+    }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {
+      // Fallback to AsyncStorage if SecureStore fails (emulator edge case)
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+  async removeItem(key) {
+    if (Platform.OS === 'web') {
+      return AsyncStorage.removeItem(key);
+    }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      await AsyncStorage.removeItem(key);
+    }
+  },
+  async multiRemove(keys) {
+    for (const key of keys) {
+      await TokenStorage.removeItem(key);
+    }
+  },
+};
+
+export { TokenStorage };
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      const token = await TokenStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -58,7 +103,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+        const refreshToken = await TokenStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
         if (!refreshToken) {
           return Promise.reject(error);
         }
@@ -68,14 +113,17 @@ apiClient.interceptors.response.use(
         });
 
         if (refreshRes.data?.success && refreshRes.data?.data?.accessToken) {
-          const newAccessToken = refreshRes.data.data.accessToken;
-          await AsyncStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshRes.data.data;
+          await TokenStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+          if (newRefreshToken) {
+            await TokenStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+          }
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);
         }
       } catch {
         // If refresh fails, clear session gracefully
-        await AsyncStorage.multiRemove([
+        await TokenStorage.multiRemove([
           AUTH_STORAGE_KEYS.ACCESS_TOKEN,
           AUTH_STORAGE_KEYS.REFRESH_TOKEN,
         ]);

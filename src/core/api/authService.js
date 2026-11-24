@@ -1,7 +1,7 @@
 // src/core/api/authService.js
 // Authentication service connecting Login and Signup screens to the backend
 
-import { apiClient, AUTH_STORAGE_KEYS } from './client';
+import { apiClient, AUTH_STORAGE_KEYS, TokenStorage } from './client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export class AuthService {
@@ -49,11 +49,12 @@ export class AuthService {
     } catch {
       // Ignore network errors on logout
     } finally {
-      await AsyncStorage.multiRemove([
+      // Tokens cleared from encrypted secure store; non-sensitive profile from AsyncStorage
+      await TokenStorage.multiRemove([
         AUTH_STORAGE_KEYS.ACCESS_TOKEN,
         AUTH_STORAGE_KEYS.REFRESH_TOKEN,
-        AUTH_STORAGE_KEYS.USER_PROFILE,
       ]);
+      await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.USER_PROFILE);
     }
   }
 
@@ -70,11 +71,9 @@ export class AuthService {
   }
 
   static async saveSession({ user, accessToken, refreshToken }) {
-    const pairs = [
-      [AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken],
-      [AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
-      [AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(user)],
-    ];
-    await AsyncStorage.multiSet(pairs);
+    // Tokens → encrypted secure store; profile JSON (non-secret) → AsyncStorage
+    await TokenStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    await TokenStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(user));
   }
 }

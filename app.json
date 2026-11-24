@@ -36,7 +36,8 @@
           "color": "#4CAF82"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-secure-store"
     ]
   }
 }
