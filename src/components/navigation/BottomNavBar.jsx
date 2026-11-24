@@ -12,6 +12,7 @@ const BOTTOM_TABS = [
   { id: 'journal',   label: 'Journal' },
   { id: 'aurora',    label: 'Aurora' },
   { id: 'arcade',    label: 'Arcade' },
+  { id: 'baraza',    label: 'Baraza' },
   { id: 'sanctuary', label: 'Profile' },
 ];
 
