@@ -105,7 +105,7 @@ export const JournalArchive = ({
               {/* Title & Feeling */}
               <View style={styles.entryMeta}>
                 <Text style={styles.entryTitle} numberOfLines={1}>
-                  {item.title || 'Untitled reflection'}
+                  {item.voiceNote ? '🎙️ ' : ''}{item.title || 'Untitled reflection'}
                 </Text>
                 {item.feelingLabel && (
                   <Text style={styles.entryFeeling} numberOfLines={1}>

@@ -16,6 +16,8 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { useCommunityStore } from '../store/communityStore';
+import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
+import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
 const ANGER_WORDS = [
   'angry', 'mad', 'hate', 'furious', 'screaming', 'tired of', 'burnout',
@@ -103,6 +105,7 @@ export const VentBoxSection = () => {
   const { theme } = useTheme();
   const { vents, addVent, toggleHugVent, toggleCandleVent } = useCommunityStore();
   const [ventText, setVentText] = useState('');
+  const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [isBurning, setIsBurning] = useState(false);
 
   // Dissolve/Burn Animation
@@ -113,8 +116,8 @@ export const VentBoxSection = () => {
   const emotion = useMemo(() => getDetectedEmotion(ventText), [ventText]);
 
   const handleBurnWorry = () => {
-    if (!ventText.trim()) {
-      Alert.alert('Empty Release', 'Write what is weighing on your mind first before releasing it to the embers.');
+    if (!ventText.trim() && !draftVoiceNote) {
+      Alert.alert('Empty Release', 'Write or record what is weighing on your mind first before releasing it to the embers.');
       return;
     }
 
@@ -134,6 +137,7 @@ export const VentBoxSection = () => {
       }),
     ]).start(() => {
       setVentText('');
+      setDraftVoiceNote(null);
       burnOpacity.setValue(1);
       burnScale.setValue(1);
       setIsBurning(false);
@@ -146,10 +150,11 @@ export const VentBoxSection = () => {
   };
 
   const handlePostAnonymous = () => {
-    if (!ventText.trim()) return;
+    if (!ventText.trim() && !draftVoiceNote) return;
     soundService.playPop();
-    addVent(ventText.trim());
+    addVent(ventText.trim(), draftVoiceNote);
     setVentText('');
+    setDraftVoiceNote(null);
     Alert.alert(
       'Shared Anonymously 🫂',
       'Your thought was placed into the quiet sanctuary. You are seen and supported.'
@@ -213,6 +218,17 @@ export const VentBoxSection = () => {
           editable={!isBurning}
         />
 
+        <View style={{ marginBottom: 12 }}>
+          <VoiceInputControls
+            voiceNote={draftVoiceNote}
+            onVoiceNoteChange={setDraftVoiceNote}
+            onAppendTranscript={(chunk) =>
+              setVentText((prev) => (prev ? `${prev} ${chunk}` : chunk))
+            }
+            compact
+          />
+        </View>
+
         <View style={styles.actionRow}>
           {/* Burn Worry Button */}
           <TouchableOpacity
@@ -229,10 +245,10 @@ export const VentBoxSection = () => {
           <TouchableOpacity
             style={[
               styles.postBtn,
-              { backgroundColor: theme.accent, opacity: ventText.trim() ? 1 : 0.6 },
+              { backgroundColor: theme.accent, opacity: ventText.trim() || draftVoiceNote ? 1 : 0.6 },
             ]}
             onPress={handlePostAnonymous}
-            disabled={isBurning || !ventText.trim()}
+            disabled={isBurning || (!ventText.trim() && !draftVoiceNote)}
             activeOpacity={0.8}
           >
             <Text style={styles.postBtnText}>Post Anonymously 🫂</Text>
@@ -243,53 +259,71 @@ export const VentBoxSection = () => {
       {/* Anonymous Vent Feed */}
       <View style={styles.feed}>
         <Text style={[styles.feedTitle, { color: theme.textSecondary }]}>Safe Anonymous Voices</Text>
-        {vents.map((v) => (
-          <View
-            key={v.id}
-            style={[styles.ventCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
-          >
-            <View style={styles.cardHeader}>
-              <Text style={[styles.anonTag, { color: theme.textMuted }]}>
-                🕊️ Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
-              </Text>
-            </View>
-
-            <Text style={[styles.cardText, { color: theme.textPrimary }]}>{v.text}</Text>
-
-            {/* Hug & Candle Reactions */}
-            <View style={styles.reactionsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.reactBtn,
-                  { borderColor: theme.divider },
-                  v.hasHugged && [styles.reactBtnActive, { backgroundColor: 'rgba(217, 107, 67, 0.15)', borderColor: '#D96B43' }],
-                ]}
-                onPress={() => handleToggleHug(v.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.reactEmoji}>🫂</Text>
-                <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasHugged && { color: '#D96B43', fontWeight: '800' }]}>
-                  {v.hugs} {v.hasHugged ? 'Hugged' : 'Send Hug'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.reactBtn,
-                  { borderColor: theme.divider },
-                  v.hasCandle && [styles.reactBtnActive, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#F59E0B' }],
-                ]}
-                onPress={() => handleToggleCandle(v.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.reactEmoji}>🕯️</Text>
-                <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasCandle && { color: '#F59E0B', fontWeight: '800' }]}>
-                  {v.candles} {v.hasCandle ? 'Lit' : 'Light Candle'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+        {vents.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            <Text style={styles.emptyEmoji}>🕊️</Text>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Safe & Silent Sanctuary</Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
+              No anonymous notes shared yet. Write what is on your chest above to release it to the embers or place it gently here.
+            </Text>
           </View>
-        ))}
+        ) : (
+          vents.map((v) => (
+            <View
+              key={v.id}
+              style={[styles.ventCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={[styles.anonTag, { color: theme.textMuted }]}>
+                  🕊️ Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
+                </Text>
+              </View>
+
+              {!!v.text && (
+                <Text style={[styles.cardText, { color: theme.textPrimary }]}>{v.text}</Text>
+              )}
+
+              {v.voiceNote && (
+                <View style={{ marginBottom: 12 }}>
+                  <VoiceNotePlayer voiceNote={v.voiceNote} compact />
+                </View>
+              )}
+
+              {/* Hug & Candle Reactions */}
+              <View style={styles.reactionsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.reactBtn,
+                    { borderColor: theme.divider },
+                    v.hasHugged && [styles.reactBtnActive, { backgroundColor: 'rgba(217, 107, 67, 0.15)', borderColor: '#D96B43' }],
+                  ]}
+                  onPress={() => handleToggleHug(v.id)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.reactEmoji}>🫂</Text>
+                  <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasHugged && { color: '#D96B43', fontWeight: '800' }]}>
+                    {v.hugs} {v.hasHugged ? 'Hugged' : 'Send Hug'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.reactBtn,
+                    { borderColor: theme.divider },
+                    v.hasCandle && [styles.reactBtnActive, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#F59E0B' }],
+                  ]}
+                  onPress={() => handleToggleCandle(v.id)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.reactEmoji}>🕯️</Text>
+                  <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasCandle && { color: '#F59E0B', fontWeight: '800' }]}>
+                    {v.candles} {v.hasCandle ? 'Lit' : 'Light Candle'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
       </View>
     </View>
   );
@@ -424,5 +458,28 @@ const styles = StyleSheet.create({
   reactLabel: {
     fontSize: 11.5,
     fontWeight: '700',
+  },
+  emptyCard: {
+    padding: 32,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 8,
+  },
+  emptyEmoji: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptySubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+    maxWidth: 340,
   },
 });

@@ -1,5 +1,5 @@
 // src/features/community/smallWins/SmallWinsSection.jsx
-// Categorized Small Wins Garden combining react-frontend's categories and teammate's GardenStrip.
+// Categorized Small Wins Garden combining real persistent user victories with dynamic GardenStrip.
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -16,6 +16,8 @@ import { GardenStrip } from '../encouragement/GardenStrip';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { useCommunityStore } from '../store/communityStore';
 import { onboardingStorage } from '../../../services/onboardingStorage';
+import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
+import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Wins 🌟' },
@@ -30,6 +32,7 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const { wins, addWin, toggleCheerWin } = useCommunityStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newWinText, setNewWinText] = useState('');
+  const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [postCategory, setPostCategory] = useState('personal');
   const [authorName, setAuthorName] = useState('You · MindBloom');
 
@@ -55,21 +58,27 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   };
 
   const handlePostWin = () => {
-    if (!newWinText.trim()) return;
+    if (!newWinText.trim() && !draftVoiceNote) return;
     soundService.playVictory();
-    addWin(newWinText.trim(), postCategory, authorName);
+    addWin(newWinText.trim(), postCategory, authorName, draftVoiceNote);
     setNewWinText('');
+    setDraftVoiceNote(null);
     Alert.alert(
       'Hongera sana! 🌸',
       'Your win was planted into the community garden. Every small step counts!'
     );
   };
 
+  const dynamicPlants = wins.map((w, idx) => ({
+    id: w.id,
+    stage: 'blooming',
+  }));
+
   return (
     <View style={styles.container}>
-      {/* Living Garden Strip from Teammate's work */}
+      {/* Living Garden Strip reflecting real planted wins */}
       <View style={styles.gardenWrap}>
-        <GardenStrip totalMembers={142} bloomingSeeds={89} companionId={companionId} />
+        <GardenStrip plants={dynamicPlants} streak={wins.length > 0 ? 1 : 0} />
       </View>
 
       {/* Post a Small Win Card */}
@@ -81,12 +90,23 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
 
         <TextInput
           style={[styles.input, { color: theme.textPrimary, borderColor: theme.divider, backgroundColor: theme.bg }]}
-          placeholder="Share your quiet victory today..."
+          placeholder="Share your quiet victory today (or record/dictate below)..."
           placeholderTextColor={theme.textMuted}
           value={newWinText}
           onChangeText={setNewWinText}
           multiline
         />
+
+        <View style={{ marginBottom: 12 }}>
+          <VoiceInputControls
+            voiceNote={draftVoiceNote}
+            onVoiceNoteChange={setDraftVoiceNote}
+            onAppendTranscript={(chunk) =>
+              setNewWinText((prev) => (prev ? `${prev} ${chunk}` : chunk))
+            }
+            compact
+          />
+        </View>
 
         {/* Category Picker for Post */}
         <View style={styles.catPickerRow}>
@@ -114,9 +134,9 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
         </View>
 
         <TouchableOpacity
-          style={[styles.postBtn, { backgroundColor: theme.accent, opacity: newWinText.trim() ? 1 : 0.6 }]}
+          style={[styles.postBtn, { backgroundColor: theme.accent, opacity: newWinText.trim() || draftVoiceNote ? 1 : 0.6 }]}
           onPress={handlePostWin}
-          disabled={!newWinText.trim()}
+          disabled={!newWinText.trim() && !draftVoiceNote}
           activeOpacity={0.85}
         >
           <Text style={styles.postBtnText}>Plant Your Win 🌱</Text>
@@ -151,45 +171,63 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
         })}
       </ScrollView>
 
-      {/* Wins Feed */}
-      <View style={styles.winsList}>
-        {filteredWins.map((win) => (
-          <View
-            key={win.id}
-            style={[styles.winCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
-          >
-            <View style={styles.winHeader}>
-              <Text style={[styles.authorName, { color: theme.accent }]}>🌿 {win.author}</Text>
-              <Text style={[styles.winTime, { color: theme.textMuted }]}>{win.createdAt || win.time || 'Today'}</Text>
-            </View>
+      {/* Wins Feed or Peaceful Empty State */}
+      {filteredWins.length === 0 ? (
+        <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+          <Text style={styles.emptyEmoji}>🌱</Text>
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Your Garden is Calm & Ready</Text>
+          <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
+            No wins recorded in this category yet. When you're ready, honor your first small step above.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.winsList}>
+          {filteredWins.map((win) => (
+            <View
+              key={win.id}
+              style={[styles.winCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
+            >
+              <View style={styles.winHeader}>
+                <Text style={[styles.authorName, { color: theme.accent }]}>🌿 {win.author}</Text>
+                <Text style={[styles.winTime, { color: theme.textMuted }]}>{win.createdAt}</Text>
+              </View>
 
-            <Text style={[styles.winText, { color: theme.textPrimary }]}>{win.text}</Text>
+              {!!win.text && (
+                <Text style={[styles.winText, { color: theme.textPrimary }]}>{win.text}</Text>
+              )}
 
-            <View style={styles.winFooter}>
-              <TouchableOpacity
-                style={[
-                  styles.cheerBtn,
-                  { borderColor: theme.divider },
-                  win.hasCheered && [styles.cheerBtnActive, { backgroundColor: 'rgba(217, 107, 67, 0.15)', borderColor: '#D96B43' }],
-                ]}
-                onPress={() => handleCheer(win.id)}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.cheerEmoji}>{win.hasCheered ? '🌸' : '🌱'}</Text>
-                <Text
+              {win.voiceNote && (
+                <View style={{ marginBottom: 12 }}>
+                  <VoiceNotePlayer voiceNote={win.voiceNote} compact />
+                </View>
+              )}
+
+              <View style={styles.winFooter}>
+                <TouchableOpacity
                   style={[
-                    styles.cheerCount,
-                    { color: theme.textSecondary },
-                    win.hasCheered && { color: '#D96B43', fontWeight: '800' },
+                    styles.cheerBtn,
+                    { borderColor: theme.divider },
+                    win.hasCheered && [styles.cheerBtnActive, { backgroundColor: 'rgba(217, 107, 67, 0.15)', borderColor: '#D96B43' }],
                   ]}
+                  onPress={() => handleCheer(win.id)}
+                  activeOpacity={0.75}
                 >
-                  {win.cheers} {win.hasCheered ? 'Cheered!' : 'Cheer'}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.cheerEmoji}>{win.hasCheered ? '🌸' : '🌱'}</Text>
+                  <Text
+                    style={[
+                      styles.cheerCount,
+                      { color: theme.textSecondary },
+                      win.hasCheered && { color: '#D96B43', fontWeight: '800' },
+                    ]}
+                  >
+                    {win.cheers} {win.hasCheered ? 'Cheered!' : 'Cheer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 };
@@ -214,16 +252,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   createSubtitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     marginBottom: 14,
   },
   input: {
-    borderRadius: 12,
+    minHeight: 80,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 12,
-    minHeight: 70,
-    textAlignVertical: 'top',
+    padding: 14,
     fontSize: 14,
+    lineHeight: 20,
+    textAlignVertical: 'top',
     marginBottom: 12,
   },
   catPickerRow: {
@@ -238,20 +277,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  catPillActive: {},
+  catPillActive: {
+    borderWidth: 1,
+  },
   catPillText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
   },
   postBtn: {
     paddingVertical: 12,
     borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   postBtnText: {
     color: '#FFFFFF',
-    fontWeight: '800',
     fontSize: 14,
+    fontWeight: '800',
   },
   filterScroll: {
     gap: 8,
@@ -260,12 +302,14 @@ const styles = StyleSheet.create({
   filterPill: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1,
   },
-  filterPillActive: {},
+  filterPillActive: {
+    borderWidth: 1,
+  },
   filterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   winsList: {
@@ -275,28 +319,27 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     borderWidth: 1,
+    gap: 10,
   },
   winHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   authorName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   winTime: {
-    fontSize: 11,
+    fontSize: 10.5,
   },
   winText: {
-    fontSize: 14.5,
-    lineHeight: 21,
-    marginBottom: 12,
+    fontSize: 14,
+    lineHeight: 20,
   },
   winFooter: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   cheerBtn: {
     flexDirection: 'row',
@@ -307,12 +350,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  cheerBtnActive: {},
+  cheerBtnActive: {
+    borderWidth: 1,
+  },
   cheerEmoji: {
     fontSize: 14,
   },
   cheerCount: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  emptyCard: {
+    padding: 32,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 8,
+  },
+  emptyEmoji: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptySubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+    maxWidth: 340,
   },
 });

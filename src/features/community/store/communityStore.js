@@ -1,123 +1,112 @@
 // src/features/community/store/communityStore.js
-// Centralized reactive Zustand store for MindBloom Community Baraza
-// Features persistent Small Wins vault, ephemeral Zero-Trace Safe Vents, and interactive reactions.
+// Reactive Zustand store for MindBloom Community Baraza
+// Purely real, persistent user data with zero dummy mocks.
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEYS = {
-  WINS: 'mindbloom:community:wins:v2',
-  VENTS: 'mindbloom:community:vents:v2',
+  WINS: 'mindbloom:community:wins:v3',
+  VENTS: 'mindbloom:community:vents:v3',
   NOTIFIED_MENTORS: 'mindbloom:community:notified_mentors:v1',
+  JOINED_CIRCLES: 'mindbloom:community:joined_circles:v1',
+  REPORTED_MSGS: 'mindbloom:community:reported_msgs:v1',
 };
 
-const INITIAL_WINS = [
-  {
-    id: 'win-1',
-    text: 'Made my bed, drank a warm cup of lemon water, and did not open social media first thing 🌱',
-    author: 'Wanjiru · Nairobi',
-    category: 'personal',
-    cheers: 28,
-    hasCheered: false,
-    createdAt: '15m ago',
-  },
-  {
-    id: 'win-2',
-    text: 'Submitted my assignment without spiraling into panic or waiting for 11:59 PM 📚',
-    author: 'Brian · Juja',
-    category: 'school',
-    cheers: 45,
-    hasCheered: true,
-    createdAt: '1h ago',
-  },
-  {
-    id: 'win-3',
-    text: 'Stood up for myself in a workplace discussion with calm confidence and zero apologies 💼',
-    author: 'Kavata · Westlands',
-    category: 'work',
-    cheers: 52,
-    hasCheered: false,
-    createdAt: '3h ago',
-  },
-  {
-    id: 'win-4',
-    text: 'Ate lunch peacefully without guilt. My body is worthy of nourishing 🌺',
-    author: 'Neema · Mombasa',
-    category: 'healing',
-    cheers: 39,
-    hasCheered: false,
-    createdAt: '5h ago',
-  },
-];
-
-const INITIAL_VENTS = [
-  {
-    id: 'vent-1',
-    text: 'Tired of being the "strong eldest sibling" who holds everyone together while feeling overwhelmed inside.',
-    createdAt: '22m ago',
-    hugs: 34,
-    hasHugged: true,
-    candles: 18,
-    hasCandle: false,
-  },
-  {
-    id: 'vent-2',
-    text: 'Sent out 20 job applications this month. Getting automated rejections can feel heavy, but taking it one day at a time.',
-    createdAt: '1h ago',
-    hugs: 56,
-    hasHugged: false,
-    candles: 29,
-    hasCandle: true,
-  },
-  {
-    id: 'vent-3',
-    text: 'When people dismiss mental wellness as "lack of hustle", it stings. Finding this quiet space helps a lot.',
-    createdAt: '3h ago',
-    hugs: 81,
-    hasHugged: false,
-    candles: 44,
-    hasCandle: false,
-  },
-];
+function formatTimestamp(date = new Date()) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const formattedHours = hours % 12 || 12;
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  return `${formattedHours}:${formattedMinutes} ${ampm}`;
+}
 
 export const useCommunityStore = create((set, get) => ({
-  wins: INITIAL_WINS,
-  vents: INITIAL_VENTS,
+  wins: [],
+  vents: [],
   notifiedMentors: {},
+  joinedCircleIds: [],
+  reportedMessageIds: [],
   isHydrated: false,
 
   // Hydrate persistent data from AsyncStorage
   hydrate: async () => {
     try {
-      const [savedWins, savedVents, savedMentors] = await Promise.all([
+      const [savedWins, savedVents, savedMentors, savedJoined, savedReported] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.WINS),
         AsyncStorage.getItem(STORAGE_KEYS.VENTS),
         AsyncStorage.getItem(STORAGE_KEYS.NOTIFIED_MENTORS),
+        AsyncStorage.getItem(STORAGE_KEYS.JOINED_CIRCLES),
+        AsyncStorage.getItem(STORAGE_KEYS.REPORTED_MSGS),
       ]);
 
-      const wins = savedWins ? JSON.parse(savedWins) : INITIAL_WINS;
-      const vents = savedVents ? JSON.parse(savedVents) : INITIAL_VENTS;
+      const wins = savedWins ? JSON.parse(savedWins) : [];
+      const vents = savedVents ? JSON.parse(savedVents) : [];
       const notifiedMentors = savedMentors ? JSON.parse(savedMentors) : {};
+      const joinedCircleIds = savedJoined ? JSON.parse(savedJoined) : [];
+      const reportedMessageIds = savedReported ? JSON.parse(savedReported) : [];
 
-      set({ wins, vents, notifiedMentors, isHydrated: true });
+      set({ wins, vents, notifiedMentors, joinedCircleIds, reportedMessageIds, isHydrated: true });
     } catch {
-      set({ isHydrated: true });
+      set({ wins: [], vents: [], joinedCircleIds: [], reportedMessageIds: [], isHydrated: true });
     }
   },
 
-  // Persistent Small Wins logic
-  addWin: async (text, category = 'personal', author = 'You · MindBloom') => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
+  // Circle Join / Leave membership
+  joinCircle: async (circleId) => {
+    if (!circleId) return;
+    const current = get().joinedCircleIds;
+    if (current.includes(circleId)) return;
+    const next = [circleId, ...current];
+    set({ joinedCircleIds: next });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
+    } catch {}
+  },
+
+  leaveCircle: async (circleId) => {
+    const next = get().joinedCircleIds.filter((id) => id !== circleId);
+    set({ joinedCircleIds: next });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.JOINED_CIRCLES, JSON.stringify(next));
+    } catch {}
+  },
+
+  toggleJoinCircle: async (circleId) => {
+    if (get().joinedCircleIds.includes(circleId)) {
+      await get().leaveCircle(circleId);
+    } else {
+      await get().joinCircle(circleId);
+    }
+  },
+
+  // Report / Hide message for safety
+  reportMessage: async (msgId) => {
+    if (!msgId) return;
+    const current = get().reportedMessageIds;
+    if (current.includes(msgId)) return;
+    const next = [...current, msgId];
+    set({ reportedMessageIds: next });
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.REPORTED_MSGS, JSON.stringify(next));
+    } catch {}
+  },
+
+  // Persistent Small Wins logic (supports text, voiceNote, or both)
+  addWin: async (text = '', category = 'personal', author = 'You · MindBloom', voiceNote = null) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed && !voiceNote) return;
 
     const newWin = {
       id: `win-${Date.now()}`,
       text: trimmed,
+      voiceNote,
       author,
       category,
       cheers: 1,
       hasCheered: true,
-      createdAt: 'Just now',
+      createdAt: `Today at ${formatTimestamp()}`,
     };
 
     const nextWins = [newWin, ...get().wins];
@@ -148,15 +137,16 @@ export const useCommunityStore = create((set, get) => ({
     } catch {}
   },
 
-  // Safe Vent Box logic (Zero-Trace / Ephemeral option)
-  addVent: async (text) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
+  // Safe Vent Box logic (Ephemeral release, supports text and/or voiceNote)
+  addVent: async (text = '', voiceNote = null) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed && !voiceNote) return;
 
     const newVent = {
       id: `vent-${Date.now()}`,
       text: trimmed,
-      createdAt: 'Just now',
+      voiceNote,
+      createdAt: `Today at ${formatTimestamp()}`,
       hugs: 0,
       hasHugged: false,
       candles: 0,

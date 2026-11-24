@@ -1,6 +1,6 @@
 // src/features/community/circles/BarazaGroupChatView.jsx
 // Authentic real-time group chat for MindBloom Baraza Circles
-// Peer bubbles, live message input, AsyncStorage persistence, and empathetic reactions.
+// Pure real user communication with AsyncStorage persistence, zero fake bots, and zero dummy seeds.
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -12,125 +12,45 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { onboardingStorage } from '../../../services/onboardingStorage';
+import { useCommunityStore } from '../store/communityStore';
+import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
+import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
-const SEED_CHAT_MESSAGES = {
-  campus_grounding: [
-    {
-      id: 'm-1',
-      sender: 'Simba',
-      emoji: '🦁',
-      text: 'Does anyone else get that Sunday evening panic before campus starts?',
-      time: '6m ago',
-      isMe: false,
-      reactions: { hugs: 6, hearts: 4 },
-    },
-    {
-      id: 'm-2',
-      sender: 'Zawadi Zebra',
-      emoji: '🦓',
-      text: 'Totally Simba. My chest gets tight around 6pm. I had to put my phone on Tulia mode.',
-      time: '4m ago',
-      isMe: false,
-      reactions: { hugs: 8, hearts: 3 },
-    },
-    {
-      id: 'm-3',
-      sender: 'Kobi',
-      emoji: '🐢',
-      text: 'Slow breathing helps. We don’t have to conquer the whole week today, just tomorrow morning.',
-      time: '2m ago',
-      isMe: false,
-      reactions: { hugs: 11, hearts: 9 },
-    },
-  ],
-  hustle_purpose: [
-    {
-      id: 'm-h1',
-      sender: 'Zawadi Zebra',
-      emoji: '🦓',
-      text: 'Sent 14 job proposals this week. Trying to breathe and not panic.',
-      time: '15m ago',
-      isMe: false,
-      reactions: { hugs: 9, hearts: 7 },
-    },
-    {
-      id: 'm-h2',
-      sender: 'Kofi Hawk',
-      emoji: '🦅',
-      text: '14 is huge courage! Take tonight off screen time. Your worth is not your inbox.',
-      time: '10m ago',
-      isMe: false,
-      reactions: { hugs: 12, hearts: 8 },
-    },
-  ],
-  night_owls: [
-    {
-      id: 'm-n1',
-      sender: 'Twiga',
-      emoji: '🦒',
-      text: '3 AM thoughts get so loud sometimes. Just listening to soft rain sounds.',
-      time: '20m ago',
-      isMe: false,
-      reactions: { hugs: 14, hearts: 10 },
-    },
-    {
-      id: 'm-n2',
-      sender: 'Brave Simba',
-      emoji: '🦁',
-      text: 'Rest your shoulders Twiga. You are safe in the night.',
-      time: '12m ago',
-      isMe: false,
-      reactions: { hugs: 7, hearts: 5 },
-    },
-  ],
-  sisterhood_sanctuary: [
-    {
-      id: 'm-s1',
-      sender: 'Lulu Flamingo',
-      emoji: '🦩',
-      text: 'Learning that "no" is a complete sentence without needing an apology.',
-      time: '18m ago',
-      isMe: false,
-      reactions: { hugs: 18, hearts: 15 },
-    },
-  ],
-  mens_grounding: [
-    {
-      id: 'm-mg1',
-      sender: 'Brave Simba',
-      emoji: '🦁',
-      text: 'Checking in on the brothers. You do not have to carry it all alone in silence.',
-      time: '24m ago',
-      isMe: false,
-      reactions: { hugs: 15, hearts: 12 },
-    },
-  ],
-  tulia_healing: [
-    {
-      id: 'm-th1',
-      sender: 'Twiga',
-      emoji: '🦒',
-      text: 'Inhale for 4, hold for 4, exhale for 6. Soften your jaw.',
-      time: '30m ago',
-      isMe: false,
-      reactions: { hugs: 22, hearts: 19 },
-    },
-  ],
-};
+function formatTimestamp(date = new Date()) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const formattedHours = hours % 12 || 12;
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  return `${formattedHours}:${formattedMinutes} ${ampm}`;
+}
 
 export const BarazaGroupChatView = ({ circle, onBack }) => {
   const { theme } = useTheme();
   const circleId = circle?.id || 'campus_grounding';
-  const storageKey = `mindbloom:baraza:chat:${circleId}:v1`;
+  const storageKey = `mindbloom:baraza:chat:${circleId}:v2`;
+
+  const {
+    joinedCircleIds,
+    joinCircle,
+    leaveCircle,
+    reportedMessageIds,
+    reportMessage,
+  } = useCommunityStore();
+  const isJoined = joinedCircleIds.includes(circleId);
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
+  const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [userName, setUserName] = useState('You');
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const scrollRef = useRef(null);
 
   // Load chat history & user profile
@@ -149,21 +69,10 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         if (rawChat) {
           setMessages(JSON.parse(rawChat));
         } else {
-          const seeds = SEED_CHAT_MESSAGES[circleId] || [
-            {
-              id: `m-init-${Date.now()}`,
-              sender: 'Baraza Guide',
-              emoji: '🌿',
-              text: `Karibu to ${circle.title}. A quiet, safe space where you are seen and respected.`,
-              time: 'Earlier',
-              isMe: false,
-              reactions: { hugs: 5, hearts: 4 },
-            },
-          ];
-          setMessages(seeds);
+          setMessages([]);
         }
       } catch {
-        setMessages(SEED_CHAT_MESSAGES[circleId] || []);
+        setMessages([]);
       }
     }
     loadChat();
@@ -171,16 +80,20 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
 
   const handleSendMessage = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text && !draftVoiceNote) return;
 
     soundService.playPop();
+    if (!isJoined) {
+      joinCircle(circleId);
+    }
 
     const newMsg = {
       id: `msg-${Date.now()}`,
-      sender: `${userName} (You)`,
+      sender: userName,
       emoji: '🌱',
       text,
-      time: 'Just now',
+      voiceNote: draftVoiceNote,
+      time: formatTimestamp(),
       isMe: true,
       reactions: { hugs: 0, hearts: 0 },
     };
@@ -188,6 +101,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     const nextMessages = [...messages, newMsg];
     setMessages(nextMessages);
     setInputText('');
+    setDraftVoiceNote(null);
 
     try {
       await AsyncStorage.setItem(storageKey, JSON.stringify(nextMessages));
@@ -196,36 +110,26 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
 
-    // Simulated warm peer reaction/acknowledgment after 4 seconds
-    setTimeout(() => {
-      const peerReplies = [
-        { sender: 'Zawadi Zebra', emoji: '🦓', text: 'Thank you for sharing that with us, you are not alone in this 🌸' },
-        { sender: 'Kobi', emoji: '🐢', text: 'Holding space for you. Take it one gentle breath at a time.' },
-        { sender: 'Simba', emoji: '🦁', text: 'Deeply resonates with me too. Proud of you for voicing it 🤝' },
-      ];
-      const randomReply = peerReplies[Math.floor(Math.random() * peerReplies.length)];
-
-      const peerMsg = {
-        id: `peer-${Date.now()}`,
-        sender: randomReply.sender,
-        emoji: randomReply.emoji,
-        text: randomReply.text,
-        time: 'Just now',
-        isMe: false,
-        reactions: { hugs: 2, hearts: 1 },
-      };
-
-      setMessages((prev) => {
-        const updated = [...prev, peerMsg];
-        AsyncStorage.setItem(storageKey, JSON.stringify(updated)).catch(() => {});
-        return updated;
-      });
-
-      setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }, 4500);
+  const handleReportMessage = (msgId) => {
+    const doReport = () => {
+      reportMessage(msgId);
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Hide and report this message for breaking sanctuary safety?')) {
+        doReport();
+      }
+      return;
+    }
+    Alert.alert(
+      'Report & Hide Message',
+      'Hide and report this message for breaking sanctuary safety?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Report & Hide', style: 'destructive', onPress: doReport },
+      ]
+    );
   };
 
   const handleReaction = async (msgId, type) => {
@@ -271,15 +175,42 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
             <View style={styles.circleStatusRow}>
               <View style={styles.onlineDot} />
               <Text style={[styles.onlineStatusText, { color: '#16A34A' }]}>
-                {circle.activeNow || 7} peers active now • Max 12
+                Cohort: {circle.ageGroup || '18-24'} • Max 12 Members
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={[styles.safeTag, { backgroundColor: 'rgba(138, 154, 134, 0.15)' }]}>
-          <Text style={[styles.safeTagText, { color: '#5B7057' }]}>🔒 Encrypted</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity
+            onPress={() => (isJoined ? leaveCircle(circleId) : joinCircle(circleId))}
+            style={[
+              styles.safeTag,
+              {
+                backgroundColor: isJoined ? 'rgba(22, 163, 74, 0.14)' : theme.accentSoft,
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.safeTagText, { color: isJoined ? '#16A34A' : theme.accent }]}>
+              {isJoined ? '✓ Joined' : '+ Join'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShowGuidelines(true)}
+            style={[styles.safeTag, { backgroundColor: 'rgba(138, 154, 134, 0.15)' }]}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.safeTagText, { color: '#5B7057' }]}>ⓘ Rules</Text>
+          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* ── ALIAS REASSURANCE BAR ────────────────────────────── */}
+      <View style={[styles.aliasBar, { backgroundColor: theme.bg, borderColor: theme.divider }]}>
+        <Text style={[styles.aliasText, { color: theme.textMuted }]}>
+          🛡️ Anonymous Alias: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{userName}</Text> · Voice & text stay confidential
+        </Text>
       </View>
 
       {/* ── MESSAGES FEED ─────────────────────────────────────── */}
@@ -291,110 +222,178 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         <View style={[styles.bannerNotice, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
           <Text style={styles.bannerNoticeEmoji}>🌿</Text>
           <Text style={[styles.bannerNoticeText, { color: theme.textSecondary }]}>
-            You have joined the cozy circle. Speak gently, listen kindly. Your words are held in strict privacy.
+            Welcome to {circle.title}. A confidential sanctuary for {circle.ageGroup || '18-24'} peers. Share gently, listen kindly.
           </Text>
         </View>
 
-        {messages.map((item) => {
-          if (item.isMe) {
+        {messages.filter((m) => !reportedMessageIds.includes(m.id)).length === 0 ? (
+          <View style={[styles.emptyChatCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            <Text style={styles.emptyChatEmoji}>🕊️</Text>
+            <Text style={[styles.emptyChatTitle, { color: theme.textPrimary }]}>The circle is calm and open</Text>
+            <Text style={[styles.emptyChatSubtitle, { color: theme.textMuted }]}>
+              No messages have been sent here yet today. Be the first to share a quiet thought, dictate, or send a voice note below.
+            </Text>
+          </View>
+        ) : (
+          messages
+            .filter((m) => !reportedMessageIds.includes(m.id))
+            .map((item) => {
+            if (item.isMe) {
+              return (
+                <View key={item.id} style={styles.myBubbleRow}>
+                  <View style={[styles.myBubble, { backgroundColor: theme.accent }]}>
+                    {item.voiceNote && (
+                      <View style={{ marginBottom: item.text ? 8 : 2 }}>
+                        <VoiceNotePlayer voiceNote={item.voiceNote} inverted compact />
+                      </View>
+                    )}
+                    {!!item.text && <Text style={styles.myBubbleText}>{item.text}</Text>}
+                    <Text style={styles.myBubbleTime}>{item.time}</Text>
+                  </View>
+                </View>
+              );
+            }
+
             return (
-              <View key={item.id} style={styles.myBubbleRow}>
-                <View style={[styles.myBubble, { backgroundColor: theme.accent }]}>
-                  <Text style={styles.myBubbleText}>{item.text}</Text>
-                  <Text style={styles.myBubbleTime}>{item.time}</Text>
+              <View key={item.id} style={styles.peerBubbleRow}>
+                <View style={styles.peerAvatar}>
+                  <Text style={styles.peerAvatarEmoji}>{item.emoji || '🌱'}</Text>
+                </View>
+                <View style={styles.peerBubbleCol}>
+                  <View style={styles.peerSenderRow}>
+                    <Text style={[styles.peerSenderName, { color: theme.textPrimary }]}>
+                      {item.sender}
+                    </Text>
+                    <Text style={[styles.peerTimeText, { color: theme.textMuted }]}>
+                      {item.time}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.peerBubble,
+                      { backgroundColor: theme.cardBg, borderColor: theme.divider },
+                    ]}
+                  >
+                    {item.voiceNote && (
+                      <View style={{ marginBottom: item.text ? 8 : 0 }}>
+                        <VoiceNotePlayer voiceNote={item.voiceNote} compact />
+                      </View>
+                    )}
+                    {!!item.text && (
+                      <Text style={[styles.peerBubbleText, { color: theme.textPrimary }]}>
+                        {item.text}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Quick Support Reactions & Safety Flag */}
+                  <View style={styles.reactionRow}>
+                    <TouchableOpacity
+                      style={[styles.reactBtn, { borderColor: theme.divider }]}
+                      onPress={() => handleReaction(item.id, 'hugs')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.reactBtnEmoji}>🫂</Text>
+                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
+                        {item.reactions?.hugs || 0}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.reactBtn, { borderColor: theme.divider }]}
+                      onPress={() => handleReaction(item.id, 'hearts')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.reactBtnEmoji}>🌸</Text>
+                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
+                        {item.reactions?.hearts || 0}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.reactBtn, { borderColor: theme.divider }]}
+                      onPress={() => handleReportMessage(item.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>⚑ Hide</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             );
-          }
-
-          return (
-            <View key={item.id} style={styles.peerBubbleRow}>
-              <View style={styles.peerAvatar}>
-                <Text style={styles.peerAvatarEmoji}>{item.emoji}</Text>
-              </View>
-              <View style={styles.peerBubbleCol}>
-                <View style={styles.peerSenderRow}>
-                  <Text style={[styles.peerSenderName, { color: theme.textPrimary }]}>
-                    {item.sender}
-                  </Text>
-                  <Text style={[styles.peerTimeText, { color: theme.textMuted }]}>
-                    {item.time}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.peerBubble,
-                    { backgroundColor: theme.cardBg, borderColor: theme.divider },
-                  ]}
-                >
-                  <Text style={[styles.peerBubbleText, { color: theme.textPrimary }]}>
-                    {item.text}
-                  </Text>
-                </View>
-
-                {/* Quick Support Reactions */}
-                <View style={styles.reactionRow}>
-                  <TouchableOpacity
-                    style={[styles.reactBtn, { borderColor: theme.divider }]}
-                    onPress={() => handleReaction(item.id, 'hugs')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.reactBtnEmoji}>🫂</Text>
-                    <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
-                      {item.reactions?.hugs || 0}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.reactBtn, { borderColor: theme.divider }]}
-                    onPress={() => handleReaction(item.id, 'hearts')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.reactBtnEmoji}>🌸</Text>
-                    <Text style={[styles.reactBtnCount, { color: theme.textMuted }]}>
-                      {item.reactions?.hearts || 0}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        })}
+          })
+        )}
       </ScrollView>
 
       {/* ── INPUT DOCK (Sticky above BottomNavBar) ───────────── */}
       <View
         style={[
-          styles.inputContainer,
+          styles.inputDockWrap,
           { backgroundColor: theme.cardBg, borderColor: theme.divider },
         ]}
       >
-        <TextInput
-          style={[
-            styles.inputField,
-            { color: theme.textPrimary, backgroundColor: theme.bg, borderColor: theme.divider },
-          ]}
-          placeholder="Share with the circle gently..."
-          placeholderTextColor={theme.textMuted}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={300}
+        <VoiceInputControls
+          voiceNote={draftVoiceNote}
+          onVoiceNoteChange={setDraftVoiceNote}
+          onAppendTranscript={(chunk) =>
+            setInputText((prev) => (prev ? `${prev} ${chunk}` : chunk))
+          }
+          compact
         />
-        <TouchableOpacity
-          style={[
-            styles.sendBtn,
-            {
-              backgroundColor: theme.accent,
-              opacity: inputText.trim() ? 1 : 0.5,
-            },
-          ]}
-          onPress={handleSendMessage}
-          disabled={!inputText.trim()}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.sendBtnArrow}>➔</Text>
-        </TouchableOpacity>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[
+              styles.inputField,
+              { color: theme.textPrimary, backgroundColor: theme.bg, borderColor: theme.divider },
+            ]}
+            placeholder="Share with the circle gently..."
+            placeholderTextColor={theme.textMuted}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={300}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendBtn,
+              {
+                backgroundColor: theme.accent,
+                opacity: inputText.trim() || draftVoiceNote ? 1 : 0.5,
+              },
+            ]}
+            onPress={handleSendMessage}
+            disabled={!inputText.trim() && !draftVoiceNote}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.sendBtnArrow}>➔</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* ── COMMUNITY GUIDELINES MODAL ───────────────────────── */}
+      <Modal
+        visible={showGuidelines}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGuidelines(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.guidelinesCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+            <Text style={[styles.guidelinesTitle, { color: theme.textPrimary }]}>🌿 Baraza Sanctuary Guidelines</Text>
+            <Text style={[styles.guidelinesBody, { color: theme.textSecondary }]}>
+              • <Text style={{ fontWeight: '800' }}>Confidentiality:</Text> What is shared in this circle stays in this circle.{'\n'}
+              • <Text style={{ fontWeight: '800' }}>Kindness First:</Text> Listen without judgment or unsolicited fixing.{'\n'}
+              • <Text style={{ fontWeight: '800' }}>Your Pace:</Text> You can speak via text, voice note, or simply read quietly.{'\n'}
+              • <Text style={{ fontWeight: '800' }}>Need Urgent Support?</Text> If you feel overwhelmed, reach out to Befrienders Kenya (0722 178 177) or local emergency services.
+            </Text>
+            <TouchableOpacity
+              style={[styles.guidelinesBtn, { backgroundColor: theme.accent }]}
+              onPress={() => setShowGuidelines(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guidelinesBtnText}>Got it, thank you</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -494,6 +493,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
+  emptyChatCard: {
+    padding: 36,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 24,
+  },
+  emptyChatEmoji: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  emptyChatTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptyChatSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
   peerBubbleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -584,6 +606,60 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     fontSize: 10,
     alignSelf: 'flex-end',
+  },
+  aliasBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+  },
+  aliasText: {
+    fontSize: 11.5,
+  },
+  inputDockWrap: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    gap: 8,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(26, 16, 36, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  guidelinesCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 22,
+    gap: 14,
+  },
+  guidelinesTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  guidelinesBody: {
+    fontSize: 13.5,
+    lineHeight: 21,
+  },
+  guidelinesBtn: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 99,
+  },
+  guidelinesBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   inputContainer: {
     flexDirection: 'row',

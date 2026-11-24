@@ -94,6 +94,7 @@ export const JournalContent = ({
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [voiceNote, setVoiceNote] = useState(null);
   const [feeling, setFeeling] = useState('lighter');
   const [draftState, setDraftState] = useState('New entry');
 
@@ -136,13 +137,14 @@ export const JournalContent = ({
     setEditingEntryId(null);
     setTitle('');
     setBody('');
+    setVoiceNote(null);
     setFeeling('lighter');
     setDraftState('Blank reflection');
   };
 
   const handleSaveEntry = () => {
-    if (!title.trim() && !body.trim()) {
-      Alert.alert('Empty Reflection', 'Take your time. Even a single gentle word is enough.');
+    if (!title.trim() && !body.trim() && !voiceNote) {
+      Alert.alert('Empty Reflection', 'Take your time. Even a single gentle word or voice note is enough.');
       return;
     }
 
@@ -162,8 +164,9 @@ export const JournalContent = ({
         e.id === editingEntryId
           ? {
             ...e,
-            title: title.trim() || 'A quiet thought',
+            title: title.trim() || (voiceNote ? 'Voice reflection' : 'A quiet thought'),
             body: body.trim(),
+            voiceNote,
             feelingLabel: feelingInfo.label,
             badgeBg: feelingInfo.bg,
             badgeColor: feelingInfo.color,
@@ -182,9 +185,10 @@ export const JournalContent = ({
         dayNumber: dayStr,
         badgeBg: feelingInfo.bg,
         badgeColor: feelingInfo.color,
-        title: title.trim() || 'A quiet thought',
+        title: title.trim() || (voiceNote ? 'Voice reflection' : 'A quiet thought'),
         feelingLabel: feelingInfo.label,
         body: body.trim(),
+        voiceNote,
         dateString: `TODAY, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
       };
       const updatedEntries = [newEntry, ...entries];
@@ -216,6 +220,7 @@ export const JournalContent = ({
     setEditingEntryId(entry.id);
     setTitle(entry.title || '');
     setBody(entry.body || '');
+    setVoiceNote(entry.voiceNote || null);
     if (entry.feelingLabel?.toLowerCase().includes('heavy')) setFeeling('heavy');
     else if (entry.feelingLabel?.toLowerCase().includes('between')) setFeeling('between');
     else setFeeling('lighter');
@@ -319,6 +324,11 @@ export const JournalContent = ({
               body={body}
               onChangeBody={(b) => {
                 setBody(b);
+                setDraftState('Unsaved draft');
+              }}
+              voiceNote={voiceNote}
+              onChangeVoiceNote={(vn) => {
+                setVoiceNote(vn);
                 setDraftState('Unsaved draft');
               }}
               selectedFeeling={feeling}

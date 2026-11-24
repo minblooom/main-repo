@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { styles } from '../styles/JournalEditor.styles';
 import { JournalSparkBanner } from './JournalSparkBanner';
+import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
 
 const FEELING_OPTIONS = [
   { id: 'heavy', label: 'A little heavy', color: '#6E5D87', bg: '#F2EDFA', border: '#DFD5F0' },
@@ -25,6 +26,8 @@ export const JournalEditor = ({
   onChangeTitle,
   body = '',
   onChangeBody,
+  voiceNote = null,
+  onChangeVoiceNote,
   selectedFeeling = 'lighter',
   onSelectFeeling,
   prompt = '',
@@ -147,6 +150,16 @@ export const JournalEditor = ({
               Keep going, or leave it here. Both are enough.
             </Text>
           </View>
+        </View>
+
+        <View style={{ marginTop: 10 }}>
+          <VoiceInputControls
+            voiceNote={voiceNote}
+            onVoiceNoteChange={onChangeVoiceNote}
+            onAppendTranscript={(chunk) =>
+              onChangeBody?.(body ? `${body} ${chunk}` : chunk)
+            }
+          />
         </View>
       </View>
 

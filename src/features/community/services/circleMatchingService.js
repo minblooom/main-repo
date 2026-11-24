@@ -124,23 +124,42 @@ export function getMatchingCirclesForUser({
 
   const candidatePool = struggleMatches.length > 0 ? struggleMatches : cohortCircles;
 
-  // Rank candidate pool: highest resonance first, open spots before full rooms
-  const sorted = [...candidatePool].sort((a, b) => {
-    // Open rooms prioritized over full rooms
-    if (a.isFull !== b.isFull) return a.isFull ? 1 : -1;
-    // Highest resonance next
-    return b.matchResonance - a.matchResonance;
+  // Rank candidate pool: highest resonance first
+  const sorted = [...candidatePool].sort((a, b) => b.matchResonance - a.matchResonance);
+
+  // Auto-Overflow / Part 2 Cohort Logic:
+  // If any circle hits the 12-member cap, spawn an open Cohort 2 so no user ever sees a closed door.
+  const openCohorts = sorted.map((circle) => {
+    const maxCap = circle.maxMembers || 12;
+    if ((circle.memberCount || 0) >= maxCap) {
+      return {
+        ...circle,
+        id: `${circle.id}_part2`,
+        parentCircleId: circle.id,
+        title: `${circle.title} · Cohort 2`,
+        memberCount: 1,
+        maxMembers: maxCap,
+        isFull: false,
+        isOverflowCohort: true,
+        cohortNumber: 2,
+      };
+    }
+    return {
+      ...circle,
+      isOverflowCohort: false,
+      cohortNumber: 1,
+    };
   });
 
   // Top candidate becomes Primary Matched Sanctuary Circle (Hero Card)
-  const primary = sorted[0] || scored.find((c) => c.isGenderMatch) || scored[0];
+  const primary = openCohorts[0] || scored.find((c) => c.isGenderMatch) || scored[0];
   const primaryMatch = {
     ...primary,
     isPrimaryMatch: true,
   };
 
   // Remaining eligible circles in feed
-  const eligibleCircles = sorted.map((c) =>
+  const eligibleCircles = openCohorts.map((c) =>
     c.id === primaryMatch.id ? { ...c, isPrimaryMatch: true } : c
   );
 

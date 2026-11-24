@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { styles } from '../styles/JournalEntryModal.styles';
+import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
 export const JournalEntryModal = ({
   visible,
@@ -84,7 +85,12 @@ export const JournalEntryModal = ({
 
           {/* Body Content */}
           <ScrollView style={styles.bodyScroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.bodyText}>{entry.body}</Text>
+            {entry.voiceNote && (
+              <View style={{ marginBottom: 14 }}>
+                <VoiceNotePlayer voiceNote={entry.voiceNote} />
+              </View>
+            )}
+            {!!entry.body && <Text style={styles.bodyText}>{entry.body}</Text>}
           </ScrollView>
 
           {/* Modal Footer Actions */}

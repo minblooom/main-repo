@@ -26,6 +26,7 @@ import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSe
 import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
 import { getMatchingCirclesForUser } from '../../features/community/services/circleMatchingService';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { useCommunityStore } from '../../features/community/store/communityStore';
 
 const CATEGORIES = [
   'All Circles',
@@ -46,12 +47,17 @@ export const CommunityScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState('All Circles');
   const [selectedCircle, setSelectedCircle] = useState(null);
   const [activeModal, setActiveModal] = useState(null); // 'small_wins' | 'vent_box' | null
+  const { joinedCircleIds, hydrate } = useCommunityStore();
   const [userProfile, setUserProfile] = useState({
     age: '18-24',
     gender: 'prefer_not',
     focusAreas: [],
     interests: [],
   });
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   useEffect(() => {
     async function loadUserPreferences() {
@@ -103,6 +109,11 @@ export const CommunityScreen = ({ navigation, route }) => {
     selectedCategory === 'All Circles'
       ? eligibleCircles
       : eligibleCircles.filter((c) => c.category === selectedCategory);
+
+  const joinedCircles = useMemo(
+    () => eligibleCircles.filter((c) => joinedCircleIds.includes(c.id)),
+    [eligibleCircles, joinedCircleIds]
+  );
 
   const handleNavigate = (routeId) => {
     setActiveModal(null);
@@ -229,6 +240,46 @@ export const CommunityScreen = ({ navigation, route }) => {
                   </TouchableOpacity>
                 </View>
 
+                {/* ── 2B. MY ACTIVE CIRCLES (WhatsApp-style 1-tap re-entry) ── */}
+                {joinedCircles.length > 0 && (
+                  <View style={{ marginBottom: 22 }}>
+                    <View style={styles.sectionHeaderRow}>
+                      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+                        📌 My Active Circles
+                      </Text>
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
+                    >
+                      {joinedCircles.map((jc) => (
+                        <TouchableOpacity
+                          key={`joined-${jc.id}`}
+                          style={[
+                            styles.categoryPill,
+                            {
+                              backgroundColor: theme.cardBg,
+                              borderColor: theme.accent,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 6,
+                              paddingVertical: 9,
+                            },
+                          ]}
+                          onPress={() => setSelectedCircle(jc)}
+                          activeOpacity={0.85}
+                        >
+                          <Text>{jc.icon || '💬'}</Text>
+                          <Text style={[styles.categoryPillText, { color: theme.textPrimary, fontWeight: '800' }]}>
+                            {jc.title}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
                 {/* ── 3. PRIMARY MATCHED SANCTUARY CIRCLE (HERO CARD) ──── */}
                 <View style={styles.sectionHeaderRow}>
                   <View>
@@ -276,13 +327,13 @@ export const CommunityScreen = ({ navigation, route }) => {
                         <View style={styles.circleMetaRow}>
                           <View style={[styles.capacityBadge, { backgroundColor: 'rgba(217, 107, 67, 0.1)' }]}>
                             <Text style={[styles.capacityText, { color: '#D96B43' }]}>
-                              {primaryMatch.memberCount || 10}/{primaryMatch.maxMembers || 12} members (2 spots left)
+                              {Math.min(12, (primaryMatch.memberCount || 1) + (joinedCircleIds.includes(primaryMatch.id) ? 1 : 0))}/{primaryMatch.maxMembers || 12} members
                             </Text>
                           </View>
                           <View style={styles.onlineBadge}>
                             <View style={styles.liveGreenDot} />
                             <Text style={[styles.onlineText, { color: '#16A34A' }]}>
-                              {primaryMatch.activeNow || 7} in discussion
+                              {primaryMatch.isOverflowCohort ? 'Cohort 2 · Open' : 'Open Sanctuary'}
                             </Text>
                           </View>
                         </View>
@@ -360,104 +411,129 @@ export const CommunityScreen = ({ navigation, route }) => {
 
                 {/* Circles Feed */}
                 <View style={styles.circlesFeed}>
-                  {filteredCircles.map((circle) => {
-                    const isFull =
-                      (circle.memberCount || 10) >= (circle.maxMembers || 12);
-
-                    return (
+                  {filteredCircles.length === 0 ? (
+                    <View
+                      style={[
+                        styles.circleItemCard,
+                        {
+                          backgroundColor: theme.cardBg,
+                          borderColor: theme.divider,
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          padding: 24,
+                          gap: 10,
+                        },
+                      ]}
+                    >
+                      <Text style={{ fontSize: 28 }}>🌿</Text>
+                      <Text style={[styles.circleItemTitle, { color: theme.textPrimary, textAlign: 'center' }]}>
+                        No circles in this filter for your cohort yet
+                      </Text>
                       <TouchableOpacity
-                        key={circle.id}
-                        style={[
-                          styles.circleItemCard,
-                          {
-                            backgroundColor: theme.cardBg,
-                            borderColor: theme.divider,
-                          },
-                        ]}
+                        style={[styles.categoryPill, { backgroundColor: theme.accent, borderColor: theme.accent }]}
+                        onPress={() => setSelectedCategory('All Circles')}
                         activeOpacity={0.85}
-                        onPress={() => setSelectedCircle(circle)}
                       >
-                        <View
-                          style={[
-                            styles.circleItemIcon,
-                            { backgroundColor: circle.iconBg || '#E8F0FF' },
-                          ]}
-                        >
-                          <Text style={styles.circleItemIconText}>
-                            {circle.icon || '🌿'}
-                          </Text>
-                        </View>
-
-                        <View style={styles.circleItemContent}>
-                          <View style={styles.circleItemTitleRow}>
-                            <Text
-                              style={[
-                                styles.circleItemTitle,
-                                { color: theme.textPrimary },
-                              ]}
-                            >
-                              {circle.title}
-                            </Text>
-                            <View
-                              style={[
-                                styles.memberCapBadge,
-                                isFull
-                                  ? styles.memberCapBadgeFull
-                                  : { backgroundColor: 'rgba(217, 107, 67, 0.1)' },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.memberCapText,
-                                  isFull
-                                    ? styles.memberCapTextFull
-                                    : { color: '#D96B43' },
-                                ]}
-                              >
-                                {isFull
-                                  ? 'FULL 12/12'
-                                  : `${circle.memberCount || 10}/${circle.maxMembers || 12}`}
-                              </Text>
-                            </View>
-                          </View>
-
-                          {circle.description && (
-                            <Text
-                              style={[
-                                styles.circleItemSnippet,
-                                { color: theme.textSecondary },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {circle.description}
-                            </Text>
-                          )}
-
-                          <View style={styles.circleItemBottomRow}>
-                            <View style={styles.circleActiveNowBadge}>
-                              <View style={styles.liveGreenDotSmall} />
-                              <Text
-                                style={[
-                                  styles.circleActiveNowText,
-                                  { color: '#16A34A' },
-                                ]}
-                              >
-                                {circle.activeNow || 5} online
-                              </Text>
-                            </View>
-                            <Text
-                              style={[
-                                styles.circleTimeText,
-                                { color: theme.textMuted },
-                              ]}
-                            >
-                              Active
-                            </Text>
-                          </View>
-                        </View>
+                        <Text style={[styles.categoryPillText, { color: '#FFFFFF', fontWeight: '800' }]}>
+                          Show All Circles
+                        </Text>
                       </TouchableOpacity>
-                    );
-                  })}
+                    </View>
+                  ) : (
+                    filteredCircles.map((circle) => {
+                      const isJoined = joinedCircleIds.includes(circle.id);
+                      const maxCap = circle.maxMembers || 12;
+                      const memberCount = Math.min(maxCap, (circle.memberCount || 1) + (isJoined ? 1 : 0));
+
+                      return (
+                        <TouchableOpacity
+                          key={circle.id}
+                          style={[
+                            styles.circleItemCard,
+                            {
+                              backgroundColor: theme.cardBg,
+                              borderColor: isJoined ? theme.accent : theme.divider,
+                            },
+                          ]}
+                          activeOpacity={0.85}
+                          onPress={() => setSelectedCircle(circle)}
+                        >
+                          <View
+                            style={[
+                              styles.circleItemIcon,
+                              { backgroundColor: circle.iconBg || '#E8F0FF' },
+                            ]}
+                          >
+                            <Text style={styles.circleItemIconText}>
+                              {circle.icon || '🌿'}
+                            </Text>
+                          </View>
+
+                          <View style={styles.circleItemContent}>
+                            <View style={styles.circleItemTitleRow}>
+                              <Text
+                                style={[
+                                  styles.circleItemTitle,
+                                  { color: theme.textPrimary },
+                                ]}
+                              >
+                                {circle.title}
+                              </Text>
+                              <View
+                                style={[
+                                  styles.memberCapBadge,
+                                  { backgroundColor: isJoined ? 'rgba(22, 163, 74, 0.14)' : 'rgba(217, 107, 67, 0.1)' },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.memberCapText,
+                                    { color: isJoined ? '#16A34A' : '#D96B43' },
+                                  ]}
+                                >
+                                  {isJoined ? '✓ Joined' : `${memberCount}/${maxCap}`}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {circle.description && (
+                              <Text
+                                style={[
+                                  styles.circleItemSnippet,
+                                  { color: theme.textSecondary },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {circle.description}
+                              </Text>
+                            )}
+
+                            <View style={styles.circleItemBottomRow}>
+                              <View style={styles.circleActiveNowBadge}>
+                                <View style={styles.liveGreenDotSmall} />
+                                <Text
+                                  style={[
+                                    styles.circleActiveNowText,
+                                    { color: '#16A34A' },
+                                  ]}
+                                >
+                                  {circle.isOverflowCohort ? 'Cohort 2 · Open' : `${maxCap - memberCount} spots open`}
+                                </Text>
+                              </View>
+                              <Text
+                                style={[
+                                  styles.circleTimeText,
+                                  { color: theme.textMuted },
+                                ]}
+                              >
+                                Age {circle.ageGroup || userAgeBand}
+                              </Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
                 </View>
               </View>
             </ScrollView>
