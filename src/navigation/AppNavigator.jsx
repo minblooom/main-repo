@@ -28,6 +28,8 @@ import { ProfileScreen }         from '../screens/profile/ProfileScreen';
 import { ArcadeScreen }          from '../screens/arcade/ArcadeScreen';
 import { CommunityScreen }       from '../screens/community/CommunityScreen';
 import { LegalScreen }           from '../screens/legal/LegalScreen';
+import { ChillScreen }         from '../screens/chill-space/ChillScreen';
+import { StoryDetailScreen }   from '../screens/chill-space/StoryDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +66,8 @@ export const AppNavigator = () => {
         <Stack.Screen name="Profile"         component={ProfileScreen} />
         <Stack.Screen name="Arcade"          component={ArcadeScreen} />
         <Stack.Screen name="Community"       component={CommunityScreen} />
+        <Stack.Screen name="Chill"           component={ChillScreen} />
+        <Stack.Screen name="StoryDetail"     component={StoryDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

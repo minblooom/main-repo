@@ -14,6 +14,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { AuthService } from '../../core/api/authService';
 import { useTheme } from '../../theme/ThemeContext';
+import { ChillContent } from '../chill-space/ChillScreen';
 
 // Modular Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
@@ -75,16 +76,11 @@ export const HomeScreen = ({ navigation, route }) => {
     } else if (routeId === 'arcade' || routeId === 'acacia') {
       setActiveTab('arcade');
     } else if (routeId === 'soundscapes') {
-      Alert.alert(
-        'Chill & Soundscapes',
-        'Immersive calming audio: Savanna twilight breeze, gentle mountain rain, and soothing guitar chords to help you unwind.'
-      );
+      setActiveTab('soundscapes');
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza' || routeId === 'community') {
       navigation.navigate('Community');
-    } else if (routeId === 'acacia') {
-      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
       setActiveTab('sanctuary');
     }
@@ -128,6 +124,8 @@ export const HomeScreen = ({ navigation, route }) => {
                   onNavigateSanctuary={() => handleNavigate('sanctuary')}
                   isWide={isWide}
                 />
+             ) : activeTab === 'soundscapes' ? (
+                <ChillContent />
               ) : activeTab === 'sanctuary' ? (
                 <ProfileContent
                   companionId={companionId}
