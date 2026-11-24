@@ -1,28 +1,18 @@
 // src/features/community/baraza/BarazaPresenceBar.jsx
-// src/features/community/baraza/BarazaPresenceBar.jsx
-// src/features/community/baraza/BarazaPresenceBar.jsx
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
-import { COMPANION_MAP } from '../../../constants/companions';
+import { getCompanionByIndex } from '../../../constants/companions';
+import { todayKey } from '../utils/dateKeys';
+import { styles } from './styles/BarazaPresenceBar.styles';
 
 const STORAGE_KEY = 'mindbloom:community:barazaLanterns:v1';
-
-const COMPANION_KEYS = Object.keys(COMPANION_MAP);
-const pickCompanion = (index, fallback) =>
-  COMPANION_MAP[COMPANION_KEYS[index]] || COMPANION_MAP[fallback] || COMPANION_MAP.noodle;
 
 const LANTERNS = [
   {
     key: 'lantern',
-    companion: pickCompanion(0, 'noodle'),
+    companion: getCompanionByIndex(0),
     label: 'Light a lantern',
     icon: '🏮',
     baseCount: 18,
@@ -33,7 +23,7 @@ const LANTERNS = [
   },
   {
     key: 'chai',
-    companion: pickCompanion(1, 'pip'),
+    companion: getCompanionByIndex(1),
     label: 'Pour chai',
     icon: '🫖',
     baseCount: 24,
@@ -44,7 +34,7 @@ const LANTERNS = [
   },
   {
     key: 'wildflower',
-    companion: pickCompanion(2, 'sunny'),
+    companion: getCompanionByIndex(2),
     label: 'Leave a flower',
     icon: '🌼',
     baseCount: 14,
@@ -55,7 +45,7 @@ const LANTERNS = [
   },
   {
     key: 'presence',
-    companion: pickCompanion(3, 'mochi'),
+    companion: getCompanionByIndex(3),
     label: 'Hold space',
     icon: '🕯️',
     baseCount: 31,
@@ -78,7 +68,7 @@ export const BarazaPresenceBar = () => {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (active && raw) {
           const parsed = JSON.parse(raw);
-          const today = new Date().toISOString().slice(0, 10);
+          const today = todayKey();
           if (parsed?.date === today && Array.isArray(parsed?.litKeys)) {
             setLitKeys(parsed.litKeys);
             if (parsed.litKeys.length > 0) {
@@ -103,10 +93,9 @@ export const BarazaPresenceBar = () => {
     setActiveKey(alreadyLit ? nextLit[nextLit.length - 1] ?? null : key);
 
     try {
-      const today = new Date().toISOString().slice(0, 10);
       await AsyncStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ date: today, litKeys: nextLit })
+        JSON.stringify({ date: todayKey(), litKeys: nextLit })
       );
     } catch {}
   };
@@ -145,7 +134,6 @@ export const BarazaPresenceBar = () => {
         </View>
       </View>
 
-      {/* 4 Static Companion Lantern Tiles */}
       <View style={styles.tileRow}>
         {LANTERNS.map((item) => {
           const isLit = litKeys.includes(item.key);
@@ -221,7 +209,6 @@ export const BarazaPresenceBar = () => {
         })}
       </View>
 
-      {/* Shared Table Blessing */}
       {activeLantern && (
         <View
           style={[
@@ -242,118 +229,3 @@ export const BarazaPresenceBar = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 22,
-    padding: 18,
-    borderWidth: 1,
-    gap: 14,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  titleBlock: {
-    flex: 1,
-    minWidth: 180,
-    gap: 2,
-  },
-  question: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  subline: {
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  counterPill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  counterText: {
-    fontSize: 11.5,
-    fontWeight: '800',
-  },
-  tileRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  tile: {
-    flex: 1,
-    minWidth: 110,
-    borderWidth: 1,
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  avatarWrap: {
-    position: 'relative',
-    marginBottom: 2,
-  },
-  avatarRing: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImg: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  badgeCircle: {
-    position: 'absolute',
-    right: -4,
-    bottom: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeEmoji: {
-    fontSize: 11,
-  },
-  tileLabel: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  tileCount: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  blessingBox: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  blessingIcon: {
-    fontSize: 18,
-  },
-  blessingText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 19,
-  },
-});
