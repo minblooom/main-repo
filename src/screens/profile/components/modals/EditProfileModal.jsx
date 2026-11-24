@@ -1,4 +1,4 @@
-﻿// src/screens/profile/components/modals/EditProfileModal.jsx
+// src/screens/profile/components/modals/EditProfileModal.jsx
 // Modal allowing the user to update their nickname, personal bio, and primary wellness focus areas.
 // Zero mock/dummy defaults and clean cross/check icons.
 

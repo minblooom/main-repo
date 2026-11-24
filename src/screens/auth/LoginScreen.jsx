@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { AuthService } from '../../core/api/authService';
+import { onboardingStorage } from '../../services/onboardingStorage';
 import { useI18n } from '../../services/i18n';
 
 export const LoginScreen = ({ navigation }) => {
@@ -91,7 +92,12 @@ export const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await AuthService.login({ identifier: identifier.trim(), password });
+      const session = await AuthService.login({ identifier: identifier.trim(), password });
+      if (session?.user?.nickname) {
+        await onboardingStorage.savePreferences({ nickname: session.user.nickname });
+      } else if (!identifier.includes('@')) {
+        await onboardingStorage.savePreferences({ nickname: identifier.trim() });
+      }
       // Success — go home
       if (navigation) {
         if (typeof navigation.replace === 'function') {

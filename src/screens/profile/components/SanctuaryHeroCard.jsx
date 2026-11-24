@@ -38,7 +38,7 @@ export const SanctuaryHeroCard = ({
         {/* Name + location + focus chip */}
         <View style={styles.infoBlock}>
           <Text style={[styles.nickname, { color: theme.textPrimary }]}>
-            {profile.nickname || 'soso'}
+            {profile.nickname || 'friend'}
           </Text>
           <Text style={[styles.location, { color: theme.textMuted }]}>
             {profile.location || 'Kenya · East Africa'}

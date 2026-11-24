@@ -15,6 +15,7 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 // Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -75,19 +76,21 @@ export const ProfileContent = ({
   useEffect(() => {
     (async () => {
       try {
-        const saved = await onboardingStorage.getPreferences();
-        if (saved) {
-          const comp = saved.companionId || saved.companion;
+        const [saved, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        if (saved || storedUser) {
+          const comp = saved?.companionId || saved?.companion;
           if (comp) setCompanionId(comp);
-          if (saved.nickname || saved.focusAreas) {
-            setProfile((prev) => ({
-              ...prev,
-              nickname: saved.nickname || prev.nickname,
-              bio: saved.bio || prev.bio,
-              location: saved.location || prev.location,
-              focusAreas: saved.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
-            }));
-          }
+          const resolvedNick = storedUser?.nickname || saved?.nickname;
+          setProfile((prev) => ({
+            ...prev,
+            nickname: resolvedNick || prev.nickname,
+            bio: saved?.bio || prev.bio,
+            location: saved?.location || prev.location,
+            focusAreas: saved?.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
+          }));
         }
       } catch (err) {
         console.warn('Failed loading profile preferences:', err);

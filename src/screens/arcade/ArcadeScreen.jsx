@@ -15,6 +15,7 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 
 // Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
@@ -44,7 +45,7 @@ import { styles } from './styles/ArcadeScreen.styles';
  */
 export const ArcadeContent = ({
   companionId = 'taz',
-  userName = 'Wanja',
+  userName = '',
   onNavigateHome,
   isWide = false,
 }) => {
@@ -66,15 +67,19 @@ export const ArcadeContent = ({
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [favourites, setFavourites] = useState([]);
   const [dailyGame, setDailyGame] = useState(getGameOfTheDay());
-  const [displayName, setDisplayName] = useState(userName);
+  const [displayName, setDisplayName] = useState(userName || 'friend');
 
   // Load user data, recents, and favourites on mount
   useEffect(() => {
     (async () => {
       try {
-        const savedPrefs = await onboardingStorage.getPreferences();
-        if (savedPrefs?.nickname) {
-          setDisplayName(savedPrefs.nickname);
+        const [savedPrefs, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        const name = storedUser?.nickname || savedPrefs?.nickname || userName;
+        if (name) {
+          setDisplayName(name);
         }
         const recents = await gameSessionManager.getRecentlyPlayed();
         setRecentlyPlayed(recents);
@@ -83,7 +88,7 @@ export const ArcadeContent = ({
         setFavourites(favs);
       } catch { }
     })();
-  }, []);
+  }, [userName]);
 
   // Filtered games list
   const filteredGames = useMemo(() => {

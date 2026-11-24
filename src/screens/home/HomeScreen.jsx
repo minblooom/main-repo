@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 import { useTheme } from '../../theme/ThemeContext';
 
 // Modular Navigation Components
@@ -37,13 +38,21 @@ export const HomeScreen = ({ navigation, route }) => {
 
   const [activeTab, setActiveTab] = useState(route?.params?.tab || 'home');
   const companionId = themeCompanionId || route?.params?.companion || 'noodle';
+  const [userName, setUserName] = useState('');
   const [userFocusAreas, setUserFocusAreas] = useState(route?.params?.focusAreas || ['anxiety']);
   const [moodAnalyticsVisible, setMoodAnalyticsVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const saved = await onboardingStorage.getPreferences();
+        const [saved, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        const name = storedUser?.nickname || saved?.nickname || '';
+        if (name) {
+          setUserName(name);
+        }
         if (saved) {
           if (saved.companion && !route?.params?.companion) {
             setCompanionId(saved.companion);
@@ -98,6 +107,7 @@ export const HomeScreen = ({ navigation, route }) => {
           {activeTab === 'arcade' ? (
             <ArcadeContent
               companionId={companionId}
+              userName={userName}
               onNavigateHome={() => setActiveTab('home')}
               isWide={isWide}
             />
@@ -136,7 +146,7 @@ export const HomeScreen = ({ navigation, route }) => {
                   />
 
                   {/* Welcoming Greeting */}
-                  <GreetingSection userName="soso" />
+                  <GreetingSection userName={userName || 'friend'} />
 
                   {/* Gentle Mood Check-in */}
                   <MoodCheckIn onOpenAnalytics={() => setMoodAnalyticsVisible(true)} />
