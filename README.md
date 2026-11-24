@@ -133,22 +133,5 @@ MindBloom is built for cultural comfort:
 
 ---
 
-## 🤝 Contributing & Jira Workflow
-
-MindBloom follows Jira-driven branch conventions:
-- `KAN-4-home-make-wellbeing-options-easy-to-find`: Home sanctuary and onboarding enhancements.
-- `KAN-15-profile-screen`: Profile screen, comfort settings, and hero card refinements.
-- `KAN-16-journal-screen`: Journaling tools, entry archiving, and privacy shielding.
-- `KAN-8-community-peer-features-spaces`: Community pods and peer baraza (under active development).
-
-### Commit Convention
-```
-KAN-<IssueNumber> <FeatureName> - <imperative summary of change>
-# Example:
-git commit -m "KAN-15 Profile - update profile screen and clean up hero card"
-```
-
----
-
 ## 🛡️ Safety & Privacy First
 MindBloom is **not a replacement for emergency clinical care**. If a user indicates crisis or acute distress, discreet and supportive crisis modals surface verified, toll-free hotlines for immediate professional care. All reflections and notes are private to the user's sanctuary.
