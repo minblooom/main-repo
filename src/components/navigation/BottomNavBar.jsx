@@ -8,6 +8,11 @@ import { COMPANION_MAP } from '../../constants/companions';
 import { useTheme } from '../../theme/ThemeContext';
 
 const BOTTOM_TABS = [
+  { id: 'home',      label: 'Home' },
+  { id: 'journal',   label: 'Journal' },
+  { id: 'aurora',    label: 'Aurora' },
+  { id: 'arcade',    label: 'Arcade' },
+  { id: 'baraza',    label: 'Baraza' },
   { id: 'home', label: 'Home' },
   { id: 'journal', label: 'Journal' },
   { id: 'baraza', label: 'Baraza' },

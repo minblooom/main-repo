@@ -1,5 +1,4 @@
 // src/features/community/baraza/CommunitySpaceCard.jsx
-// src/features/community/baraza/CommunitySpaceCard.jsx
 import React from 'react';
 import { Pressable, View, Text } from 'react-native';
 import { useSpaceTone } from '../utils/spaceTones';
@@ -18,6 +17,11 @@ export const CommunitySpaceCard = ({
 }) => {
   const t = useSpaceTone(type);
   const subline = preview || meta;
+
+  const handleQuickPress = (e) => {
+    e?.stopPropagation?.();
+    onQuick?.(e);
+  };
 
   return (
     <Pressable
@@ -43,7 +47,7 @@ export const CommunitySpaceCard = ({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${quickLabel} ${title}`}
-                onPress={onQuick}
+                onPress={handleQuickPress}
                 hitSlop={6}
                 style={[styles.quick, { borderColor: t.accent }]}
               >

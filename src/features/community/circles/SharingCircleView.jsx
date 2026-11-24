@@ -12,11 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
-import { COMPANION_MAP } from '../../../constants/companions';
-
-const COMPANION_KEYS = Object.keys(COMPANION_MAP);
-const getCompanion = (idx) =>
-  COMPANION_MAP[COMPANION_KEYS[idx % COMPANION_KEYS.length]] || COMPANION_MAP.noodle;
+import { getCompanionByIndex } from '../../../constants/companions';
 
 const HOLD_INTENTIONS = [
   'Just sharing',
@@ -310,7 +306,6 @@ export const SharingCircleView = ({
       reactions: {},
     };
 
-    // Unlocks next uncollected art piece when sharing in the visual/pace space
     let nextCols = collectedIds;
     if (purpose === 'visual') {
       const nextUncollected = ART_COLLECTABLES.find((c) => !collectedIds.includes(c.id));
@@ -816,7 +811,7 @@ export const SharingCircleView = ({
             </Text>
           ) : (
             visibleWorks.map((work, idx) => {
-              const comp = getCompanion(idx);
+              const comp = getCompanionByIndex(idx);
               const savedInPocket = pocketIds.includes(work.id);
               const menuOpen = menuWorkId === work.id;
 
@@ -943,16 +938,29 @@ export const SharingCircleView = ({
                         activeOpacity={0.85}
                         onPress={() => togglePinWall(work.id)}
                       >
-                        <Text style={[styles.perkLink, baseFont, { color: theme.accent }]}>
-                          {work.pinned ? 'Spotlight ★' : 'Spotlight'}
+                        <Text
+                          style={[
+                            styles.perkLink,
+                            baseFont,
+                            { color: work.pinned ? theme.accent : theme.textSecondary },
+                          ]}
+                        >
+                          {work.pinned ? '✦ Spotlight' : 'Pin'}
                         </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
                         activeOpacity={0.85}
                         onPress={() => togglePocket(work.id)}
                       >
-                        <Text style={[styles.perkLink, baseFont, { color: theme.accent }]}>
-                          {savedInPocket ? 'In pocket ✓' : '+ Pocket'}
+                        <Text
+                          style={[
+                            styles.perkLink,
+                            baseFont,
+                            { color: savedInPocket ? theme.accent : theme.textSecondary },
+                          ]}
+                        >
+                          {savedInPocket ? 'Pocketed ✓' : '+ Pocket'}
                         </Text>
                       </TouchableOpacity>
                     </View>
