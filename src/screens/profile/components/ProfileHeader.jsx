@@ -5,7 +5,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
-import { useI18n } from '../../../services/i18n';
 import { styles } from '../styles/ProfileHeader.styles';
 
 export const ProfileHeader = ({ onHomePress, onNotificationPress }) => {

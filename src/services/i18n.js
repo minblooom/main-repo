@@ -199,7 +199,9 @@ const I18nContext = createContext({
   language: 'en',
   country: 'ke',
   countryData: COUNTRY_DATA.ke,
+  availableLanguages: [SUPPORTED_LANGUAGES[0]],
   setLanguage: () => {},
+  cycleLanguage: () => {},
   setCountry: () => {},
   t: (key) => key,
 });
