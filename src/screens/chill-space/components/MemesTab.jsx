@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,57 +9,128 @@ import {
   Share,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { onboardingStorage } from '../../../services/onboardingStorage';
+import { AuthService } from '../../../core/api/authService';
 import { initialMemes } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
+
+const INTEREST_SUBREDDITS = {
+  music: ['wholesomememes', 'MadeMeSmile'],
+  gaming: ['gamingmemes', 'wholesomememes'],
+  anime: ['wholesomeanimemes', 'animememes'],
+  tech: ['ProgrammerHumor', 'me_irl'],
+  books: ['bookmemes', 'introvertmemes'],
+  writing: ['introvertmemes', 'wholesomememes'],
+  fitness: ['GymMemes', 'MadeMeSmile'],
+  sports: ['GymMemes', 'MadeMeSmile'],
+  outdoors: ['MadeMeSmile', 'wholesomememes'],
+  cooking: ['wholesomememes', 'me_irl'],
+  art: ['wholesomememes', 'MadeMeSmile'],
+  photography: ['MadeMeSmile', 'mildlyinteresting'],
+  mindfulness: ['wholesomememes', 'introvertmemes'],
+  podcasts: ['me_irl', 'wholesomememes'],
+  deep_talks: ['introvertmemes', 'wholesomememes'],
+  fashion: ['me_irl', 'wholesomememes'],
+  crafts: ['wholesomememes', 'MadeMeSmile'],
+};
+
+const DEFAULT_SUBREDDITS = ['wholesomememes', 'MadeMeSmile', 'me_irl', 'introvertmemes'];
 
 export const MemesTab = () => {
   const { theme } = useTheme();
   const [localMemes, setLocalMemes] = useState(initialMemes.map((m) => ({ ...m, liked: false })));
   const [apiMemes, setApiMemes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedMemeIdx, setSelectedMemeIdx] = useState(-1);
+  const [userInterests, setUserInterests] = useState([]);
 
-  // Fetch wholesome memes from multiple subreddits via meme-api.com
-  const fetchLiveMemes = useCallback(async () => {
-    setLoading(true);
+  const seenUrlsRef = useRef(new Set());
+  const poolRef = useRef(DEFAULT_SUBREDDITS);
+
+  // Build personalized subreddit pool from user's selected interests
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [prefs, user] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        const interests = prefs?.interests?.length
+          ? prefs.interests
+          : user?.interests || [];
+        if (!mounted) return;
+        setUserInterests(interests);
+
+        const subs = new Set(DEFAULT_SUBREDDITS);
+        interests.forEach((raw) => {
+          const key = String(raw).toLowerCase();
+          Object.entries(INTEREST_SUBREDDITS).forEach(([k, list]) => {
+            if (key.includes(k) || k.includes(key)) {
+              list.forEach((s) => subs.add(s));
+            }
+          });
+        });
+        poolRef.current = Array.from(subs);
+      } catch {}
+      if (mounted) fetchBatch(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const fetchBatch = useCallback(async (reset = false) => {
+    if (reset) {
+      setLoading(true);
+      seenUrlsRef.current = new Set();
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const subs = ['wholesomememes', 'MadeMeSmile', 'me_irl'];
-      const pickA = subs[Math.floor(Math.random() * subs.length)];
-      const pickB = subs[(subs.indexOf(pickA) + 1) % subs.length];
+      const pool = poolRef.current.length ? poolRef.current : DEFAULT_SUBREDDITS;
+      // Pick 2 distinct subreddits from the user's interest pool
+      const idxA = Math.floor(Math.random() * pool.length);
+      const idxB = (idxA + 1 + Math.floor(Math.random() * Math.max(1, pool.length - 1))) % pool.length;
+      const picks = idxA === idxB ? [pool[idxA]] : [pool[idxA], pool[idxB]];
 
       const results = await Promise.all(
-        [pickA, pickB].map(async (sub) => {
-          const res = await fetch(`https://meme-api.com/gimme/${sub}/8`);
+        picks.map(async (sub) => {
+          const res = await fetch(`https://meme-api.com/gimme/${sub}/10`);
           if (!res.ok) return [];
           const data = await res.json();
           return (data.memes || []).filter(
             (m) =>
               m.url &&
               !m.nsfw &&
+              !m.spoiler &&
               (m.url.endsWith('.jpg') || m.url.endsWith('.png') || m.url.endsWith('.webp'))
           );
         })
       );
 
-      const seen = new Set();
-      const merged = [];
+      const fresh = [];
       results.flat().forEach((m) => {
-        if (!seen.has(m.url)) {
-          seen.add(m.url);
-          merged.push({ ...m, liked: false });
+        if (!seenUrlsRef.current.has(m.url)) {
+          seenUrlsRef.current.add(m.url);
+          fresh.push({ ...m, liked: false });
         }
       });
-      setApiMemes(merged);
+
+      if (reset) {
+        setApiMemes(fresh);
+      } else if (fresh.length > 0) {
+        setApiMemes((prev) => [...prev, ...fresh]);
+      }
     } catch {
-      // Offline fallback uses curated local cards cleanly
+      // Offline fallback uses local MindBloom cards cleanly
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchLiveMemes();
-  }, [fetchLiveMemes]);
 
   function handleLocalReact(id) {
     setLocalMemes((prev) =>
@@ -90,17 +161,19 @@ export const MemesTab = () => {
   return (
     <View>
       <View style={styles.sectionHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.sectionHeading, { color: theme?.textPrimary || '#2A192E' }]}>
-            Live Wholesome Memes 🎭
+            Endless Relatable Vibes 🎭
           </Text>
           <Text style={[styles.sectionSubtext, { color: theme?.textMuted || '#7E726D' }]}>
-            Tap any meme to view, react & share a gentle laugh
+            {userInterests.length > 0
+              ? `Tailored to your interests: ${userInterests.slice(0, 3).join(' · ')}`
+              : 'Tap any meme to view, react & share a gentle laugh'}
           </Text>
         </View>
         <TouchableOpacity
           style={[styles.smallBtn, { backgroundColor: theme?.heroBg || '#F1EBF8' }]}
-          onPress={fetchLiveMemes}
+          onPress={() => fetchBatch(true)}
         >
           <Text style={[styles.smallBtnText, { color: theme?.accent || '#42213D' }]}>Shuffle 🔀</Text>
         </TouchableOpacity>
@@ -109,60 +182,84 @@ export const MemesTab = () => {
       {loading && (
         <View style={[styles.infoBox, { backgroundColor: theme?.cardBg || '#FFFFFF' }]}>
           <ActivityIndicator color={theme?.accent || '#42213D'} />
-          <Text style={[styles.metaText, { marginTop: 8 }]}>Loading fresh wholesome memes...</Text>
+          <Text style={[styles.metaText, { marginTop: 8 }]}>Loading fresh relatable memes...</Text>
         </View>
       )}
 
-      {/* 2-Column Masonry Grid matching screenshot */}
+      {/* Endless 2-Column Masonry Grid */}
       {apiMemes.length > 0 && (
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-          {[0, 1].map((col) => (
-            <View key={col} style={{ flex: 1, gap: 12 }}>
-              {apiMemes
-                .map((m, idx) => ({ m, idx }))
-                .filter(({ idx }) => idx % 2 === col)
-                .map(({ m, idx }) => (
-                  <TouchableOpacity
-                    key={m.url}
-                    style={[
-                      styles.card,
-                      {
-                        padding: 0,
-                        overflow: 'hidden',
-                        marginBottom: 0,
-                        backgroundColor: theme?.cardBg || '#FFFFFF',
-                        borderColor: theme?.divider || '#E8DFF2',
-                      },
-                    ]}
-                    onPress={() => setSelectedMemeIdx(idx)}
-                    activeOpacity={0.88}
-                  >
-                    <Image
-                      source={{ uri: m.url }}
-                      style={{ width: '100%', height: 155 }}
-                      resizeMode="cover"
-                    />
-                    <View style={{ padding: 12, gap: 6 }}>
-                      <Text
-                        style={{ fontSize: 12.5, fontWeight: '700', color: theme?.textPrimary || '#2A192E' }}
-                        numberOfLines={2}
-                      >
-                        {m.title}
-                      </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, color: theme?.textMuted || '#7E726D' }}>
-                          r/{m.subreddit}
+        <>
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+            {[0, 1].map((col) => (
+              <View key={col} style={{ flex: 1, gap: 12 }}>
+                {apiMemes
+                  .map((m, idx) => ({ m, idx }))
+                  .filter(({ idx }) => idx % 2 === col)
+                  .map(({ m, idx }) => (
+                    <TouchableOpacity
+                      key={`${m.url}-${idx}`}
+                      style={[
+                        styles.card,
+                        {
+                          padding: 0,
+                          overflow: 'hidden',
+                          marginBottom: 0,
+                          backgroundColor: theme?.cardBg || '#FFFFFF',
+                          borderColor: theme?.divider || '#E8DFF2',
+                        },
+                      ]}
+                      onPress={() => setSelectedMemeIdx(idx)}
+                      activeOpacity={0.88}
+                    >
+                      <Image
+                        source={{ uri: m.url }}
+                        style={{ width: '100%', height: 155 }}
+                        resizeMode="cover"
+                      />
+                      <View style={{ padding: 12, gap: 6 }}>
+                        <Text
+                          style={{ fontSize: 12.5, fontWeight: '700', color: theme?.textPrimary || '#2A192E' }}
+                          numberOfLines={2}
+                        >
+                          {m.title}
                         </Text>
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: theme?.accent || '#E06D3B' }}>
-                          ❤️ {m.ups}
-                        </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: theme?.textMuted || '#7E726D' }}>
+                            r/{m.subreddit}
+                          </Text>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: theme?.accent || '#E06D3B' }}>
+                            ❤️ {m.ups}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-            </View>
-          ))}
-        </View>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.primaryBtn,
+              {
+                backgroundColor: theme?.heroBg || '#F1EBF8',
+                borderWidth: 1,
+                borderColor: theme?.divider || '#E8DFF2',
+                marginBottom: 20,
+              },
+            ]}
+            onPress={() => fetchBatch(false)}
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={theme?.accent || '#42213D'} />
+            ) : (
+              <Text style={[styles.primaryBtnText, { color: theme?.accent || '#42213D' }]}>
+                Load more memes ✨
+              </Text>
+            )}
+          </TouchableOpacity>
+        </>
       )}
 
       {/* Relatable Local MindBloom Cards */}
@@ -195,7 +292,7 @@ export const MemesTab = () => {
         </View>
       ))}
 
-      {/* Cute Meme Viewer Popup */}
+      {/* Cute Meme Viewer Popup (auto-loads more when reaching end) */}
       <Modal
         visible={!!activeMeme}
         transparent
@@ -255,7 +352,11 @@ export const MemesTab = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.smallBtn, { backgroundColor: theme?.bg || '#F1EBF8' }]}
-                      onPress={() => setSelectedMemeIdx((idx) => (idx + 1) % apiMemes.length)}
+                      onPress={() => {
+                        const nextIdx = selectedMemeIdx + 1;
+                        if (nextIdx >= apiMemes.length - 2) fetchBatch(false);
+                        setSelectedMemeIdx(nextIdx % apiMemes.length);
+                      }}
                     >
                       <Text style={styles.smallBtnText}>Next ›</Text>
                     </TouchableOpacity>
