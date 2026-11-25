@@ -53,6 +53,7 @@ export const ProfileContent = ({
   companionId: initialCompanionId,
   userFocusAreas = ['Anxiety & Panic'],
   onNavigateHome,
+  onNavigateChill,
   onNavigateJournal,
   onSignOut,
   isWide = false,
@@ -252,7 +253,7 @@ export const ProfileContent = ({
         onClose={() => setActiveModal(null)}
         onNavigateChill={() => {
           setActiveModal(null);
-          Alert.alert('Chill & Soundscapes', 'Streaming relaxing audio from your teammate\'s Chill Space.');
+          onNavigateChill?.();
         }}
       />
 
@@ -319,8 +320,8 @@ export const ProfileScreen = ({ navigation, route }) => {
       navigation?.navigate?.('Journal', { companion: companionId, focusAreas });
     } else if (routeId === 'sanctuary') {
       // Already on profile
-    } else if (routeId === 'chill') {
-      Alert.alert('Chill Space', 'A calm space to unwind and listen to soothing sounds.');
+    } else if (routeId === 'chill' || routeId === 'soundscapes') {
+      navigation?.navigate?.('Chill');
     } else if (routeId === 'community' || routeId === 'baraza') {
       navigation?.navigate?.('Community');
     } else if (routeId === 'aurora') {
@@ -370,6 +371,7 @@ export const ProfileScreen = ({ navigation, route }) => {
               companionId={companionId}
               userFocusAreas={focusAreas}
               onNavigateHome={() => navigation?.navigate?.('Home', { tab: 'home' })}
+              onNavigateChill={() => navigation?.navigate?.('Chill')}
               onNavigateJournal={() =>
                 navigation?.navigate?.('Journal', { companion: companionId, focusAreas })
               }

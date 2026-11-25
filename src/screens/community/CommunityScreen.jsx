@@ -167,6 +167,7 @@ export const CommunityScreen = ({ navigation, route }) => {
     if (routeId === 'home') navigation.navigate('Home');
     else if (routeId === 'journal') navigation.navigate('Journal');
     else if (routeId === 'arcade') navigation.navigate('Arcade');
+    else if (routeId === 'soundscapes' || routeId === 'chill') navigation.navigate('Chill');
     else if (routeId === 'sanctuary') navigation.navigate('Profile');
     else if (routeId === 'baraza' || routeId === 'community') setSelectedCircle(null);
   };

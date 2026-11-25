@@ -354,8 +354,8 @@ export const ArcadeScreen = ({ navigation, route }) => {
       navigation?.navigate?.('Community');
     } else if (routeId === 'arcade' || routeId === 'acacia') {
       // Already on arcade
-    } else if (routeId === 'soundscapes') {
-      Alert.alert('Chill & Soundscapes', 'Immersive calming audio: Savanna twilight breeze, gentle mountain rain, and soothing guitar chords to help you unwind.');
+    } else if (routeId === 'soundscapes' || routeId === 'chill') {
+      navigation?.navigate?.('Chill');
     } else {
       Alert.alert('MindBloom', `Navigating to ${routeId}...`);
     }

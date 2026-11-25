@@ -14,6 +14,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { AuthService } from '../../core/api/authService';
 import { useTheme } from '../../theme/ThemeContext';
+import { ChillContent } from '../chill-space/ChillScreen';
 
 // Modular Navigation Components
 import { SidebarNav } from '../../components/navigation/SidebarNav';
@@ -74,11 +75,8 @@ export const HomeScreen = ({ navigation, route }) => {
       Alert.alert('Tulia Breath', 'A 2-minute reset. Inhale gently, exhale slowly.');
     } else if (routeId === 'arcade' || routeId === 'acacia') {
       setActiveTab('arcade');
-    } else if (routeId === 'soundscapes') {
-      Alert.alert(
-        'Chill & Soundscapes',
-        'Immersive calming audio: Savanna twilight breeze, gentle mountain rain, and soothing guitar chords to help you unwind.'
-      );
+    } else if (routeId === 'soundscapes' || routeId === 'chill') {
+      setActiveTab('soundscapes');
     } else if (routeId === 'aurora') {
       Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
     } else if (routeId === 'baraza' || routeId === 'community') {
@@ -128,11 +126,14 @@ export const HomeScreen = ({ navigation, route }) => {
                   onNavigateSanctuary={() => handleNavigate('sanctuary')}
                   isWide={isWide}
                 />
+              ) : activeTab === 'soundscapes' ? (
+                <ChillContent onNavigateHome={() => setActiveTab('home')} />
               ) : activeTab === 'sanctuary' ? (
                 <ProfileContent
                   companionId={companionId}
                   userFocusAreas={userFocusAreas}
                   onNavigateHome={() => setActiveTab('home')}
+                  onNavigateChill={() => setActiveTab('soundscapes')}
                   onNavigateJournal={() => setActiveTab('journal')}
                   onSignOut={() => navigation.reset({ index: 0, routes: [{ name: 'Splash' }] })}
                   isWide={isWide}

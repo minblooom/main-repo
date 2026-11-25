@@ -444,6 +444,8 @@ export const JournalScreen = ({ navigation, route }) => {
       navigation?.navigate?.('Home');
     } else if (routeId === 'arcade') {
       navigation?.navigate?.('Arcade');
+    } else if (routeId === 'soundscapes' || routeId === 'chill') {
+      navigation?.navigate?.('Chill');
     } else if (routeId === 'baraza' || routeId === 'community') {
       navigation?.navigate?.('Community');
     } else if (routeId === 'sanctuary') {
