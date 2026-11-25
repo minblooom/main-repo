@@ -649,7 +649,10 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
             <View style={styles.inlineRecordingLeft}>
               <View style={styles.liveRedDot} />
               <Text style={styles.inlineRecordingLabel}>
-                Recording {formatVoiceDuration(elapsedSec)} / {formatVoiceDuration(MAX_VOICE_NOTE_SECONDS)}
+                Recording {formatVoiceDuration(elapsedSec)}
+                {elapsedSec >= MAX_VOICE_NOTE_SECONDS - 60
+                  ? ` / ${formatVoiceDuration(MAX_VOICE_NOTE_SECONDS)}`
+                  : ''}
               </Text>
             </View>
             <View style={styles.inlineRecordingActions}>

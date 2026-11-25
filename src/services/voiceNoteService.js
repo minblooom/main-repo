@@ -5,12 +5,34 @@
 import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
 
-export const MAX_VOICE_NOTE_SECONDS = 120;
+export const MAX_VOICE_NOTE_SECONDS = 3600; // 1 hour max (WhatsApp-style long voice notes)
+
+const VOICE_RECORDING_OPTIONS = {
+  ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+  android: {
+    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
+    numberOfChannels: 1,
+    bitRate: 32000,
+  },
+  ios: {
+    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
+    numberOfChannels: 1,
+    bitRate: 32000,
+  },
+  web: {
+    mimeType: 'audio/webm',
+    bitsPerSecond: 32000,
+  },
+};
 
 export function formatVoiceDuration(seconds = 0) {
   const s = Math.max(0, Math.floor(seconds));
-  const mins = Math.floor(s / 60);
+  const hrs = Math.floor(s / 3600);
+  const mins = Math.floor((s % 3600) / 60);
   const secs = s % 60;
+  if (hrs > 0) {
+    return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
@@ -53,7 +75,7 @@ export async function startVoiceRecording() {
   });
 
   const { recording } = await Audio.Recording.createAsync(
-    Audio.RecordingOptionsPresets.HIGH_QUALITY
+    VOICE_RECORDING_OPTIONS
   );
   activeRecording = recording;
   return recording;
