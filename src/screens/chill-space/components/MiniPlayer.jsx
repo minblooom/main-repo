@@ -64,7 +64,7 @@ export const MiniPlayer = ({ episode, isPlaying, onTogglePlay, onClose }) => {
           🎙️ {episode.title}
         </Text>
         <Text style={{ color: '#D6CCC2', fontSize: 11 }} numberOfLines={1}>
-          {episode.host} · {isPlaying ? 'Playing...' : 'Paused'}
+          {episode.host || episode.collectionName || 'Podcast'} · {isPlaying ? 'Playing...' : 'Paused'}
         </Text>
       </View>
 
