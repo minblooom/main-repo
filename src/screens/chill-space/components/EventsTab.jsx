@@ -1,3 +1,7 @@
+// src/screens/chill-space/components/EventsTab.jsx
+// Live event RSVP with server sync, optimistic updates, embedded map,
+// Google Calendar sync suggestion on RSVP, and directions for physical events.
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
@@ -11,8 +15,30 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { WeatherService } from '../../../services/weatherService';
+import { apiClient } from '../../../core/api/client';
 import { initialEvents } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
+
+// Build a Google Calendar "add event" URL from an event object
+function buildGCalUrl(ev) {
+  const title = encodeURIComponent(ev.title || '');
+  const location = encodeURIComponent(ev.locationStr || (ev.isOnline ? 'Online' : ''));
+  const details = encodeURIComponent(ev.description || '');
+  // Convert ISO strings to compact GCal format: 20261128T054500Z
+  const toGCal = (iso) => iso ? iso.replace(/[-:]/g, '').replace('.000', '') : '';
+  const start = toGCal(ev.startISO);
+  const end = toGCal(ev.endISO);
+  const dates = start && end ? `${start}/${end}` : '';
+  return `https://calendar.google.com/calendar/r/eventedit?text=${title}&dates=${dates}&details=${details}&location=${location}`;
+}
+
+function openUrl(url) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    Linking.openURL(url).catch(() => {});
+  }
+}
 
 export const EventsTab = () => {
   const { theme } = useTheme();
@@ -21,6 +47,7 @@ export const EventsTab = () => {
   const [filterMode, setFilterMode] = useState('all'); // 'all' | 'nearby' | 'online'
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [weatherLine, setWeatherLine] = useState('');
+  const [calendarPrompt, setCalendarPrompt] = useState(null); // { ev } or null
 
   const activeCity = countryData?.capital && countryData.capital !== 'Global'
     ? countryData.capital
@@ -35,9 +62,26 @@ export const EventsTab = () => {
         setWeatherLine(`${w.icon} ${w.temperature}°C · ${w.condition}`);
       }
     });
-    return () => {
-      mounted = false;
-    };
+
+    // Hydrate live RSVP counts & user RSVP status from backend
+    apiClient
+      .get('/community/events/rsvps')
+      .then((res) => {
+        const data = res?.data?.data;
+        if (!mounted || !data) return;
+        const myIds = new Set(data.myEventIds || []);
+        const counts = data.counts || {};
+        setEvents((prev) =>
+          prev.map((ev) => ({
+            ...ev,
+            isGoing: myIds.has(ev.id),
+            joinedCount: typeof counts[ev.id] === 'number' ? counts[ev.id] : ev.joinedCount,
+          }))
+        );
+      })
+      .catch(() => {});
+
+    return () => { mounted = false; };
   }, [countryData?.code, activeCity]);
 
   const filteredEvents = useMemo(() => {
@@ -53,11 +97,14 @@ export const EventsTab = () => {
     return events;
   }, [events, filterMode, activeCity, countryData?.name]);
 
-  function handleRsvp(id) {
+  async function handleRsvp(id) {
+    // Optimistic update
+    let optimisticGoing = false;
     setEvents((prev) =>
       prev.map((ev) => {
         if (ev.id !== id) return ev;
         const nextGoing = !ev.isGoing;
+        optimisticGoing = nextGoing;
         return {
           ...ev,
           isGoing: nextGoing,
@@ -74,6 +121,31 @@ export const EventsTab = () => {
         joinedCount: nextGoing ? prev.joinedCount + 1 : Math.max(0, prev.joinedCount - 1),
       };
     });
+
+    try {
+      const res = await apiClient.post(`/community/events/${id}/rsvp`);
+      const serverData = res?.data?.data;
+      if (serverData) {
+        setEvents((prev) =>
+          prev.map((ev) =>
+            ev.id === id
+              ? { ...ev, isGoing: serverData.isGoing, joinedCount: serverData.rsvpCount }
+              : ev
+          )
+        );
+        setSelectedEvent((prev) =>
+          prev && prev.id === id
+            ? { ...prev, isGoing: serverData.isGoing, joinedCount: serverData.rsvpCount }
+            : prev
+        );
+
+        // Suggest Google Calendar if user just RSVPed (not un-RSVPed)
+        if (serverData.isGoing) {
+          const targetEv = events.find((e) => e.id === id);
+          if (targetEv) setCalendarPrompt(targetEv);
+        }
+      }
+    } catch {}
   }
 
   function handleOpenDirections(ev) {
@@ -82,25 +154,18 @@ export const EventsTab = () => {
         ? `${ev.lat},${ev.lon}`
         : encodeURIComponent(ev.locationStr || ev.city || 'Nairobi');
 
-    const openUrl = (originParam = '') => {
-      const url = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${dest}&travelmode=transit`;
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      } else {
-        Linking.openURL(url).catch(() => {});
-      }
+    const doOpen = (originParam = '') => {
+      openUrl(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${dest}&travelmode=transit`);
     };
 
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          openUrl(`&origin=${pos.coords.latitude},${pos.coords.longitude}`);
-        },
-        () => openUrl(''),
+        (pos) => doOpen(`&origin=${pos.coords.latitude},${pos.coords.longitude}`),
+        () => doOpen(''),
         { timeout: 3500 }
       );
     } else {
-      openUrl('');
+      doOpen('');
     }
   }
 
@@ -148,7 +213,7 @@ export const EventsTab = () => {
         {[
           { id: 'all', label: `All Circles (${events.length})` },
           { id: 'nearby', label: `Nearby ${activeCity} 📍` },
-          { id: 'online', label: 'Online Rooms 🌐' },
+          { id: 'online', label: 'Online Rooms 🌍' },
         ].map((pill) => {
           const active = filterMode === pill.id;
           return (
@@ -201,7 +266,7 @@ export const EventsTab = () => {
                 <Text style={[styles.authorName, { color: theme?.textPrimary || '#2A192E' }]}>{ev.title}</Text>
                 <Text style={styles.metaText}>{ev.host}</Text>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: ev.isOnline ? '#16A34A' : '#E06D3B', marginTop: 2 }}>
-                  {ev.isOnline ? '🌐 Online · Open across East Africa' : `📍 ${ev.locationStr}`}
+                  {ev.isOnline ? '🌍 Online · Open across East Africa' : `📍 ${ev.locationStr}`}
                 </Text>
               </View>
             </View>
@@ -234,7 +299,7 @@ export const EventsTab = () => {
         </TouchableOpacity>
       ))}
 
-      {/* Event Details Popup Modal (with Map & Directions for physical events) */}
+      {/* Event Details Popup Modal */}
       <Modal
         visible={!!selectedEvent}
         transparent
@@ -281,7 +346,7 @@ export const EventsTab = () => {
                       📅 {selectedEvent.dateStr}
                     </Text>
                     <Text style={{ fontSize: 12.5, fontWeight: '700', color: selectedEvent.isOnline ? '#16A34A' : '#E06D3B' }}>
-                      {selectedEvent.isOnline ? `🌐 ${selectedEvent.locationStr}` : `📍 ${selectedEvent.locationStr}`}
+                      {selectedEvent.isOnline ? `🌍 ${selectedEvent.locationStr}` : `📍 ${selectedEvent.locationStr}`}
                     </Text>
                     <Text style={{ fontSize: 12, color: theme?.textMuted || '#7E726D' }}>
                       👥 {selectedEvent.joinedCount}/{selectedEvent.capacity} joined · {selectedEvent.tag}
@@ -292,7 +357,7 @@ export const EventsTab = () => {
                     {selectedEvent.description}
                   </Text>
 
-                  {/* Embedded Interactive Map Preview for Physical Events on Web */}
+                  {/* Embedded OpenStreetMap for physical events (web only) */}
                   {!selectedEvent.isOnline && selectedEvent.lat && selectedEvent.lon && Platform.OS === 'web' && (
                     <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme?.divider || '#E8DFF2', marginTop: 10, marginBottom: 12, height: 170 }}>
                       <iframe
@@ -334,6 +399,56 @@ export const EventsTab = () => {
                 </>
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Google Calendar Suggestion Modal — appears after RSVPing */}
+      <Modal
+        visible={!!calendarPrompt}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCalendarPrompt(null)}
+      >
+        <View style={[styles.modalBg, { justifyContent: 'flex-end' }]}>
+          <View
+            style={{
+              backgroundColor: theme?.cardBg || '#FFFFFF',
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              padding: 28,
+              paddingBottom: 36,
+              borderWidth: 1,
+              borderColor: theme?.divider || '#E8DFF2',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 32, marginBottom: 10 }}>📅</Text>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: theme?.textPrimary || '#2A192E', textAlign: 'center', marginBottom: 6 }}>
+              You're going!
+            </Text>
+            <Text style={{ fontSize: 13.5, color: theme?.textSecondary || '#5C4D60', textAlign: 'center', marginBottom: 22, lineHeight: 20 }}>
+              Want to save{' '}
+              <Text style={{ fontWeight: '700' }}>{calendarPrompt?.title}</Text>
+              {' '}to your Google Calendar so you don't miss it?
+            </Text>
+            <TouchableOpacity
+              style={[styles.primaryBtn, { backgroundColor: '#1A73E8', width: '100%', marginBottom: 10 }]}
+              onPress={() => {
+                if (calendarPrompt) openUrl(buildGCalUrl(calendarPrompt));
+                setCalendarPrompt(null);
+              }}
+            >
+              <Text style={[styles.primaryBtnText, { fontSize: 14 }]}>Yes, open Google Calendar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ paddingVertical: 10 }}
+              onPress={() => setCalendarPrompt(null)}
+            >
+              <Text style={{ fontSize: 13.5, color: theme?.textMuted || '#7E726D', fontWeight: '600' }}>
+                Not now
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

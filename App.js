@@ -1,16 +1,22 @@
 // App.js
 // MindBloom Entry Point
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { I18nProvider } from './src/services/i18n';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { registerForPushNotifications } from './src/services/notificationService';
 
 const AppContent = () => {
   const { theme, isDark } = useTheme();
+
+  useEffect(() => {
+    // Silently register push token after the app loads — never blocks UI
+    registerForPushNotifications().catch(() => {});
+  }, []);
 
   return (
     <View style={[styles.root, { backgroundColor: theme?.bg || '#FAF6EF' }]}>
