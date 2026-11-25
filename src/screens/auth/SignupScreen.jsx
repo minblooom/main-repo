@@ -120,36 +120,48 @@ export const SignupScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Save to onboarding storage first (used in onboarding steps)
+      await AuthService.register({
+        nickname: name,
+        contact: contactVal,
+        password,
+      });
+
       await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
 
-      // Try to register with backend (non-blocking — onboarding still works offline)
+      let devCode = '';
       try {
-        await AuthService.register({
-          nickname: name,
+        const otpRes = await AuthService.sendOtp({
           contact: contactVal,
-          password,
-          // ageBand and gender come from onboarding steps — added later
+          purpose: 'VERIFY_CONTACT',
         });
-      } catch (backendErr) {
-        // If the backend is unreachable, still allow onboarding to proceed
-        // The registration will be retried when the user completes onboarding
-        const msg = backendErr?.response?.data?.message || '';
-        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists') || msg.toLowerCase().includes('duplicate')) {
-          setErrors({ general: 'That email or nickname is already taken. Try a different one or sign in.' });
-          setLoading(false);
-          return;
-        }
-        // Network / server unavailable — proceed to onboarding anyway
-        console.warn('[SignupScreen] Backend unreachable, proceeding offline:', backendErr?.message);
+        if (otpRes?.devCode) devCode = otpRes.devCode;
+      } catch {
+        // Non-blocking if OTP email service is temporarily unavailable
       }
 
-      // Always navigate to onboarding after successful local save
       if (navigation) {
-        navigation.navigate('GentleHello');
+        navigation.navigate('VerifyOtp', { contact: contactVal, devCode });
       }
-    } catch (err) {
-      setErrors({ general: 'Something went wrong. Please try again.' });
+    } catch (backendErr) {
+      const status = backendErr?.response?.status;
+      const code = backendErr?.response?.data?.error?.code;
+      const msg = backendErr?.response?.data?.message || '';
+
+      if (
+        status === 409 ||
+        code === 'CONTACT_TAKEN' ||
+        msg.toLowerCase().includes('already') ||
+        msg.toLowerCase().includes('exists')
+      ) {
+        setErrors({
+          contact: 'An account with this email or phone already exists.',
+          contactTaken: true,
+        });
+      } else {
+        setErrors({
+          general: msg || 'Could not create your account right now. Please check your connection and try again.',
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -286,7 +298,16 @@ export const SignupScreen = ({ navigation }) => {
                     editable={!loading}
                   />
                   {submitted && errors.contact ? (
-                    <Text style={s.errorText}>{errors.contact}</Text>
+                    <View>
+                      <Text style={s.errorText}>{errors.contact}</Text>
+                      {errors.contactTaken && (
+                        <TouchableOpacity onPress={goToLogin} style={{ marginTop: 4 }}>
+                          <Text style={[s.forgotBtnText, { fontWeight: '800' }]}>
+                            Sign in instead →
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   ) : (
                     <Text style={s.helperText}>We'll never share this with anyone.</Text>
                   )}

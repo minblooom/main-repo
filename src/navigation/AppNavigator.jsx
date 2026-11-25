@@ -10,6 +10,8 @@ import { SplashScreen }          from '../screens/auth/SplashScreen';
 import { WelcomeScreen }         from '../screens/auth/WelcomeScreen';
 import { SignupScreen }          from '../screens/auth/SignupScreen';
 import { LoginScreen }           from '../screens/auth/LoginScreen';
+import { VerifyOtpScreen }       from '../screens/auth/VerifyOtpScreen';
+import { ForgotPasswordScreen }  from '../screens/auth/ForgotPasswordScreen';
 
 // Onboarding (steps 1–7)
 import { GentleHelloScreen }     from '../screens/onboarding/GentleHelloScreen';
@@ -51,6 +53,8 @@ export const AppNavigator = () => {
         <Stack.Screen name="Welcome"         component={WelcomeScreen} />
         <Stack.Screen name="Signup"          component={SignupScreen} />
         <Stack.Screen name="Login"           component={LoginScreen} />
+        <Stack.Screen name="VerifyOtp"       component={VerifyOtpScreen} />
+        <Stack.Screen name="ForgotPassword"  component={ForgotPasswordScreen} />
         <Stack.Screen name="Legal"           component={LegalScreen} />
 
         {/* -- Onboarding ------------------------------ */}

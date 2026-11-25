@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { AuthService } from '../../core/api/authService';
 
 export const SplashScreen = ({ onFinish, navigation }) => {
   const { height, isDesktop, isTablet, containerMaxWidth } = useResponsiveLayout();
@@ -79,11 +80,18 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     return () => breathLoop.stop();
   }, []);
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (onFinish) {
       onFinish();
-    } else if (navigation) {
-      navigation.navigate('Welcome');
+      return;
+    }
+    if (navigation) {
+      const remembered = await AuthService.hasValidSession();
+      if (remembered) {
+        navigation.replace('Home');
+      } else {
+        navigation.navigate('Welcome');
+      }
     }
   };
 

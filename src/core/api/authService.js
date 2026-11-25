@@ -1,5 +1,5 @@
 // src/core/api/authService.js
-// Authentication service connecting Login and Signup screens to the backend
+// Authentication service connecting Login, Signup, OTP, and Password Reset screens to the backend
 
 import { apiClient, AUTH_STORAGE_KEYS, TokenStorage } from './client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,7 +25,7 @@ export class AuthService {
   }
 
   /**
-   * Login with identifier (nickname, email, or phone) + password
+   * Login strictly with canonical email or phone number + password
    */
   static async login({ identifier, password }) {
     const res = await apiClient.post('/auth/login', {
@@ -41,6 +41,30 @@ export class AuthService {
   }
 
   /**
+   * Request a 6-digit OTP for contact verification or password reset
+   */
+  static async sendOtp({ contact, purpose = 'VERIFY_CONTACT' }) {
+    const res = await apiClient.post('/auth/send-otp', { contact, purpose });
+    return res.data?.data || { sent: true };
+  }
+
+  /**
+   * Verify a 6-digit OTP code
+   */
+  static async verifyOtp({ contact, code, purpose = 'VERIFY_CONTACT' }) {
+    const res = await apiClient.post('/auth/verify-otp', { contact, code, purpose });
+    return res.data?.data || { verified: true };
+  }
+
+  /**
+   * Reset password using the resetToken issued after OTP verification
+   */
+  static async resetPassword({ resetToken, newPassword }) {
+    const res = await apiClient.post('/auth/reset-password', { resetToken, newPassword });
+    return res.data?.data || { reset: true };
+  }
+
+  /**
    * Step away for a moment (Logout)
    */
   static async logout() {
@@ -49,12 +73,39 @@ export class AuthService {
     } catch {
       // Ignore network errors on logout
     } finally {
-      // Tokens cleared from encrypted secure store; non-sensitive profile from AsyncStorage
       await TokenStorage.multiRemove([
         AUTH_STORAGE_KEYS.ACCESS_TOKEN,
         AUTH_STORAGE_KEYS.REFRESH_TOKEN,
       ]);
       await AsyncStorage.removeItem(AUTH_STORAGE_KEYS.USER_PROFILE);
+    }
+  }
+
+  /**
+   * Check whether a persistent session exists on this device so returning users stay signed in.
+   * Silently refreshes profile in the background if online.
+   */
+  static async hasValidSession() {
+    try {
+      const [access, refresh] = await Promise.all([
+        TokenStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN),
+        TokenStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN),
+      ]);
+      if (!access && !refresh) return false;
+
+      // Silent background profile sync (interceptor auto-refreshes expired accessToken)
+      apiClient
+        .get('/user/me')
+        .then((res) => {
+          if (res?.data?.data) {
+            AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(res.data.data)).catch(() => {});
+          }
+        })
+        .catch(() => {});
+
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -71,7 +122,6 @@ export class AuthService {
   }
 
   static async saveSession({ user, accessToken, refreshToken }) {
-    // Tokens → encrypted secure store; profile JSON (non-secret) → AsyncStorage
     await TokenStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
     await TokenStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(user));

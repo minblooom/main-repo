@@ -64,14 +64,14 @@ export const LoginScreen = ({ navigation }) => {
     const p = passVal !== undefined ? passVal : password;
 
     if (!id) {
-      errs.identifier = 'Please enter your email, phone or nickname.';
+      errs.identifier = 'Please enter your email or phone number.';
     } else if (id.includes('@')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(id)) {
         errs.identifier = 'Please enter a valid email address.';
       }
-    } else if (id.length < 2) {
-      errs.identifier = 'Nickname or username must be at least 2 characters.';
+    } else if (id.replace(/\D/g, '').length < 9) {
+      errs.identifier = 'Please enter a valid phone number.';
     }
 
     if (!p) {
@@ -132,7 +132,9 @@ export const LoginScreen = ({ navigation }) => {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert('Reset Password', 'A recovery link will be sent to your registered contact.');
+    if (navigation) {
+      navigation.navigate('ForgotPassword');
+    }
   };
 
   const goToSignup = () => {
@@ -226,7 +228,7 @@ export const LoginScreen = ({ navigation }) => {
               <View style={s.fieldsBlock}>
 
                 <View style={s.fieldGroup}>
-                  <Text style={s.fieldLabel}>{t('email_or_nickname')}</Text>
+                  <Text style={s.fieldLabel}>Email or phone number</Text>
                   <TextInput
                     underlineColorAndroid="transparent"
                     style={[s.textInput, (submitted && errors.identifier) && s.inputError]}
@@ -237,7 +239,7 @@ export const LoginScreen = ({ navigation }) => {
                         setErrors(validateLogin(text, undefined));
                       }
                     }}
-                    placeholder="wanjiku@email.com or nickname"
+                    placeholder="wanjiku@email.com or +254 7xx xxx xxx"
                     placeholderTextColor="#76648E"
                     autoCapitalize="none"
                     autoCorrect={false}
