@@ -66,6 +66,8 @@ export const StoriesTab = ({
 
   // Cute centered Reader Popup state (handles featured story, community story, or external essay)
   const [readingItem, setReadingItem] = useState(null); // { type: 'featured' | 'story' | 'article', data }
+  const [fullArticleBody, setFullArticleBody] = useState('');
+  const [loadingFullArticle, setLoadingFullArticle] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
 
   // Fetch multi-source wellness articles (DEV.to mentalhealth + Wikipedia REST summaries)
@@ -91,12 +93,13 @@ export const StoriesTab = ({
           filtered.forEach((a) => {
             collected.push({
               id: `dev-${a.id}`,
+              devId: a.id,
               source: 'DEV.to Wellness',
               title: a.title,
               author: a.user?.name || 'Community Writer',
               readTime: `${a.reading_time_minutes || 3} min read`,
               coverImage: a.cover_image || null,
-              body: `${a.description}\n\nTaking a moment to check in with your body — dropping your shoulders, loosening your jaw, and slowing your exhale — signals safety to your nervous system faster than overthinking alone.`,
+              body: a.description,
               takeaway: 'Slow down first; your mind follows when your body feels safe.',
             });
           });
@@ -108,17 +111,18 @@ export const StoriesTab = ({
           WIKI_WELLNESS_TOPICS.map(async (topic) => {
             const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${topic}`);
             if (!r.ok) return null;
-            return r.json();
+            return { topic, data: await r.json() };
           })
         );
-        wikiResults.filter(Boolean).forEach((w) => {
+        wikiResults.filter(Boolean).forEach(({ topic, data: w }) => {
           if (w?.title && w?.extract) {
             collected.push({
               id: `wiki-${w.pageid || w.title}`,
+              wikiTitle: w.title || topic,
               source: 'Wellness Encyclopedia',
               title: w.title,
               author: 'Evidence-Based Guide',
-              readTime: '2 min read',
+              readTime: '3 min read',
               coverImage: w.thumbnail?.source || null,
               body: w.extract,
               takeaway: 'Small, repeatable grounding practices build lasting emotional steadiness.',
@@ -137,6 +141,74 @@ export const StoriesTab = ({
       cancelled = true;
     };
   }, [primaryFocus]);
+
+  // Fetch full article text when user opens an external DEV.to or Wikipedia essay
+  useEffect(() => {
+    if (readingItem?.type !== 'article' || !readingItem.data) {
+      setFullArticleBody('');
+      setLoadingFullArticle(false);
+      return;
+    }
+
+    const art = readingItem.data;
+    if (art.fullBody) {
+      setFullArticleBody(art.fullBody);
+      setLoadingFullArticle(false);
+      return;
+    }
+
+    let cancelled = false;
+    setFullArticleBody('');
+    setLoadingFullArticle(true);
+
+    (async () => {
+      try {
+        let fetchedText = '';
+        if (art.devId) {
+          const res = await fetch(`https://dev.to/api/articles/${art.devId}`);
+          if (res.ok) {
+            const detail = await res.json();
+            const rawMd = detail?.body_markdown || '';
+            fetchedText = rawMd
+              .replace(/^---[\s\S]*?---/, '')
+              .replace(/!\[.*?\]\(.*?\)/g, '')
+              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+              .replace(/#{1,6}\s*/g, '')
+              .replace(/[*_`>~]/g, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
+          }
+        } else if (art.wikiTitle) {
+          const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&titles=${encodeURIComponent(
+            art.wikiTitle
+          )}&format=json&origin=*`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const json = await res.json();
+            const pages = json?.query?.pages || {};
+            const firstPage = Object.values(pages)[0];
+            if (firstPage?.extract) {
+              fetchedText = firstPage.extract.replace(/\n{3,}/g, '\n\n').trim();
+            }
+          }
+        }
+
+        if (!cancelled) {
+          const finalBody = fetchedText || art.body;
+          art.fullBody = finalBody;
+          setFullArticleBody(finalBody);
+        }
+      } catch {
+        if (!cancelled) setFullArticleBody(art.body);
+      } finally {
+        if (!cancelled) setLoadingFullArticle(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [readingItem]);
 
   const filteredStories = useMemo(() => {
     const normalizedFocus = userFocusAreas.map((f) => f.toLowerCase());
@@ -494,9 +566,18 @@ export const StoriesTab = ({
                   <Text style={[styles.metaText, { marginBottom: 14, color: theme?.textMuted || '#7E726D' }]}>
                     By {activeStory.author} · {activeStory.readTime}
                   </Text>
-                  <Text style={[styles.bodyText, { fontSize: 14.5, lineHeight: 23, color: theme?.textSecondary || '#5C4D60' }]}>
-                    {activeStory.body}
-                  </Text>
+                  {loadingFullArticle ? (
+                    <View style={{ paddingVertical: 20, alignItems: 'center', gap: 8 }}>
+                      <ActivityIndicator color={theme?.accent || '#42213D'} />
+                      <Text style={{ fontSize: 12, color: theme?.textMuted || '#7E726D' }}>
+                        Loading full story...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.bodyText, { fontSize: 14.5, lineHeight: 23, color: theme?.textSecondary || '#5C4D60' }]}>
+                      {fullArticleBody || activeStory.body}
+                    </Text>
+                  )}
                   <View style={{ backgroundColor: theme?.heroBg || '#FCEFE9', padding: 14, borderRadius: 16, marginTop: 14 }}>
                     <Text style={{ fontSize: 11.5, fontWeight: '800', color: theme?.accent || '#E06D3B', marginBottom: 4 }}>
                       🌿 Gentle Takeaway
