@@ -46,10 +46,13 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   const [activeMeditation, setActiveMeditation] = useState(null);
   const [medRunning, setMedRunning] = useState(false);
   const [medMuted, setMedMuted] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [sessionElapsedSec, setSessionElapsedSec] = useState(0);
   const [breathPhase, setBreathPhase] = useState('Inhale gently');
   const [counter, setCounter] = useState(4);
   const [promptIdx, setPromptIdx] = useState(0);
   const medTimerRef = useRef(null);
+  const lastSpokenRef = useRef('');
 
   // Fetch diverse episodes from Apple iTunes Podcast API + curated multi-topic queries
   async function loadPodcasts(queryTerm) {
@@ -106,42 +109,91 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
     };
   }, []);
 
-  // Meditation breathing & warm background pad effect
+  function speakGuidance(text) {
+    if (!voiceEnabled || Platform.OS !== 'web' || typeof window === 'undefined' || !window.speechSynthesis) {
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 0.84;
+      utter.pitch = 0.95;
+      utter.volume = 0.85;
+      window.speechSynthesis.speak(utter);
+    } catch {}
+  }
+
+  function stopVoiceGuidance() {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
+  }
+
+  // Meditation breathing, session timer, spoken voice guidance & warm background pad effect
   useEffect(() => {
     if (!activeMeditation || !medRunning) {
       if (medTimerRef.current) clearInterval(medTimerRef.current);
+      stopVoiceGuidance();
       if (!activeSound) soundEngine.stopSoundscape();
       return;
     }
 
     if (!medMuted) {
-      soundEngine.startSoundscape(activeMeditation.soundType || 'meditation', 0.16);
+      soundEngine.startSoundscape(activeMeditation.soundType || 'meditation', 0.14);
     }
 
+    const rhythm = activeMeditation.rhythm || { inhale: 4, hold: 4, exhale: 6 };
+    const totalSessionSecs = (activeMeditation.durationMinutes || 8) * 60;
+    const prompts = activeMeditation.prompts || [];
+
     let phase = 'inhale';
-    let count = 4;
+    let count = rhythm.inhale;
+    let currentPromptIndex = promptIdx;
+
     setBreathPhase('Inhale gently');
-    setCounter(4);
+    setCounter(rhythm.inhale);
+    if (prompts[currentPromptIndex] && lastSpokenRef.current !== prompts[currentPromptIndex]) {
+      lastSpokenRef.current = prompts[currentPromptIndex];
+      speakGuidance(prompts[currentPromptIndex]);
+    }
     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     medTimerRef.current = setInterval(() => {
+      setSessionElapsedSec((prev) => {
+        const next = prev + 1;
+        if (next >= totalSessionSecs) {
+          setMedRunning(false);
+          stopVoiceGuidance();
+          soundEngine.stopSoundscape();
+          return totalSessionSecs;
+        }
+        return next;
+      });
+
       count -= 1;
       setCounter(count);
 
       if (count <= 0) {
         if (phase === 'inhale') {
           phase = 'hold';
-          count = 4;
+          count = rhythm.hold;
           setBreathPhase('Hold softly');
         } else if (phase === 'hold') {
           phase = 'exhale';
-          count = 6;
+          count = rhythm.exhale;
           setBreathPhase('Exhale slowly');
         } else {
           phase = 'inhale';
-          count = 4;
+          count = rhythm.inhale;
           setBreathPhase('Inhale gently');
-          setPromptIdx((i) => i + 1);
+          currentPromptIndex = (currentPromptIndex + 1) % Math.max(1, prompts.length);
+          setPromptIdx(currentPromptIndex);
+          if (prompts[currentPromptIndex]) {
+            lastSpokenRef.current = prompts[currentPromptIndex];
+            speakGuidance(prompts[currentPromptIndex]);
+          }
           if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         }
         setCounter(count);
@@ -150,8 +202,9 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
 
     return () => {
       if (medTimerRef.current) clearInterval(medTimerRef.current);
+      stopVoiceGuidance();
     };
-  }, [activeMeditation, medRunning, medMuted]);
+  }, [activeMeditation, medRunning, medMuted, voiceEnabled]);
 
   function handleSelectTopic(topic) {
     setActiveTopic(topic);
@@ -177,6 +230,8 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   function openMeditation(med) {
     setActiveSound(null);
     setPromptIdx(0);
+    setSessionElapsedSec(0);
+    lastSpokenRef.current = '';
     setMedMuted(false);
     setActiveMeditation(med);
     setMedRunning(true);
@@ -185,7 +240,14 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   function closeMeditation() {
     setMedRunning(false);
     setActiveMeditation(null);
+    stopVoiceGuidance();
     soundEngine.stopSoundscape();
+  }
+
+  function formatMedTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
   }
 
   return (
@@ -418,20 +480,34 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
               },
             ]}
           >
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  const nextMuted = !medMuted;
-                  setMedMuted(nextMuted);
-                  if (nextMuted) soundEngine.setSoundscapeVolume(0);
-                  else soundEngine.setSoundscapeVolume(0.16);
-                }}
-                style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: theme?.bg || '#FAF6EF' }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: theme?.textSecondary || '#5C4D60' }}>
-                  {medMuted ? '🔇 Sound off' : '🔊 Gentle ambient'}
-                </Text>
-              </TouchableOpacity>
+            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    const nextMuted = !medMuted;
+                    setMedMuted(nextMuted);
+                    if (nextMuted) soundEngine.setSoundscapeVolume(0);
+                    else soundEngine.setSoundscapeVolume(0.14);
+                  }}
+                  style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: theme?.bg || '#FAF6EF' }}
+                >
+                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme?.textSecondary || '#5C4D60' }}>
+                    {medMuted ? '🔇 Ambient off' : '🔊 Ambient'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    const nextVoice = !voiceEnabled;
+                    setVoiceEnabled(nextVoice);
+                    if (!nextVoice) stopVoiceGuidance();
+                  }}
+                  style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: theme?.bg || '#FAF6EF' }}
+                >
+                  <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme?.textSecondary || '#5C4D60' }}>
+                    {voiceEnabled ? '🗣️ Voice guide' : '🤫 Silent'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 onPress={closeMeditation}
                 style={{
@@ -450,9 +526,21 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
             <Text style={{ fontSize: 17, fontWeight: '800', color: theme?.textPrimary || '#2A192E', textAlign: 'center' }}>
               {activeMeditation?.title}
             </Text>
-            <Text style={{ fontSize: 12, color: theme?.textMuted || '#7E726D', marginTop: 2, marginBottom: 14 }}>
-              With {activeMeditation?.guide}
+            <Text style={{ fontSize: 12, color: theme?.textMuted || '#7E726D', marginTop: 2, marginBottom: 10 }}>
+              With {activeMeditation?.guide} · {formatMedTime(sessionElapsedSec)} / {formatMedTime((activeMeditation?.durationMinutes || 8) * 60)}
             </Text>
+
+            {/* Session Progress Bar */}
+            <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: theme?.bg || '#F1EBF8', marginBottom: 14, overflow: 'hidden' }}>
+              <View
+                style={{
+                  height: '100%',
+                  width: `${Math.min(100, (sessionElapsedSec / ((activeMeditation?.durationMinutes || 8) * 60)) * 100)}%`,
+                  backgroundColor: theme?.accent || '#42213D',
+                  borderRadius: 3,
+                }}
+              />
+            </View>
 
             <AnimatedCompanion
               companionId={companionId || 'noodle'}
