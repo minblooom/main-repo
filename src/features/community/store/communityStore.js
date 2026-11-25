@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { encryptedStorage } from '../../../services/encryptedStorage';
+import { apiClient } from '../../../core/api/client';
 
 const STORAGE_KEYS = {
   WINS: 'mindbloom:community:wins:v3',
@@ -48,6 +49,29 @@ export const useCommunityStore = create((set, get) => ({
       const reportedMessageIds = savedReported ? JSON.parse(savedReported) : [];
 
       set({ wins, vents, notifiedMentors, joinedCircleIds, reportedMessageIds, isHydrated: true });
+
+      // Silently sync live Small Wins from backend if authenticated
+      try {
+        const res = await apiClient.get('/community/wins?page=1&per_page=20');
+        const serverItems = res?.data?.data?.items;
+        if (Array.isArray(serverItems) && serverItems.length > 0) {
+          const mapped = serverItems.map((w) => ({
+            id: w.id,
+            text: w.title,
+            author: w.user?.nickname ? `${w.user.nickname} · MindBloom` : 'Peer · MindBloom',
+            category: w.category || 'personal',
+            cheers: w.cheerCount ?? 1,
+            hasCheered: false,
+            createdAt: new Date(w.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+          }));
+          const mergedIds = new Set(mapped.map((m) => m.id));
+          const merged = [...mapped, ...wins.filter((localW) => !mergedIds.has(localW.id))];
+          set({ wins: merged });
+          await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(merged));
+        }
+      } catch {
+        // Offline or guest mode — encrypted local wins remain intact
+      }
     } catch {
       set({ wins: [], vents: [], joinedCircleIds: [], reportedMessageIds: [], isHydrated: true });
     }
@@ -115,6 +139,26 @@ export const useCommunityStore = create((set, get) => ({
     try {
       await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
     } catch {}
+
+    if (trimmed) {
+      try {
+        const res = await apiClient.post('/community/wins', {
+          title: trimmed,
+          category: ['mindfulness', 'routine', 'courage', 'healing', 'personal'].includes(category)
+            ? category
+            : 'personal',
+          isPublic: true,
+        });
+        const serverWin = res?.data?.data;
+        if (serverWin?.id) {
+          const synced = get().wins.map((w) => (w.id === newWin.id ? { ...w, id: serverWin.id } : w));
+          set({ wins: synced });
+          await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(synced));
+        }
+      } catch {
+        // Offline fallback kept encrypted locally
+      }
+    }
   },
 
   toggleCheerWin: async (id) => {
@@ -134,6 +178,9 @@ export const useCommunityStore = create((set, get) => ({
 
     try {
       await encryptedStorage.setItem(STORAGE_KEYS.WINS, JSON.stringify(nextWins));
+      if (!String(id).startsWith('win-')) {
+        await apiClient.post(`/community/wins/${id}/cheer`);
+      }
     } catch {}
   },
 

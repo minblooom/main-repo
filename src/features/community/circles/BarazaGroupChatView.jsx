@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Mic, MoreHorizontal, Send } from 'lucide-react-native';
 import { encryptedStorage } from '../../../services/encryptedStorage';
+import { apiClient } from '../../../core/api/client';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
@@ -160,8 +161,41 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setIsDictating(false);
   };
 
-  // Load chat history & user profile
+  // Load chat history & user profile, then poll server every 4s for live multi-user sync
   useEffect(() => {
+    let active = true;
+
+    const mapServerMsg = (m) => {
+      const dt = m.createdAt ? new Date(m.createdAt) : new Date();
+      return {
+        id: m.id,
+        sender: m.sender || 'Peer',
+        emoji: m.emoji || '🌱',
+        text: m.text || '',
+        voiceNote: m.voiceNote || null,
+        replyTo: m.replyTo || null,
+        dateLabel: dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+        time: formatTimestamp(dt),
+        isMe: Boolean(m.isMe),
+        edited: Boolean(m.edited),
+        reactions: m.reactions || { hugs: 0, hearts: 0, pray: 0, green: 0 },
+      };
+    };
+
+    async function syncFromServer() {
+      try {
+        const res = await apiClient.get(`/community/circles/${circleId}/messages?page=1&per_page=30`);
+        const serverItems = res?.data?.data?.items;
+        if (active && Array.isArray(serverItems) && serverItems.length > 0) {
+          const formatted = serverItems.map(mapServerMsg);
+          setMessages(formatted);
+          await encryptedStorage.setItem(storageKey, JSON.stringify(formatted));
+        }
+      } catch {
+        // Offline or guest mode — keep encrypted local messages
+      }
+    }
+
     async function loadChat() {
       try {
         const [rawChat, prefs] = await Promise.all([
@@ -169,20 +203,27 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
           onboardingStorage.getPreferences(),
         ]);
 
-        if (prefs?.name || prefs?.nickname) {
+        if (active && (prefs?.name || prefs?.nickname)) {
           setUserName(prefs.name || prefs.nickname);
         }
 
-        if (rawChat) {
+        if (active && rawChat) {
           setMessages(JSON.parse(rawChat));
-        } else {
+        } else if (active) {
           setMessages([]);
         }
       } catch {
-        setMessages([]);
+        if (active) setMessages([]);
       }
+      await syncFromServer();
     }
+
     loadChat();
+    const pollId = setInterval(syncFromServer, 4000);
+    return () => {
+      active = false;
+      clearInterval(pollId);
+    };
   }, [circleId]);
 
   const handleSendMessage = async () => {
@@ -195,20 +236,25 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     }
 
     if (editingMsgId) {
+      const targetId = editingMsgId;
       const nextMessages = messages.map((m) =>
-        m.id === editingMsgId ? { ...m, text, edited: true } : m
+        m.id === targetId ? { ...m, text, edited: true } : m
       );
       setMessages(nextMessages);
       setEditingMsgId(null);
       setInputText('');
       try {
         await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
+        if (!String(targetId).startsWith('msg-')) {
+          await apiClient.patch(`/community/circles/${circleId}/messages/${targetId}`, { text });
+        }
       } catch {}
       return;
     }
 
+    const tempId = `msg-${Date.now()}`;
     const newMsg = {
-      id: `msg-${Date.now()}`,
+      id: tempId,
       sender: userName,
       emoji: '🌱',
       text,
@@ -234,6 +280,16 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
 
     try {
       await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
+      const res = await apiClient.post(`/community/circles/${circleId}/messages`, {
+        text,
+        senderEmoji: '🌱',
+        voiceNote: newMsg.voiceNote,
+        replyTo: newMsg.replyTo,
+      });
+      const saved = res?.data?.data;
+      if (saved?.id) {
+        setMessages((curr) => curr.map((m) => (m.id === tempId ? { ...m, id: saved.id } : m)));
+      }
     } catch {}
 
     setTimeout(() => {
@@ -247,6 +303,9 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       setMessages(next);
       try {
         await encryptedStorage.setItem(storageKey, JSON.stringify(next));
+        if (!String(msgId).startsWith('msg-')) {
+          await apiClient.delete(`/community/circles/${circleId}/messages/${msgId}`);
+        }
       } catch {}
     };
     if (Platform.OS === 'web') {
@@ -300,6 +359,9 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setMessages(next);
     try {
       await encryptedStorage.setItem(storageKey, JSON.stringify(next));
+      if (!String(msgId).startsWith('msg-')) {
+        await apiClient.post(`/community/circles/${circleId}/messages/${msgId}/react`, { key: type });
+      }
     } catch {}
   };
 

@@ -123,7 +123,11 @@ export const EventsTab = () => {
     });
 
     try {
-      const res = await apiClient.post(`/community/events/${id}/rsvp`);
+      const targetEv = events.find((e) => e.id === id);
+      const res = await apiClient.post(`/community/events/${id}/rsvp`, {
+        eventTitle: targetEv?.title,
+        eventDateStr: targetEv?.dateStr,
+      });
       const serverData = res?.data?.data;
       if (serverData) {
         setEvents((prev) =>
@@ -140,9 +144,8 @@ export const EventsTab = () => {
         );
 
         // Suggest Google Calendar if user just RSVPed (not un-RSVPed)
-        if (serverData.isGoing) {
-          const targetEv = events.find((e) => e.id === id);
-          if (targetEv) setCalendarPrompt(targetEv);
+        if (serverData.isGoing && targetEv) {
+          setCalendarPrompt(targetEv);
         }
       }
     } catch {}
