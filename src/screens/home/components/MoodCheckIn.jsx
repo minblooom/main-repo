@@ -91,27 +91,15 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
     })();
   }, []);
 
-  const handleSelectMood = (id) => {
-    setSelectedMoodId(id);
-    setHasSaved(false);
-    onMoodSelect?.(id);
-  };
-
-  const toggleFactor = (fId) => {
-    setSelectedFactors((prev) =>
-      prev.includes(fId) ? prev.filter((id) => id !== fId) : [...prev, fId]
-    );
-    setHasSaved(false);
-  };
-
-  const handleSaveCheckIn = async () => {
+  const saveCheckIn = async (moodId, factors) => {
+    const moodObj = MOODS.find((m) => m.id === moodId) || MOODS[3];
     const entry = {
       id: 'mood_' + Date.now(),
-      moodId: activeMood.id,
-      label: activeMood.label,
-      emoji: activeMood.emoji,
-      score: activeMood.score,
-      factors: selectedFactors,
+      moodId: moodObj.id,
+      label: moodObj.label,
+      emoji: moodObj.emoji,
+      score: moodObj.score,
+      factors,
       dateString: new Date().toDateString(),
       timestamp: Date.now(),
     };
@@ -125,19 +113,30 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
       await AsyncStorage.setItem(MOOD_HISTORY_KEY, JSON.stringify(filtered));
       setHasSaved(true);
 
-      // 2. Silent Cloud Telemetry Sync (for AI adaptation & research insights)
+      // 2. Silent Cloud Telemetry Sync
       apiClient.post('/journal/mood', {
-        moodScore: activeMood.score,
-        moodLabel: activeMood.label,
-        triggers: selectedFactors,
+        moodScore: moodObj.score,
+        moodLabel: moodObj.label,
+        triggers: factors,
         toolsUsed: ['mood_checkin'],
         helpfulRating: 5,
         note: `Self-recorded on ${entry.dateString}`,
-      }).catch((err) => {
-        // Silently tolerate network/offline
-        console.log('[MoodCheckIn] Backend sync offline, stored locally:', err.message);
-      });
-    } catch { }
+      }).catch(() => {});
+    } catch {}
+  };
+
+  const handleSelectMood = (id) => {
+    setSelectedMoodId(id);
+    onMoodSelect?.(id);
+    saveCheckIn(id, selectedFactors);
+  };
+
+  const toggleFactor = (fId) => {
+    const nextFactors = selectedFactors.includes(fId)
+      ? selectedFactors.filter((id) => id !== fId)
+      : [...selectedFactors, fId];
+    setSelectedFactors(nextFactors);
+    saveCheckIn(selectedMoodId, nextFactors);
   };
 
   return (
@@ -248,21 +247,9 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
 
         {/* Action Footer */}
         <View style={styles.actionFooter}>
-          <TouchableOpacity
-            style={[
-              styles.saveBtn,
-              { backgroundColor: hasSaved ? '#10B981' : theme.accent },
-            ]}
-            onPress={handleSaveCheckIn}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.saveBtnText, { color: '#FFFFFF' }]}>
-              {hasSaved ? '✓ Recorded to your rhythm' : 'Save today\'s check-in'}
-            </Text>
-            <Text style={[styles.seedBadgeText, { color: '#FFFFFF' }]}>
-              (+1 Seed 🌸)
-            </Text>
-          </TouchableOpacity>
+          <Text style={[styles.skipNote, { color: hasSaved ? '#10B981' : theme.textMuted }]}>
+            {hasSaved ? '✓ Recorded to your rhythm' : 'Saved automatically as you reflect'}
+          </Text>
 
           {onOpenAnalytics && (
             <TouchableOpacity onPress={onOpenAnalytics} activeOpacity={0.75}>
