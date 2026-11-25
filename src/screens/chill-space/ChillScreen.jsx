@@ -14,6 +14,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 import { initialStories } from './chillData';
+import { SoundscapesTab } from './components/SoundscapesTab';
 import { StoriesTab } from './components/StoriesTab';
 import { MemesTab } from './components/MemesTab';
 import { EventsTab } from './components/EventsTab';
@@ -24,7 +25,7 @@ import { styles } from './styles/ChillScreen.styles';
 export const ChillContent = () => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
-  const [activeTab, setActiveTab] = useState('stories');
+  const [activeTab, setActiveTab] = useState('soundscapes');
   const [stories, setStories] = useState(initialStories);
 
   // Audio player state
@@ -107,6 +108,27 @@ export const ChillContent = () => {
     setStories([newStory, ...stories]);
   }
 
+  function handleAddReflection(storyId, text) {
+    const city = countryData?.capital || 'Your Sanctuary';
+    setStories((prev) =>
+      prev.map((story) =>
+        story.id === storyId
+          ? {
+              ...story,
+              reflections: [
+                ...story.reflections,
+                {
+                  id: `r_${Date.now()}`,
+                  author: `You · ${city}`,
+                  text,
+                },
+              ],
+            }
+          : story
+      )
+    );
+  }
+
   function handleSelectEpisode(episode) {
     setCurrentEpisode(episode);
     setIsPlaying(true);
@@ -140,6 +162,7 @@ export const ChillContent = () => {
       {/* Pill Tabs */}
       <View style={styles.tabBar}>
         {[
+          { id: 'soundscapes', label: '🌿 Soundscapes' },
           { id: 'stories', label: '📖 Stories' },
           { id: 'memes', label: '😂 Memes' },
           { id: 'events', label: '🎟️ Events' },
@@ -176,12 +199,15 @@ export const ChillContent = () => {
       />
 
       {/* Active Tab Content */}
+      {activeTab === 'soundscapes' && <SoundscapesTab />}
+
       {activeTab === 'stories' && (
         <StoriesTab
           stories={stories}
           onToggleLike={handleToggleLike}
           onToggleSave={handleToggleSave}
           onAddStory={handleAddStory}
+          onAddReflection={handleAddReflection}
         />
       )}
 
