@@ -29,6 +29,7 @@ import { JournalInspirationCard } from './components/JournalInspirationCard';
 import { JournalEntryModal } from './components/JournalEntryModal';
 import { AllEntriesModal } from './components/AllEntriesModal';
 import { JournalPrivacyModal } from './components/JournalPrivacyModal';
+import { ReleaseToWorldModal } from './components/ReleaseToWorldModal';
 import { LegalModal } from '../legal/LegalScreen';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { journalStorage } from '../../services/journalStorage';
@@ -113,6 +114,9 @@ export const JournalContent = ({
   }, []);
 
   // Modals
+  const [editorMode, setEditorMode] = useState('journal'); // 'journal' | 'vent'
+  const [releaseModalVisible, setReleaseModalVisible] = useState(false);
+  const [releasePreview, setReleasePreview] = useState('');
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [singleModalVisible, setSingleModalVisible] = useState(false);
   const [allEntriesVisible, setAllEntriesVisible] = useState(false);
@@ -140,6 +144,22 @@ export const JournalContent = ({
     setVoiceNote(null);
     setFeeling('lighter');
     setDraftState('Blank reflection');
+  };
+
+  // Ephemeral vent release — clears immediately from memory and never saves or tracks
+  const handleReleaseToWorld = () => {
+    if (!title.trim() && !body.trim() && !voiceNote) {
+      Alert.alert('Nothing to Release', 'Speak, dictate, or write whatever is weighing on you first.');
+      return;
+    }
+    const snippet = body.trim() || title.trim() || 'Voice vent';
+    setReleasePreview(snippet);
+    setEditingEntryId(null);
+    setTitle('');
+    setBody('');
+    setVoiceNote(null);
+    setDraftState('Released · Not saved');
+    setReleaseModalVisible(true);
   };
 
   const handleSaveEntry = () => {
@@ -316,20 +336,25 @@ export const JournalContent = ({
           <View style={styles.editorCol}>
             <JournalEditor
               dateString="MONDAY, 16 NOVEMBER"
+              editorMode={editorMode}
+              onChangeEditorMode={(m) => {
+                setEditorMode(m);
+                setDraftState(m === 'vent' ? 'Zero-trace vent' : 'New entry');
+              }}
               title={title}
               onChangeTitle={(t) => {
                 setTitle(t);
-                setDraftState('Unsaved draft');
+                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
               }}
               body={body}
               onChangeBody={(b) => {
                 setBody(b);
-                setDraftState('Unsaved draft');
+                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
               }}
               voiceNote={voiceNote}
               onChangeVoiceNote={(vn) => {
                 setVoiceNote(vn);
-                setDraftState('Unsaved draft');
+                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
               }}
               selectedFeeling={feeling}
               onSelectFeeling={setFeeling}
@@ -340,6 +365,7 @@ export const JournalContent = ({
               onHidePrompt={() => setIsSparkVisible(false)}
               onShowPrompt={() => setIsSparkVisible(true)}
               onSave={handleSaveEntry}
+              onReleaseToWorld={handleReleaseToWorld}
               onNewEntry={handleNewEntry}
               draftState={draftState}
               isEditingExisting={Boolean(editingEntryId)}
@@ -403,6 +429,15 @@ export const JournalContent = ({
         onClose={() => setPrivacyModalVisible(false)}
         onOpenPrivacyPolicy={() => setLegalModalTab('privacy')}
         onExportEntries={handleExportEntries}
+      />
+
+      <ReleaseToWorldModal
+        visible={releaseModalVisible}
+        previewText={releasePreview}
+        onClose={() => {
+          setReleaseModalVisible(false);
+          setReleasePreview('');
+        }}
       />
 
       {/* In-App Legal Modal Popup for Privacy Policy */}

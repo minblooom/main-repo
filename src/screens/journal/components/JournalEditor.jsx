@@ -22,6 +22,8 @@ const FEELING_OPTIONS = [
 
 export const JournalEditor = ({
   dateString = 'MONDAY, 16 NOVEMBER',
+  editorMode = 'journal',
+  onChangeEditorMode,
   title = '',
   onChangeTitle,
   body = '',
@@ -37,6 +39,7 @@ export const JournalEditor = ({
   onHidePrompt,
   onShowPrompt,
   onSave,
+  onReleaseToWorld,
   onNewEntry,
   draftState = 'Unsaved draft',
   isEditingExisting = false,
@@ -44,10 +47,76 @@ export const JournalEditor = ({
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [isBodyFocused, setIsBodyFocused] = useState(false);
 
+  const isVentMode = editorMode === 'vent';
   const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
 
   return (
     <View style={styles.card}>
+      {/* Mode Switcher: Private Journal vs Zero-Trace Safe Vent */}
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
+        {[
+          { id: 'journal', label: '📓 Private Journal' },
+          { id: 'vent', label: '🌬️ Safe Vent (2hr · Not Saved)' },
+        ].map((tab) => {
+          const active = editorMode === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => onChangeEditorMode?.(tab.id)}
+              activeOpacity={0.85}
+              style={{
+                flex: 1,
+                paddingVertical: 9,
+                paddingHorizontal: 10,
+                borderRadius: 14,
+                borderWidth: 1,
+                alignItems: 'center',
+                backgroundColor: active
+                  ? tab.id === 'vent'
+                    ? '#ECFDF5'
+                    : '#F2EDFA'
+                  : '#FAF5EE',
+                borderColor: active
+                  ? tab.id === 'vent'
+                    ? '#10B981'
+                    : '#8B6DA8'
+                  : 'rgba(73, 37, 66, 0.08)',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: active ? '800' : '600',
+                  color: active
+                    ? tab.id === 'vent'
+                      ? '#065F46'
+                      : '#492542'
+                    : '#7A6F68',
+                }}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {isVentMode && (
+        <View
+          style={{
+            backgroundColor: '#ECFDF5',
+            borderColor: '#A7F3D0',
+            borderWidth: 1,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={{ fontSize: 12, color: '#065F46', lineHeight: 17, fontWeight: '600' }}>
+            Zero-trace mode: nothing you type, dictate, or record (up to 2 hours) is saved or tracked. When you are ready, release it to the world.
+          </Text>
+        </View>
+      )}
       {/* Top Header Row with Date, Draft Pill, and "+ New Entry" button */}
       <View style={styles.dateRow}>
         <View style={styles.dateLeft}>
@@ -156,6 +225,7 @@ export const JournalEditor = ({
           <VoiceInputControls
             voiceNote={voiceNote}
             onVoiceNoteChange={onChangeVoiceNote}
+            maxSeconds={isVentMode ? 7200 : 3600}
             onAppendTranscript={(chunk) =>
               onChangeBody?.(body ? `${body} ${chunk}` : chunk)
             }
@@ -202,16 +272,28 @@ export const JournalEditor = ({
 
       {/* Bottom Footer Actions */}
       <View style={styles.footerRow}>
-        <Text style={styles.footerHint}>Only share what feels right.</Text>
-        <TouchableOpacity
-          style={styles.saveBtn}
-          onPress={onSave}
-          activeOpacity={0.88}
-        >
-          <Text style={styles.saveBtnText}>
-            {isEditingExisting ? 'Update entry →' : 'Save entry →'}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.footerHint}>
+          {isVentMode ? 'Never saved · Let it go when ready.' : 'Only share what feels right.'}
+        </Text>
+        {isVentMode ? (
+          <TouchableOpacity
+            style={[styles.saveBtn, { backgroundColor: '#10B981' }]}
+            onPress={onReleaseToWorld}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.saveBtnText}>🌬️ Release to the world</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.saveBtn}
+            onPress={onSave}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.saveBtnText}>
+              {isEditingExisting ? 'Update entry →' : 'Save entry →'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

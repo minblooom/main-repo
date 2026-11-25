@@ -81,7 +81,7 @@ export async function startVoiceRecording() {
   return recording;
 }
 
-export async function stopVoiceRecording(recording = activeRecording) {
+export async function stopVoiceRecording(recording = activeRecording, maxSeconds = MAX_VOICE_NOTE_SECONDS) {
   const target = recording || activeRecording;
   if (!target) return null;
 
@@ -98,7 +98,7 @@ export async function stopVoiceRecording(recording = activeRecording) {
     activeRecording = null;
     return {
       uri: persistentUri,
-      durationSec: Math.min(MAX_VOICE_NOTE_SECONDS, durationSec),
+      durationSec: Math.min(maxSeconds, durationSec),
       createdAt: new Date().toISOString(),
     };
   } catch (err) {

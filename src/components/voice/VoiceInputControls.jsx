@@ -21,6 +21,7 @@ export const VoiceInputControls = ({
   onVoiceNoteChange,
   onAppendTranscript,
   compact = false,
+  maxSeconds = MAX_VOICE_NOTE_SECONDS,
 }) => {
   const { theme } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
@@ -56,7 +57,7 @@ export const VoiceInputControls = ({
       timerRef.current = setInterval(() => {
         setElapsedSec((prev) => {
           const next = prev + 1;
-          if (next >= MAX_VOICE_NOTE_SECONDS) {
+          if (next >= maxSeconds) {
             handleStopRecording();
           }
           return next;
@@ -74,7 +75,7 @@ export const VoiceInputControls = ({
     }
     setIsRecording(false);
     try {
-      const result = await stopVoiceRecording(recordingRef.current);
+      const result = await stopVoiceRecording(recordingRef.current, maxSeconds);
       recordingRef.current = null;
       if (result) {
         onVoiceNoteChange?.(result);
@@ -129,7 +130,10 @@ export const VoiceInputControls = ({
           <View style={styles.recordingLeft}>
             <View style={styles.liveRedDot} />
             <Text style={styles.recordingLabel}>
-              Recording {formatVoiceDuration(elapsedSec)} / {formatVoiceDuration(MAX_VOICE_NOTE_SECONDS)}
+              Recording {formatVoiceDuration(elapsedSec)}
+              {elapsedSec >= maxSeconds - 60
+                ? ` / ${formatVoiceDuration(maxSeconds)}`
+                : ''}
             </Text>
           </View>
           <View style={styles.recordingActions}>
