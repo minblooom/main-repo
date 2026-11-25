@@ -16,8 +16,10 @@ import {
   Alert,
 } from 'react-native';
 import { Mic, MoreHorizontal, Send } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { encryptedStorage } from '../../../services/encryptedStorage';
-import { apiClient } from '../../../core/api/client';
+import { apiClient, AUTH_STORAGE_KEYS } from '../../../core/api/client';
+import { AuthService } from '../../../core/api/authService';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
@@ -161,22 +163,27 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setIsDictating(false);
   };
 
-  // Load chat history & user profile, then poll server every 4s for live multi-user sync
+  // Load chat history & user profile, subscribe to live SSE stream (web), with polling fallback
   useEffect(() => {
     let active = true;
+    let eventSource = null;
 
-    const mapServerMsg = (m) => {
+    const mapServerMsg = (m, currentUserId = null) => {
       const dt = m.createdAt ? new Date(m.createdAt) : new Date();
+      const isMe =
+        typeof m.isMe === 'boolean' && m.userId === undefined
+          ? m.isMe
+          : Boolean(currentUserId && m.userId === currentUserId);
       return {
         id: m.id,
-        sender: m.sender || 'Peer',
+        sender: isMe ? 'You' : m.sender || 'Peer',
         emoji: m.emoji || '🌱',
         text: m.text || '',
         voiceNote: m.voiceNote || null,
         replyTo: m.replyTo || null,
         dateLabel: dt.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
         time: formatTimestamp(dt),
-        isMe: Boolean(m.isMe),
+        isMe,
         edited: Boolean(m.edited),
         reactions: m.reactions || { hugs: 0, hearts: 0, pray: 0, green: 0 },
       };
@@ -187,13 +194,64 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         const res = await apiClient.get(`/community/circles/${circleId}/messages?page=1&per_page=30`);
         const serverItems = res?.data?.data?.items;
         if (active && Array.isArray(serverItems) && serverItems.length > 0) {
-          const formatted = serverItems.map(mapServerMsg);
+          const formatted = serverItems.map((m) => mapServerMsg(m));
           setMessages(formatted);
           await encryptedStorage.setItem(storageKey, JSON.stringify(formatted));
         }
       } catch {
         // Offline or guest mode — keep encrypted local messages
       }
+    }
+
+    async function connectLiveStream() {
+      if (Platform.OS !== 'web' || typeof EventSource === 'undefined') return;
+      try {
+        const [token, storedUser] = await Promise.all([
+          AsyncStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN),
+          AuthService.getStoredUser(),
+        ]);
+        if (!active || !token) return;
+
+        const base = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+        const url = `${base}/community/circles/${encodeURIComponent(circleId)}/stream?token=${encodeURIComponent(token)}`;
+        eventSource = new EventSource(url);
+
+        eventSource.addEventListener('message:created', (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            const incoming = mapServerMsg(payload, storedUser?.id);
+            setMessages((curr) => {
+              if (curr.some((m) => m.id === incoming.id)) return curr;
+              return [...curr, incoming];
+            });
+          } catch {}
+        });
+
+        eventSource.addEventListener('message:updated', (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            setMessages((curr) =>
+              curr.map((m) => (m.id === payload.id ? { ...m, text: payload.text, edited: true } : m))
+            );
+          } catch {}
+        });
+
+        eventSource.addEventListener('message:deleted', (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            setMessages((curr) => curr.filter((m) => m.id !== payload.id));
+          } catch {}
+        });
+
+        eventSource.addEventListener('message:reacted', (evt) => {
+          try {
+            const payload = JSON.parse(evt.data);
+            setMessages((curr) =>
+              curr.map((m) => (m.id === payload.id ? { ...m, reactions: payload.reactions } : m))
+            );
+          } catch {}
+        });
+      } catch {}
     }
 
     async function loadChat() {
@@ -216,13 +274,20 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         if (active) setMessages([]);
       }
       await syncFromServer();
+      await connectLiveStream();
     }
 
     loadChat();
-    const pollId = setInterval(syncFromServer, 4000);
+    const pollMs = Platform.OS === 'web' && typeof EventSource !== 'undefined' ? 15000 : 4000;
+    const pollId = setInterval(syncFromServer, pollMs);
     return () => {
       active = false;
       clearInterval(pollId);
+      if (eventSource) {
+        try {
+          eventSource.close();
+        } catch {}
+      }
     };
   }, [circleId]);
 
@@ -288,9 +353,24 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       });
       const saved = res?.data?.data;
       if (saved?.id) {
-        setMessages((curr) => curr.map((m) => (m.id === tempId ? { ...m, id: saved.id } : m)));
+        setMessages((curr) =>
+          curr.map((m) =>
+            m.id === tempId ? { ...m, id: saved.id, voiceNote: saved.voiceNote ?? m.voiceNote } : m
+          )
+        );
       }
-    } catch {}
+    } catch (err) {
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message;
+      if (status === 422 || status === 429) {
+        setMessages((curr) => curr.filter((m) => m.id !== tempId));
+        if (Platform.OS === 'web') {
+          window.alert(serverMsg || 'Unable to post this message right now.');
+        } else {
+          Alert.alert('Sanctuary Safety', serverMsg || 'Unable to post this message right now.');
+        }
+      }
+    }
 
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
@@ -323,6 +403,11 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
   const handleReportMessage = (msgId) => {
     const doReport = () => {
       reportMessage(msgId);
+      if (!String(msgId).startsWith('msg-')) {
+        apiClient
+          .post(`/community/circles/${circleId}/messages/${msgId}/report`, { reason: 'safety' })
+          .catch(() => {});
+      }
     };
     if (Platform.OS === 'web') {
       if (window.confirm('Hide and report this message for breaking sanctuary safety?')) {

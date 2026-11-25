@@ -1,4 +1,4 @@
-﻿// src/screens/auth/SplashScreen.jsx
+// src/screens/auth/SplashScreen.jsx
 // Exact implementation of Figma splash screen for MindBloom
 // Responsive: 2-column on desktop/tablet, bottom sheet on mobile
 
