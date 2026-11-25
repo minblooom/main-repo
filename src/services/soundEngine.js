@@ -137,6 +137,52 @@ class SoundEngine {
         this.activeSourceNodes.push(noise, lfo);
       } else if (type === 'chime') {
         this.playTibetanChime(432, masterGain, ctx);
+      } else if (type === 'meditation') {
+        // Gentle, non-distracting background: soft low-passed rain + warm muffled harmonic pad
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.045;
+          b6 = white * 0.115926;
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        noise.loop = true;
+
+        const rainFilter = ctx.createBiquadFilter();
+        rainFilter.type = 'lowpass';
+        rainFilter.frequency.setValueAtTime(850, ctx.currentTime);
+        noise.connect(rainFilter);
+        rainFilter.connect(masterGain);
+        noise.start();
+        this.activeSourceNodes.push(noise);
+
+        // Warm low-passed harmonic pad (216Hz + 324Hz) — subtle, human room warmth
+        const padFilter = ctx.createBiquadFilter();
+        padFilter.type = 'lowpass';
+        padFilter.frequency.setValueAtTime(520, ctx.currentTime);
+        padFilter.connect(masterGain);
+
+        [216, 324].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const oscGain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          oscGain.gain.setValueAtTime(0.06, ctx.currentTime);
+          osc.connect(oscGain);
+          oscGain.connect(padFilter);
+          osc.start();
+          this.activeSourceNodes.push(osc);
+        });
       }
       return;
     }
@@ -207,6 +253,14 @@ class SoundEngine {
       this.nativeSoundscape.stopAsync().catch(() => {});
       this.nativeSoundscape.unloadAsync().catch(() => {});
       this.nativeSoundscape = null;
+    }
+  }
+
+  setSoundscapeVolume(vol) {
+    if (Platform.OS === 'web' && this.soundscapeGainNode && this.webAudioCtx) {
+      this.soundscapeGainNode.gain.setValueAtTime(vol, this.webAudioCtx.currentTime);
+    } else if (this.nativeSoundscape) {
+      this.nativeSoundscape.setVolumeAsync(vol).catch(() => {});
     }
   }
 }

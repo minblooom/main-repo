@@ -11,10 +11,10 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import { useI18n } from '../../services/i18n';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { onboardingStorage } from '../../services/onboardingStorage';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 import { initialStories } from './chillData';
-import { SoundscapesTab } from './components/SoundscapesTab';
 import { StoriesTab } from './components/StoriesTab';
 import { MemesTab } from './components/MemesTab';
 import { EventsTab } from './components/EventsTab';
@@ -25,20 +25,20 @@ import { styles } from './styles/ChillScreen.styles';
 export const ChillContent = () => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
-  const [activeTab, setActiveTab] = useState('soundscapes');
+  const [activeTab, setActiveTab] = useState('stories');
   const [stories, setStories] = useState(initialStories);
+  const [userFocusAreas, setUserFocusAreas] = useState(['anxiety']);
 
   // Audio player state
   const [currentEpisode, setCurrentEpisode] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Sheng Chill Modal + Advice API state
+  // Daily Breath & Wisdom Modal + Advice API state
   const [showModal, setShowModal] = useState(false);
   const [advice, setAdvice] = useState('');
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [adviceError, setAdviceError] = useState('');
 
-  // Dynamic colors from ThemeContext with MindBloom defaults
   const accentColor = theme?.accent || '#42213D';
   const softBg = theme?.navActive || '#EFE8FA';
   const cardBg = theme?.cardBg || '#FFFFFF';
@@ -46,20 +46,28 @@ export const ChillContent = () => {
   const mutedText = theme?.textMuted || '#746379';
 
   useEffect(() => {
-    if (!showModal) return;
+    onboardingStorage
+      .getPreferences()
+      .then((prefs) => {
+        if (prefs?.focusAreas && prefs.focusAreas.length > 0) {
+          setUserFocusAreas(prefs.focusAreas);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
+  useEffect(() => {
+    if (!showModal) return;
     setLoadingAdvice(true);
     setAdviceError('');
 
     fetch('https://api.adviceslip.com/advice')
       .then((res) => {
-        if (!res.ok) {
-          throw new Error('Could not load advice.');
-        }
+        if (!res.ok) throw new Error('Could not load daily tip right now.');
         return res.json();
       })
       .then((data) => {
-        setAdvice(data.slip.advice);
+        setAdvice(data?.slip?.advice || 'Take one slow breath at a time.');
         setLoadingAdvice(false);
       })
       .catch((err) => {
@@ -69,35 +77,36 @@ export const ChillContent = () => {
   }, [showModal]);
 
   function handleToggleLike(id) {
-    const updated = stories.map((story) => {
-      if (story.id === id) {
+    setStories((prev) =>
+      prev.map((story) => {
+        if (story.id !== id) return story;
         const nextLiked = !story.isLiked;
         return {
           ...story,
           isLiked: nextLiked,
-          likes: nextLiked ? story.likes + 1 : story.likes - 1,
+          likes: nextLiked ? story.likes + 1 : Math.max(0, story.likes - 1),
         };
-      }
-      return story;
-    });
-    setStories(updated);
+      })
+    );
   }
 
   function handleToggleSave(id) {
-    const updated = stories.map((story) =>
-      story.id === id ? { ...story, isSaved: !story.isSaved } : story
+    setStories((prev) =>
+      prev.map((story) => (story.id === id ? { ...story, isSaved: !story.isSaved } : story))
     );
-    setStories(updated);
   }
 
-  function handleAddStory(title, excerpt, tag) {
-    const city = countryData?.capital || 'Your Sanctuary';
+  function handleAddStory(title, excerpt, tag, category = 'anxiety') {
+    const city = countryData?.capital && countryData.capital !== 'Global'
+      ? countryData.capital
+      : 'Your Sanctuary';
     const newStory = {
-      id: 's_' + Date.now(),
+      id: `s_${Date.now()}`,
       authorName: 'Anonymous',
       authorEmoji: '🌊',
       location: `${city} · Just now`,
       tag,
+      category,
       title,
       excerpt,
       likes: 1,
@@ -105,11 +114,13 @@ export const ChillContent = () => {
       isLiked: true,
       isSaved: false,
     };
-    setStories([newStory, ...stories]);
+    setStories((prev) => [newStory, ...prev]);
   }
 
   function handleAddReflection(storyId, text) {
-    const city = countryData?.capital || 'Your Sanctuary';
+    const city = countryData?.capital && countryData.capital !== 'Global'
+      ? countryData.capital
+      : 'Your Sanctuary';
     setStories((prev) =>
       prev.map((story) =>
         story.id === storyId
@@ -136,37 +147,35 @@ export const ChillContent = () => {
 
   return (
     <View style={styles.container}>
-      {/* Breadcrumb matching Home, Journal & Profile */}
       <Text style={[styles.breadcrumb, { color: mutedText }]}>
         My sanctuary / Chill & Soundscapes
       </Text>
 
-      {/* Header */}
+      {/* Header matching screenshots */}
       <View style={styles.header}>
         <View>
           <Text style={[styles.title, { color: theme?.textPrimary || '#2A192E' }]}>
-            Chill & Soundscapes 🌴
+            Chill Space 🌴
           </Text>
           <Text style={[styles.subtitle, { color: mutedText }]}>
-            Stories · Memes · Events · Podcasts
+            Interactive Sanctuary · Matched to {(userFocusAreas[0] || 'Peace').toUpperCase()}
           </Text>
         </View>
         <TouchableOpacity
           style={[styles.maskButton, { backgroundColor: softBg, borderColor }]}
           onPress={() => setShowModal(true)}
         >
-          <Text style={{ fontSize: 22 }}>🎭</Text>
+          <Text style={{ fontSize: 20 }}>🌿</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Pill Tabs */}
+      {/* 4 Clean Pill Tabs matching screenshots */}
       <View style={styles.tabBar}>
         {[
-          { id: 'soundscapes', label: '🌿 Soundscapes' },
-          { id: 'stories', label: '📖 Stories' },
-          { id: 'memes', label: '😂 Memes' },
-          { id: 'events', label: '🎟️ Events' },
-          { id: 'pods', label: '🎙️ Pods' },
+          { id: 'stories', label: '✍️ Stories & Essays' },
+          { id: 'pods', label: '🎙️ Audio Sanctuary' },
+          { id: 'memes', label: '😂 Vibes' },
+          { id: 'events', label: '🗓️ Events' },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -187,7 +196,7 @@ export const ChillContent = () => {
         })}
       </View>
 
-      {/* Now Playing Bar (shows cleanly inside the page when audio is active) */}
+      {/* Now Playing Bar */}
       <MiniPlayer
         episode={currentEpisode}
         isPlaying={isPlaying}
@@ -199,21 +208,16 @@ export const ChillContent = () => {
       />
 
       {/* Active Tab Content */}
-      {activeTab === 'soundscapes' && <SoundscapesTab />}
-
       {activeTab === 'stories' && (
         <StoriesTab
           stories={stories}
+          userFocusAreas={userFocusAreas}
           onToggleLike={handleToggleLike}
           onToggleSave={handleToggleSave}
           onAddStory={handleAddStory}
           onAddReflection={handleAddReflection}
         />
       )}
-
-      {activeTab === 'memes' && <MemesTab />}
-
-      {activeTab === 'events' && <EventsTab />}
 
       {activeTab === 'pods' && (
         <PodsTab
@@ -224,24 +228,21 @@ export const ChillContent = () => {
         />
       )}
 
+      {activeTab === 'memes' && <MemesTab />}
+
+      {activeTab === 'events' && <EventsTab />}
+
       {/* Daily Breath & Wisdom Modal */}
       <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalBg}>
-          <View style={[styles.modalCard, { backgroundColor: cardBg }]}>
-            <Text style={{ fontSize: 42, textAlign: 'center' }}>🌿✨</Text>
+          <View style={[styles.modalCard, { backgroundColor: cardBg, borderRadius: 28 }]}>
+            <Text style={{ fontSize: 40, textAlign: 'center' }}>🌿✨</Text>
             <Text style={[styles.sectionHeading, { textAlign: 'center', marginVertical: 8, color: theme?.textPrimary || '#2A192E' }]}>
               Daily Breath & Wisdom
             </Text>
             <Text style={[styles.bodyText, { textAlign: 'center', color: theme?.textSecondary || '#5C4D60' }]}>
-              "No catching up needed. Take a slow breath, pick a gentle sound, or share a quiet smile."
+              "No catching up needed. Take a slow breath, listen to something gentle, or share a quiet smile."
             </Text>
-
-            <View style={[styles.memeSubBox, { alignItems: 'flex-start', backgroundColor: softBg }]}>
-              <Text style={[styles.tagText, { color: accentColor }]}>🌿 Gentle Reminder:</Text>
-              <Text style={{ fontSize: 13, fontStyle: 'italic', marginTop: 4, color: theme?.textPrimary || '#2A192E' }}>
-                "Even after seven hours of rain, the sun still finds its way back tomorrow."
-              </Text>
-            </View>
 
             <View style={[styles.memeSubBox, { alignItems: 'flex-start', backgroundColor: softBg }]}>
               <Text style={[styles.tagText, { color: accentColor }]}>💡 Daily Tip:</Text>
