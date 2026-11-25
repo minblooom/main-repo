@@ -29,6 +29,7 @@ import { MomentsSection } from './components/MomentsSection';
 import { JournalContent } from '../journal/JournalScreen';
 import { ProfileContent } from '../profile/ProfileScreen';
 import { ArcadeContent } from '../arcade/ArcadeScreen';
+import { AuroraContent } from '../ai/AuroraScreen';
 import { MoodAnalyticsModal } from '../profile/components/modals/MoodAnalyticsModal';
 import { styles } from './styles/HomeScreen.styles';
 
@@ -78,7 +79,7 @@ export const HomeScreen = ({ navigation, route }) => {
     } else if (routeId === 'soundscapes' || routeId === 'chill') {
       setActiveTab('soundscapes');
     } else if (routeId === 'aurora') {
-      Alert.alert('Aurora AI Companion', 'Aurora and your companion are ready to listen. Start anywhere.');
+      setActiveTab('aurora');
     } else if (routeId === 'baraza' || routeId === 'community') {
       navigation.navigate('Community');
     } else if (routeId === 'acacia') {
@@ -107,6 +108,14 @@ export const HomeScreen = ({ navigation, route }) => {
               companionId={companionId}
               userName={userName}
               onNavigateHome={() => setActiveTab('home')}
+              isWide={isWide}
+            />
+          ) : activeTab === 'aurora' ? (
+            <AuroraContent
+              companionId={companionId}
+              userName={userName}
+              onNavigateHome={() => setActiveTab('home')}
+              onNavigateSoundscapes={() => setActiveTab('soundscapes')}
               isWide={isWide}
             />
           ) : (

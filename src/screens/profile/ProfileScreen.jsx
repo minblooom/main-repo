@@ -325,7 +325,7 @@ export const ProfileScreen = ({ navigation, route }) => {
     } else if (routeId === 'community' || routeId === 'baraza') {
       navigation?.navigate?.('Community');
     } else if (routeId === 'aurora') {
-      Alert.alert('Aurora Companion', 'Aurora AI companion session is starting...');
+      navigation?.navigate?.('Aurora');
     } else if (routeId === 'breath') {
       Alert.alert('Tulia Breathing', '60-second breathing exercise starting...');
     } else {

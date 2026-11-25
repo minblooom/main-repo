@@ -32,6 +32,7 @@ import { VentScreen }            from '../screens/community/VentScreen';
 import { LegalScreen }           from '../screens/legal/LegalScreen';
 import { ChillScreen }           from '../screens/chill-space/ChillScreen';
 import { StoryDetailScreen }     from '../screens/chill-space/StoryDetailScreen';
+import { AuroraScreen }          from '../screens/ai/AuroraScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -72,6 +73,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="Vent"            component={VentScreen} />
         <Stack.Screen name="Chill"           component={ChillScreen} />
         <Stack.Screen name="StoryDetail"     component={StoryDetailScreen} />
+        <Stack.Screen name="Aurora"          component={AuroraScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
