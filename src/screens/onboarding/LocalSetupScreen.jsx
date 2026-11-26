@@ -24,22 +24,19 @@ const COUNTRIES = [
   { id: 'rw', code: 'RW', name: 'Rwanda', langs: 'Kinyarwanda & English' },
 ];
 
-const LANGUAGES = ['English', 'Kiswahili', 'Sheng'];
-
 export const LocalSetupScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const { country: globalCountry, language: globalLanguage, setCountry: setGlobalCountry, setLanguage: setGlobalLanguage } = useI18n();
+  const { country: globalCountry, setCountry: setGlobalCountry, setLanguage: setGlobalLanguage } = useI18n();
 
   const [country, setCountry] = useState(route?.params?.country || globalCountry || 'ke');
-  const [language, setLanguage] = useState(route?.params?.language || (globalLanguage === 'sw' ? 'Kiswahili' : globalLanguage === 'sheng' ? 'Sheng' : 'English'));
   const [elsewhere, setElsewhere] = useState(country === 'global');
 
   const handleContinue = () => {
     if (!navigation) return;
     const finalCountry = elsewhere ? 'global' : country;
     setGlobalCountry(finalCountry);
-    setGlobalLanguage(language);
+    setGlobalLanguage('en');
 
     navigation.navigate('CompanionSelect', {
       ...(route?.params ?? {}),
@@ -73,7 +70,7 @@ export const LocalSetupScreen = ({ navigation, route }) => {
               <Text style={s.stepTag}>STEP 2 OF 7 · YOUR HOME BASE</Text>
               <Text style={s.title}>A little closer to home.</Text>
               <Text style={s.subtitle}>
-                Choose your country for local support and language. No GPS needed.
+                Choose your country for local support. No GPS needed.
               </Text>
 
               {/* Country list */}
@@ -133,26 +130,6 @@ export const LocalSetupScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Language chips */}
-              <Text style={styles.langLabel}>Your language:</Text>
-              <View style={styles.langRow}>
-                {LANGUAGES.map((l) => (
-                  <TouchableOpacity
-                    key={l}
-                    style={[styles.langChip, language === l && styles.langChipSelected]}
-                    onPress={() => setLanguage(l)}
-                  >
-                    <Text
-                      style={[
-                        styles.langChipText,
-                        language === l && styles.langChipTextSelected,
-                      ]}
-                    >
-                      {l} {language === l ? '✓' : ''}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               <TouchableOpacity style={s.primaryBtn} onPress={handleContinue} activeOpacity={0.88}>
                 <Text style={s.primaryBtnText}>Feels like home →</Text>
