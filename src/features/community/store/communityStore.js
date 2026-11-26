@@ -202,18 +202,11 @@ export const useCommunityStore = create((set, get) => ({
 
     const nextVents = [newVent, ...get().vents];
     set({ vents: nextVents });
-
-    try {
-      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
-    } catch {}
   },
 
   deleteVent: async (id) => {
     const nextVents = get().vents.filter((v) => v.id !== id);
     set({ vents: nextVents });
-    try {
-      await encryptedStorage.setItem(STORAGE_KEYS.VENTS, JSON.stringify(nextVents));
-    } catch {}
   },
 
   toggleHugVent: async (id) => {

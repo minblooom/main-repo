@@ -17,9 +17,9 @@ import {
 } from 'react-native';
 import { Mic, MoreHorizontal, Send } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { encryptedStorage } from '../../../services/encryptedStorage';
 import { apiClient, AUTH_STORAGE_KEYS } from '../../../core/api/client';
 import { AuthService } from '../../../core/api/authService';
+import { analyzeTextSafety } from '../../../core/safety/safetyFilter';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
@@ -69,6 +69,7 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
   const [userName, setUserName] = useState('You');
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [showCircleInfo, setShowCircleInfo] = useState(false);
+  const [showHelplineNudge, setShowHelplineNudge] = useState(false);
   const [activeMsgMenu, setActiveMsgMenu] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -196,10 +197,9 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
         if (active && Array.isArray(serverItems) && serverItems.length > 0) {
           const formatted = serverItems.map((m) => mapServerMsg(m));
           setMessages(formatted);
-          await encryptedStorage.setItem(storageKey, JSON.stringify(formatted));
         }
       } catch {
-        // Offline or guest mode — keep encrypted local messages
+        // Offline or guest mode — keep ephemeral in-memory messages only (never stored)
       }
     }
 
@@ -256,23 +256,12 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
 
     async function loadChat() {
       try {
-        const [rawChat, prefs] = await Promise.all([
-          encryptedStorage.getItem(storageKey),
-          onboardingStorage.getPreferences(),
-        ]);
-
+        const prefs = await onboardingStorage.getPreferences();
         if (active && (prefs?.name || prefs?.nickname)) {
           setUserName(prefs.name || prefs.nickname);
         }
-
-        if (active && rawChat) {
-          setMessages(JSON.parse(rawChat));
-        } else if (active) {
-          setMessages([]);
-        }
-      } catch {
-        if (active) setMessages([]);
-      }
+      } catch {}
+      if (active) setMessages([]);
       await syncFromServer();
       await connectLiveStream();
     }
@@ -295,6 +284,13 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     const text = inputText.trim();
     if (!text && !draftVoiceNote) return;
 
+    // Flag dangerous/crisis terms immediately and gently nudge toward helplines
+    const safety = analyzeTextSafety(text);
+    if (safety.isCritical) {
+      setShowHelplineNudge(true);
+      return;
+    }
+
     soundService.playPop();
     if (!isJoined) {
       joinCircle(circleId);
@@ -309,7 +305,6 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       setEditingMsgId(null);
       setInputText('');
       try {
-        await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
         if (!String(targetId).startsWith('msg-')) {
           await apiClient.patch(`/community/circles/${circleId}/messages/${targetId}`, { text });
         }
@@ -344,7 +339,6 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
     setReplyingTo(null);
 
     try {
-      await encryptedStorage.setItem(storageKey, JSON.stringify(nextMessages));
       const res = await apiClient.post(`/community/circles/${circleId}/messages`, {
         text,
         senderEmoji: '🌱',
@@ -382,7 +376,6 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
       const next = messages.filter((m) => m.id !== msgId);
       setMessages(next);
       try {
-        await encryptedStorage.setItem(storageKey, JSON.stringify(next));
         if (!String(msgId).startsWith('msg-')) {
           await apiClient.delete(`/community/circles/${circleId}/messages/${msgId}`);
         }
@@ -981,6 +974,35 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
               activeOpacity={0.85}
             >
               <Text style={styles.guidelinesBtnText}>Got it, thank you</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── CRISIS SAFETY & HELPLINE NUDGE MODAL ───────────────────────── */}
+      <Modal
+        visible={showHelplineNudge}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHelplineNudge(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.guidelinesCard, { backgroundColor: theme.cardBg, borderColor: '#FCA5A5', borderWidth: 1.5 }]}>
+            <Text style={[styles.guidelinesTitle, { color: '#991B1B' }]}>💛 You don't have to carry this alone</Text>
+            <Text style={[styles.guidelinesBody, { color: theme.textSecondary }]}>
+              It sounds like you might be going through something really heavy right now. Please consider reaching out to someone trained to support you right away — free, confidential, and judgment-free:
+              {'\n\n'}• <Text style={{ fontWeight: '800' }}>{countryData?.helplineName || 'Befrienders Kenya'}:</Text> {countryData?.helplinePhone || '+254 722 178 177'}
+              {'\n'}• <Text style={{ fontWeight: '800' }}>Kenya Red Cross:</Text> 1199 (Toll-Free)
+              {'\n'}• <Text style={{ fontWeight: '800' }}>Uganda Mental Health:</Text> 0800 21 21 21
+              {'\n'}• <Text style={{ fontWeight: '800' }}>Rwanda Support:</Text> 114
+              {'\n'}• <Text style={{ fontWeight: '800' }}>Global Directory:</Text> findahelpline.com
+            </Text>
+            <TouchableOpacity
+              style={[styles.guidelinesBtn, { backgroundColor: theme.accent }]}
+              onPress={() => setShowHelplineNudge(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guidelinesBtnText}>I understand</Text>
             </TouchableOpacity>
           </View>
         </View>

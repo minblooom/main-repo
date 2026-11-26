@@ -12,6 +12,8 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useI18n } from '../../services/i18n';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { chillLibraryStorage } from '../../services/chillLibraryStorage';
+import { useAudioPlayer } from '../../core/audio/AudioPlayerContext';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 import { initialStories } from './chillData';
@@ -19,19 +21,17 @@ import { StoriesTab } from './components/StoriesTab';
 import { MemesTab } from './components/MemesTab';
 import { EventsTab } from './components/EventsTab';
 import { PodsTab } from './components/PodsTab';
-import { MiniPlayer } from './components/MiniPlayer';
 import { styles } from './styles/ChillScreen.styles';
 
 export const ChillContent = () => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
+  const { currentEpisode, isPlaying, playEpisode, togglePlay } = useAudioPlayer();
   const [activeTab, setActiveTab] = useState('stories');
-  const [stories, setStories] = useState(initialStories);
+  const [stories, setStories] = useState(() =>
+    initialStories.map((s) => ({ ...s, isSaved: false }))
+  );
   const [userFocusAreas, setUserFocusAreas] = useState(['anxiety']);
-
-  // Audio player state
-  const [currentEpisode, setCurrentEpisode] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Daily Breath & Wisdom Modal + Advice API state
   const [showModal, setShowModal] = useState(false);
@@ -52,6 +52,16 @@ export const ChillContent = () => {
         if (prefs?.focusAreas && prefs.focusAreas.length > 0) {
           setUserFocusAreas(prefs.focusAreas);
         }
+      })
+      .catch(() => {});
+
+    chillLibraryStorage
+      .getAll()
+      .then((saved) => {
+        const savedIds = new Set(saved.map((item) => String(item.id)));
+        setStories((prev) =>
+          prev.map((s) => ({ ...s, isSaved: savedIds.has(String(s.id)) }))
+        );
       })
       .catch(() => {});
   }, []);
@@ -90,9 +100,22 @@ export const ChillContent = () => {
     );
   }
 
-  function handleToggleSave(id) {
+  async function handleToggleSave(id) {
+    const target = stories.find((s) => s.id === id);
+    if (!target) return;
+    const { isSaved } = await chillLibraryStorage.toggleSave({
+      id: target.id,
+      category: target.tag || 'COMMUNITY STORY',
+      title: target.title,
+      desc: target.excerpt,
+      body: target.excerpt,
+      author: target.authorName,
+      bg: '#F0EAFA',
+      color: '#492542',
+      icon: target.authorEmoji || '🌿',
+    });
     setStories((prev) =>
-      prev.map((story) => (story.id === id ? { ...story, isSaved: !story.isSaved } : story))
+      prev.map((story) => (story.id === id ? { ...story, isSaved } : story))
     );
   }
 
@@ -141,8 +164,7 @@ export const ChillContent = () => {
   }
 
   function handleSelectEpisode(episode) {
-    setCurrentEpisode(episode);
-    setIsPlaying(true);
+    playEpisode(episode);
   }
 
   return (
@@ -196,17 +218,6 @@ export const ChillContent = () => {
         })}
       </View>
 
-      {/* Now Playing Bar */}
-      <MiniPlayer
-        episode={currentEpisode}
-        isPlaying={isPlaying}
-        onTogglePlay={() => setIsPlaying(!isPlaying)}
-        onClose={() => {
-          setCurrentEpisode(null);
-          setIsPlaying(false);
-        }}
-      />
-
       {/* Active Tab Content */}
       {activeTab === 'stories' && (
         <StoriesTab
@@ -224,7 +235,7 @@ export const ChillContent = () => {
           currentEpisode={currentEpisode}
           isPlaying={isPlaying}
           onSelectEpisode={handleSelectEpisode}
-          onTogglePlay={() => setIsPlaying(!isPlaying)}
+          onTogglePlay={togglePlay}
         />
       )}
 

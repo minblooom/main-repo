@@ -110,11 +110,11 @@ export const MomentsSection = ({
 
   const cards = [
     {
-      id: 'soundscapes',
-      category: "TODAY'S PODCAST · 10 MIN",
-      title: dailyPodcast.title,
-      desc: dailyPodcast.desc,
-      cta: 'Listen on Chill & Soundscapes →',
+      id: 'baraza',
+      category: 'COMMUNITY BARAZA · SAFE CIRCLES',
+      title: 'Soft Space in a Loud World',
+      desc: 'Step into a quiet peer circle when you want warm company — zero pressure to speak.',
+      cta: 'Visit Community Baraza →',
       bg: '#EDF5EE',
       border: '#D8ECDA',
       textDark: '#2C5A38',
@@ -130,11 +130,11 @@ export const MomentsSection = ({
       textDark: '#8A531C',
     },
     {
-      id: 'acacia',
+      id: 'arcade',
       category: 'MINDFUL PLAY · AT YOUR PACE',
-      title: 'The acacia worry tree',
-      desc: 'Set a worry down. Make room to grow.',
-      cta: 'Play a little →',
+      title: 'Blooms Arcade',
+      desc: 'Gentle, score-free mini-games to help your mind reset at your own pace.',
+      cta: 'Open Blooms Arcade →',
       bg: '#F0EAFA',
       border: '#DFD5F0',
       textDark: colors.brand,

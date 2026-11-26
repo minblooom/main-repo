@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
 import { soundEngine } from '../../../services/soundEngine';
+import { chillLibraryStorage } from '../../../services/chillLibraryStorage';
 import { GUIDED_MEDITATIONS } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
 
@@ -22,6 +23,17 @@ const PODCAST_TOPICS = [
   { id: 'calm', label: 'Calm & Sleep', term: 'guided meditation sleep calm' },
   { id: 'anxiety', label: 'Anxiety & Healing', term: 'anxiety therapy healing' },
   { id: 'africa', label: 'African Voices', term: 'legally clueless africa mental health' },
+];
+
+const ENDLESS_WELLNESS_QUERIES = [
+  'mental health mindfulness',
+  'guided meditation sleep calm',
+  'anxiety relief therapy',
+  'burnout recovery rest',
+  'self compassion healing',
+  'emotional resilience africa',
+  'grief healing support',
+  'morning calm affirmations',
 ];
 
 const SOUNDSCAPES = [
@@ -37,6 +49,9 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   const [activeTopic, setActiveTopic] = useState(PODCAST_TOPICS[0]);
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageIdx, setPageIdx] = useState(0);
+  const [savedIds, setSavedIds] = useState(new Set());
   const [error, setError] = useState('');
 
   // Ambient Soundscape quick-play
@@ -54,21 +69,29 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   const medTimerRef = useRef(null);
   const lastSpokenRef = useRef('');
 
-  // Fetch diverse episodes from Apple iTunes Podcast API + curated multi-topic queries
-  async function loadPodcasts(queryTerm) {
-    setLoading(true);
+  // Fetch diverse episodes from Apple iTunes Podcast API + endless query pagination
+  async function loadPodcasts(queryTerm, { append = false, nextPage = 0 } = {}) {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError('');
     try {
+      const rotatingTerm =
+        append && queryTerm === PODCAST_TOPICS[0].term && !searchText.trim()
+          ? ENDLESS_WELLNESS_QUERIES[nextPage % ENDLESS_WELLNESS_QUERIES.length]
+          : queryTerm;
+
       const terms =
-        queryTerm === PODCAST_TOPICS[0].term && !searchText.trim()
+        !append && queryTerm === PODCAST_TOPICS[0].term && !searchText.trim()
           ? ['mental health mindfulness', 'guided meditation calm sleep']
-          : [queryTerm];
+          : [rotatingTerm];
+
+      const offset = append ? Math.floor(nextPage / ENDLESS_WELLNESS_QUERIES.length) * 15 : 0;
 
       const responses = await Promise.all(
         terms.map(async (t) => {
           const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
             t
-          )}&media=podcast&entity=podcastEpisode&limit=8`;
+          )}&media=podcast&entity=podcastEpisode&limit=15&offset=${offset}`;
           const res = await fetch(url);
           if (!res.ok) return [];
           const json = await res.json();
@@ -76,8 +99,8 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
         })
       );
 
-      const seen = new Set();
-      const merged = [];
+      const seen = new Set(append ? episodes.map((e) => e.id) : []);
+      const merged = append ? [...episodes] : [];
       responses.flat().forEach((item) => {
         if (item.episodeUrl && !seen.has(item.trackId)) {
           seen.add(item.trackId);
@@ -94,20 +117,47 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
       });
 
       setEpisodes(merged);
+      setPageIdx(nextPage);
     } catch {
-      setError('We could not reach the podcast library right now.');
+      if (!append) setError('We could not reach the podcast library right now.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }
 
   useEffect(() => {
     loadPodcasts(activeTopic.term);
+    chillLibraryStorage
+      .getAll()
+      .then((saved) => setSavedIds(new Set(saved.map((i) => String(i.id)))))
+      .catch(() => {});
     return () => {
       if (medTimerRef.current) clearInterval(medTimerRef.current);
       soundEngine.stopSoundscape();
     };
   }, []);
+
+  async function handleToggleSaveEpisode(ep) {
+    const { isSaved } = await chillLibraryStorage.toggleSave({
+      id: `pod_${ep.id}`,
+      category: 'PODCAST EPISODE',
+      title: ep.title,
+      desc: (ep.description || '').replace(/<[^>]+>/g, '').slice(0, 180),
+      author: ep.collectionName,
+      duration: `${ep.durationMins} MIN`,
+      audioUrl: ep.audioUrl,
+      bg: '#EDF5EE',
+      color: '#2C5A38',
+      icon: '🎙️',
+    });
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (isSaved) next.add(`pod_${ep.id}`);
+      else next.delete(`pod_${ep.id}`);
+      return next;
+    });
+  }
 
   function speakGuidance(text) {
     if (!voiceEnabled || Platform.OS !== 'web' || typeof window === 'undefined' || !window.speechSynthesis) {
@@ -456,9 +506,38 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
               <Text style={[styles.bodyText, { color: theme?.textSecondary || '#5C4D60' }]} numberOfLines={2}>
                 {ep.description.replace(/<[^>]+>/g, '')}
               </Text>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => handleToggleSaveEpisode(ep)}>
+                  <Text style={styles.actionText}>
+                    {savedIds.has(`pod_${ep.id}`) ? '🔖 Saved' : '🏷️ Save'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         })}
+
+      {!loading && error === '' && episodes.length > 0 && (
+        <TouchableOpacity
+          style={[
+            styles.primaryBtn,
+            {
+              backgroundColor: theme?.heroBg || '#F0EAFA',
+              borderWidth: 1,
+              borderColor: theme?.divider || '#E8DFF2',
+              marginTop: 4,
+              marginBottom: 16,
+            },
+          ]}
+          onPress={() => loadPodcasts(searchText.trim() || activeTopic.term, { append: true, nextPage: pageIdx + 1 })}
+          disabled={loadingMore}
+        >
+          <Text style={[styles.primaryBtnText, { color: theme?.accent || '#42213D' }]}>
+            {loadingMore ? 'Loading more episodes...' : 'Load More Episodes 🎙️'}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Human-Feel Guided Meditation Modal */}
       <Modal

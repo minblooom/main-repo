@@ -360,21 +360,60 @@ export const EventsTab = () => {
                     {selectedEvent.description}
                   </Text>
 
-                  {/* Embedded OpenStreetMap for physical events (web only) */}
-                  {!selectedEvent.isOnline && selectedEvent.lat && selectedEvent.lon && Platform.OS === 'web' && (
-                    <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme?.divider || '#E8DFF2', marginTop: 10, marginBottom: 12, height: 170 }}>
-                      <iframe
-                        title="Event Map"
-                        width="100%"
-                        height="170"
-                        style={{ border: 0 }}
-                        loading="lazy"
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedEvent.lon - 0.015}%2C${selectedEvent.lat - 0.012}%2C${selectedEvent.lon + 0.015}%2C${selectedEvent.lat + 0.012}&layer=mapnik&marker=${selectedEvent.lat}%2C${selectedEvent.lon}`}
-                      />
-                    </View>
+                  {/* Interactive Map for physical events (Web iframe + Native OpenStreetMap link) */}
+                  {!selectedEvent.isOnline && selectedEvent.lat && selectedEvent.lon && (
+                    Platform.OS === 'web' ? (
+                      <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme?.divider || '#E8DFF2', marginTop: 10, marginBottom: 12, height: 190 }}>
+                        <iframe
+                          title="Event Map"
+                          width="100%"
+                          height="190"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedEvent.lon - 0.015}%2C${selectedEvent.lat - 0.012}%2C${selectedEvent.lon + 0.015}%2C${selectedEvent.lat + 0.012}&layer=mapnik&marker=${selectedEvent.lat}%2C${selectedEvent.lon}`}
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={{
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: theme?.divider || '#E8DFF2',
+                          backgroundColor: theme?.heroBg || '#F7F3FB',
+                          padding: 14,
+                          marginTop: 10,
+                          marginBottom: 12,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                        onPress={() => openUrl(`https://www.openstreetmap.org/?mlat=${selectedEvent.lat}&mlon=${selectedEvent.lon}#map=15/${selectedEvent.lat}/${selectedEvent.lon}`)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: theme?.textPrimary || '#2A192E' }}>
+                            🗺️ Open Interactive Map
+                          </Text>
+                          <Text style={{ fontSize: 11.5, color: theme?.textMuted || '#7E726D', marginTop: 2 }}>
+                            {selectedEvent.lat.toFixed(4)}, {selectedEvent.lon.toFixed(4)} · Tap to view pin
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: theme?.accent || '#E06D3B' }}>View ↗</Text>
+                      </TouchableOpacity>
+                    )
                   )}
 
-                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                  {selectedEvent.joinUrl && (
+                    <TouchableOpacity
+                      style={[styles.primaryBtn, { backgroundColor: '#42213D', marginTop: 6, marginBottom: 6 }]}
+                      onPress={() => openUrl(selectedEvent.joinUrl)}
+                    >
+                      <Text style={styles.primaryBtnText}>
+                        {selectedEvent.isOnline ? '🔗 Join Live Session / Portal ↗' : '🔗 Event Info & Updates ↗'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
                     {!selectedEvent.isOnline && (
                       <TouchableOpacity
                         style={[styles.primaryBtn, { flex: 1, backgroundColor: '#1F6F78' }]}

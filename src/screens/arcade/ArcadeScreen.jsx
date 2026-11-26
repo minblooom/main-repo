@@ -30,7 +30,7 @@ import { RecentlyPlayedSection } from './components/RecentlyPlayedSection';
 import { FavouritesSection } from './components/FavouritesSection';
 
 // Game Engine & Modals
-import { GAMES_CATALOG, getCatalogForUser } from './engine/gameRegistry';
+import { UNIVERSAL_ARCADE_GAMES } from './engine/gameRegistry';
 import { getGameOfTheDay } from './engine/dailyRotationService';
 import { gameSessionManager } from './engine/gameSessionManager';
 import { GamePreviewModal } from './components/modals/GamePreviewModal';
@@ -119,10 +119,8 @@ export const ArcadeContent = ({
     })();
   }, [userName]);
 
-  // Filtered games list tailored specifically for this user
-  const userCatalog = useMemo(() => {
-    return getCatalogForUser(userFocusAreas, userInterests);
-  }, [userFocusAreas, userInterests]);
+  // Only surface the 6 universal games in Blooms Arcade for now
+  const userCatalog = UNIVERSAL_ARCADE_GAMES;
 
   const filteredGames = useMemo(() => {
     return userCatalog.filter((g) => {
@@ -246,32 +244,6 @@ export const ArcadeContent = ({
           isWide={isWide}
           onPlayToday={() => handlePlayGame(dailyGame)}
         />
-
-        {/* Curated for Your Heart: Issue-based Therapeutic Recommendations */}
-        {userFocusAreas.length > 0 && (
-          <View style={styles.focusCurationSection}>
-            <View style={styles.focusCurationHeader}>
-              <Text style={styles.focusCurationEmoji}>🌿</Text>
-              <View>
-                <Text style={[styles.focusCurationTitle, { color: theme.textPrimary }]}>
-                  Crafted for What's on Your Heart
-                </Text>
-                <Text style={[styles.focusCurationSub, { color: theme.textMuted }]}>
-                  Evidence-based tools selected for {userFocusAreas.slice(0, 2).map((a) => a.replace('_', ' ')).join(' & ')}
-                </Text>
-              </View>
-            </View>
-            <MadeForYourMomentSection
-              games={GAMES_CATALOG.filter((g) =>
-                g.issues?.some((i) => userFocusAreas.includes(i))
-              ).slice(0, 3)}
-              favourites={favourites}
-              isWide={isWide}
-              onPlayGame={handlePlayGame}
-              onToggleFavourite={handleToggleFavourite}
-            />
-          </View>
-        )}
 
         {/* "Find your kind of play" Search & Filters */}
         <PlayFilterSection

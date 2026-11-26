@@ -65,11 +65,11 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
   const companionKey = propCompanionId || globalCompanionId || 'noodle';
   const companion = COMPANION_MAP[companionKey] || COMPANION_MAP.noodle;
 
-  const [selectedMoodId, setSelectedMoodId] = useState('calm');
-  const [selectedFactors, setSelectedFactors] = useState(['quiet']);
+  const [selectedMoodId, setSelectedMoodId] = useState(null);
+  const [selectedFactors, setSelectedFactors] = useState([]);
   const [hasSaved, setHasSaved] = useState(false);
 
-  const activeMood = MOODS.find((m) => m.id === selectedMoodId) || MOODS[3];
+  const activeMood = MOODS.find((m) => m.id === selectedMoodId) || null;
 
   useEffect(() => {
     (async () => {
@@ -136,7 +136,9 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
       ? selectedFactors.filter((id) => id !== fId)
       : [...selectedFactors, fId];
     setSelectedFactors(nextFactors);
-    saveCheckIn(selectedMoodId, nextFactors);
+    if (selectedMoodId) {
+      saveCheckIn(selectedMoodId, nextFactors);
+    }
   };
 
   return (
@@ -205,7 +207,7 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
               {companion.name} · gently beside you
             </Text>
             <Text style={[styles.companionQuote, { color: theme.textPrimary }]}>
-              "{activeMood.guidance}"
+              "{activeMood ? activeMood.guidance : "Tap how your heart is feeling above whenever you're ready. There's zero pressure."}"
             </Text>
           </View>
         </View>

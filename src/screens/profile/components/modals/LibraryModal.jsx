@@ -2,7 +2,7 @@
 // Displays user's saved content exclusively bookmarked from the Chill & Soundscapes space.
 // Styles extracted to src/screens/profile/styles/LibraryModal.styles.js.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,98 +10,52 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
+import { chillLibraryStorage } from '../../../../services/chillLibraryStorage';
+import { useAudioPlayer } from '../../../../core/audio/AudioPlayerContext';
 import { styles } from '../../styles/LibraryModal.styles';
-
-const INITIAL_CHILL_ITEMS = [
-  {
-    id: 'cs_1',
-    category: 'CHILL SOUNDSCAPE',
-    title: 'Savanna Twilight Breeze',
-    desc: 'Gentle dusk wind rustling through acacia boughs, distant crickets, and evening calm.',
-    duration: '12 MIN',
-    date: 'SAVED FROM CHILL SPACE',
-    bg: '#F5EBE1',
-    color: '#8A531C',
-    icon: '🌾',
-  },
-  {
-    id: 'cs_2',
-    category: 'GUIDED BREATHWORK',
-    title: 'Tulia 4-7-8 Deep Rhythm',
-    desc: 'Inhale peace (4s), hold stillness (7s), release physical tension (8s). Calms the nervous system.',
-    duration: '5 MIN',
-    date: 'SAVED FROM CHILL SPACE',
-    bg: '#EDF5EE',
-    color: '#2C5A38',
-    icon: '🫧',
-  },
-  {
-    id: 'cs_3',
-    category: 'CHILL SOUNDSCAPE',
-    title: 'Mount Kenya Gentle Rain',
-    desc: 'Soft mountain shower pattering on broad leaves for deep focus and emotional reset.',
-    duration: '20 MIN',
-    date: 'SAVED FROM CHILL SPACE',
-    bg: '#EAF1F8',
-    color: '#1E4D6B',
-    icon: '🌧️',
-  },
-  {
-    id: 'cs_4',
-    category: 'SLEEP STORY',
-    title: 'Starlit Mara Night Walk',
-    desc: 'A gentle guided auditory bedtime journey across the peaceful, starlit African savanna.',
-    duration: '15 MIN',
-    date: 'SAVED FROM CHILL SPACE',
-    bg: '#F0EAFA',
-    color: '#492542',
-    icon: '✨',
-  },
-  {
-    id: 'cs_5',
-    category: 'MINDFUL RESONANCE',
-    title: 'Acacia Stream & Windchimes',
-    desc: 'Flowing forest brook with organic bamboo windchimes to dissolve mental clutter.',
-    duration: '8 MIN',
-    date: 'SAVED FROM CHILL SPACE',
-    bg: '#FAF4E8',
-    color: '#7D5A18',
-    icon: '🍃',
-  },
-];
 
 export const LibraryModal = ({ visible, onClose, onNavigateChill, theme: propTheme }) => {
   const { theme: ctxTheme } = useTheme();
   const theme = propTheme || ctxTheme;
+  const { currentEpisode, isPlaying: audioPlaying, playEpisode } = useAudioPlayer();
 
-  const [savedItems, setSavedItems] = useState(INITIAL_CHILL_ITEMS);
-  const [playingId, setPlayingId] = useState(null);
+  const [savedItems, setSavedItems] = useState([]);
+  const [readingItem, setReadingItem] = useState(null);
 
-  const handlePlayItem = (item) => {
-    if (playingId === item.id) {
-      setPlayingId(null);
-    } else {
-      setPlayingId(item.id);
-      Alert.alert(
-        `Now Playing: ${item.title}`,
-        `Streaming relaxing audio from Chill & Soundscapes (${item.duration}). Take a slow, gentle breath.`,
-        [
-          { text: 'Close', style: 'cancel' },
-          {
-            text: 'Go to Chill Space',
-            onPress: () => {
-              onClose?.();
-              onNavigateChill?.();
-            },
-          },
-        ]
-      );
+  useEffect(() => {
+    if (!visible) return;
+    chillLibraryStorage.getAll().then(setSavedItems).catch(() => setSavedItems([]));
+  }, [visible]);
+
+  const handleOpenItem = (item) => {
+    if (item.audioUrl) {
+      playEpisode({
+        id: item.id,
+        title: item.title,
+        collectionName: item.author || item.category,
+        audioUrl: item.audioUrl,
+      });
+      return;
     }
+    setReadingItem(item);
+  };
+
+  const performDelete = async (id) => {
+    const next = await chillLibraryStorage.removeItem(id);
+    setSavedItems(next);
+    if (readingItem?.id === id) setReadingItem(null);
   };
 
   const handleRemove = (id, title) => {
+    if (Platform.OS === 'web') {
+      if (typeof window === 'undefined' || window.confirm(`Remove "${title}" from your saved Chill Space moments?`)) {
+        performDelete(id);
+      }
+      return;
+    }
     Alert.alert(
       'Remove from Library',
       `Remove "${title}" from your saved Chill Space moments?`,
@@ -110,9 +64,7 @@ export const LibraryModal = ({ visible, onClose, onNavigateChill, theme: propThe
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setSavedItems((prev) => prev.filter((item) => item.id !== id));
-          },
+          onPress: () => performDelete(id),
         },
       ]
     );
@@ -138,39 +90,79 @@ export const LibraryModal = ({ visible, onClose, onNavigateChill, theme: propThe
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            {savedItems.length === 0 ? (
+            {readingItem ? (
+              <View style={[styles.itemCard, { backgroundColor: readingItem.bg || theme.heroBg }]}>
+                <TouchableOpacity
+                  onPress={() => setReadingItem(null)}
+                  style={{ marginBottom: 10, alignSelf: 'flex-start' }}
+                >
+                  <Text style={{ fontSize: 12.5, fontWeight: '800', color: readingItem.color || theme.accent }}>
+                    ← Back to Saved Library
+                  </Text>
+                </TouchableOpacity>
+                <Text style={[styles.itemCat, { color: readingItem.color || theme.accent, marginBottom: 4 }]}>
+                  {readingItem.icon} {readingItem.category} · OFFLINE READY
+                </Text>
+                <Text style={[styles.itemTitle, { fontSize: 17, marginBottom: 6 }]}>{readingItem.title}</Text>
+                {readingItem.author ? (
+                  <Text style={{ fontSize: 12, color: theme.textMuted, marginBottom: 10 }}>
+                    By {readingItem.author}
+                  </Text>
+                ) : null}
+                <Text style={[styles.itemDesc, { lineHeight: 22 }]}>
+                  {readingItem.body || readingItem.desc}
+                </Text>
+              </View>
+            ) : savedItems.length === 0 ? (
               <View style={styles.emptyWrap}>
                 <Text style={styles.emptyIcon}>🌙</Text>
                 <Text style={styles.emptyTitle}>Your Chill Library is empty</Text>
                 <Text style={styles.emptySub}>
-                  Bookmark soundscapes and breath sessions in Chill & Soundscapes to keep them handy here.
+                  Save stories, essays, or podcasts in Chill & Soundscapes to keep them available offline here.
                 </Text>
+                {onNavigateChill && (
+                  <TouchableOpacity
+                    style={[styles.playBtn, { backgroundColor: theme.accent, marginTop: 14, paddingHorizontal: 18 }]}
+                    onPress={() => {
+                      onClose?.();
+                      onNavigateChill();
+                    }}
+                  >
+                    <Text style={styles.playBtnText}>Explore Chill Space →</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               savedItems.map((item) => {
-                const isPlaying = playingId === item.id;
+                const isPlaying = Boolean(item.audioUrl) && currentEpisode?.id === item.id && audioPlaying;
                 return (
-                  <View key={item.id} style={[styles.itemCard, { backgroundColor: item.bg }]}>
+                  <View key={item.id} style={[styles.itemCard, { backgroundColor: item.bg || '#EDF5EE' }]}>
                     <View style={styles.itemTop}>
                       <View style={styles.catWrap}>
-                        <Text style={{ fontSize: 13 }}>{item.icon}</Text>
-                        <Text style={[styles.itemCat, { color: item.color }]}>{item.category}</Text>
+                        <Text style={{ fontSize: 13 }}>{item.icon || '🌿'}</Text>
+                        <Text style={[styles.itemCat, { color: item.color || '#2C5A38' }]}>{item.category}</Text>
                       </View>
-                      <Text style={[styles.itemDate, { color: item.color }]}>⏱ {item.duration}</Text>
+                      <Text style={[styles.itemDate, { color: item.color || '#2C5A38' }]}>
+                        {item.duration ? `⏱ ${item.duration}` : '📥 Offline'}
+                      </Text>
                     </View>
 
                     <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemDesc}>{item.desc}</Text>
+                    <Text style={styles.itemDesc} numberOfLines={3}>{item.desc}</Text>
 
                     {/* Card Actions */}
                     <View style={styles.cardActionsRow}>
                       <TouchableOpacity
-                        style={[styles.playBtn, { backgroundColor: item.color }]}
-                        onPress={() => handlePlayItem(item)}
+                        style={[styles.playBtn, { backgroundColor: item.color || theme.accent }]}
+                        onPress={() => handleOpenItem(item)}
                         activeOpacity={0.8}
                       >
                         <Text style={styles.playBtnText}>
-                          {isPlaying ? '⏸ Pause Audio' : '▶ Play Soundscape'}
+                          {item.audioUrl
+                            ? isPlaying
+                              ? '⏸ Pause Episode'
+                              : '▶ Play Episode'
+                            : '📖 Read Offline'}
                         </Text>
                       </TouchableOpacity>
 

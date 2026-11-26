@@ -82,8 +82,6 @@ export const HomeScreen = ({ navigation, route }) => {
       setActiveTab('aurora');
     } else if (routeId === 'baraza' || routeId === 'community') {
       navigation.navigate('Community');
-    } else if (routeId === 'acacia') {
-      Alert.alert('The Acacia Worry Tree', 'Place a worry onto a leaf and watch it drift away.');
     } else if (routeId === 'sanctuary') {
       setActiveTab('sanctuary');
     }
@@ -161,12 +159,13 @@ export const HomeScreen = ({ navigation, route }) => {
                   {/* Gentle Mood Check-in */}
                   <MoodCheckIn onOpenAnalytics={() => setMoodAnalyticsVisible(true)} />
 
-                  {/* Hero Twin Banners: Aurora & Animated Companion Mascot + Tulia Breath */}
+                  {/* Hero Twin Banners: Aurora & Animated Companion Mascot + Podcast of the Day */}
                   <HeroBanners
                     isWide={isWide}
                     companionId={companionId}
+                    userFocusAreas={userFocusAreas}
                     onAuroraPress={() => handleNavigate('aurora')}
-                    onBreathPress={() => handleNavigate('breath')}
+                    onPodcastPress={() => handleNavigate('soundscapes')}
                   />
 
                   {/* "A Moment for You" 3 Activities */}

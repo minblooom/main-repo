@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { soundService } from '../../../screens/arcade/audio/soundService';
+import { analyzeTextSafety } from '../../../core/safety/safetyFilter';
 import { useCommunityStore } from '../store/communityStore';
 import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
 import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
@@ -151,6 +152,14 @@ export const VentBoxSection = () => {
 
   const handlePostAnonymous = () => {
     if (!ventText.trim() && !draftVoiceNote) return;
+    const safety = analyzeTextSafety(ventText);
+    if (safety.isCritical) {
+      const msg =
+        'It sounds like you may be carrying something very heavy right now. Please consider talking to a caring helpline:\n\n• Befrienders Kenya: +254 722 178 177\n• Kenya Red Cross: 1199\n• Uganda: 0800 21 21 21\n• Global: findahelpline.com';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert("You're Not Alone 💛", msg);
+      return;
+    }
     soundService.playPop();
     addVent(ventText.trim(), draftVoiceNote);
     setVentText('');

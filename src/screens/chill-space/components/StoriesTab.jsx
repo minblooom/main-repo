@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { COMPANION_MAP } from '../../../constants/companions';
+import { chillLibraryStorage } from '../../../services/chillLibraryStorage';
 import { featuredStory } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
 
@@ -57,6 +58,9 @@ export const StoriesTab = ({
   const [selectedCategory, setSelectedCategory] = useState('for_you');
   const [liveArticles, setLiveArticles] = useState([]);
   const [loadingArticles, setLoadingArticles] = useState(false);
+  const [loadingMoreArticles, setLoadingMoreArticles] = useState(false);
+  const [articlesPage, setArticlesPage] = useState(1);
+  const [savedArticleIds, setSavedArticleIds] = useState(new Set());
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -70,43 +74,47 @@ export const StoriesTab = ({
   const [loadingFullArticle, setLoadingFullArticle] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
 
-  // Fetch multi-source wellness articles (DEV.to mentalhealth + Wikipedia REST summaries)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoadingArticles(true);
-      const collected = [];
+  // Fetch multi-source wellness articles (DEV.to + Wikipedia REST + Search) with pagination
+  async function fetchArticlesPage(pageNum = 1, append = false) {
+    if (append) setLoadingMoreArticles(true);
+    else setLoadingArticles(true);
 
-      try {
-        const tag = primaryFocus.includes('burnout') ? 'burnout' : 'mentalhealth';
-        const res = await fetch(`https://dev.to/api/articles?tag=${tag}&per_page=8&top=30`);
-        if (res.ok) {
-          const data = await res.json();
-          const filtered = (data || [])
-            .filter(
-              (a) =>
-                a.title &&
-                a.description &&
-                !/interview|coding|leetcode|javascript|react|python/i.test(a.title)
-            )
-            .slice(0, 4);
-          filtered.forEach((a) => {
-            collected.push({
-              id: `dev-${a.id}`,
-              devId: a.id,
-              source: 'DEV.to Wellness',
-              title: a.title,
-              author: a.user?.name || 'Community Writer',
-              readTime: `${a.reading_time_minutes || 3} min read`,
-              coverImage: a.cover_image || null,
-              body: a.description,
-              takeaway: 'Slow down first; your mind follows when your body feels safe.',
-            });
+    const collected = [];
+    const devTags = ['mentalhealth', 'burnout', 'selfcare', 'mindfulness'];
+    const tag = primaryFocus.includes('burnout')
+      ? 'burnout'
+      : devTags[(pageNum - 1) % devTags.length];
+
+    try {
+      const res = await fetch(`https://dev.to/api/articles?tag=${tag}&page=${pageNum}&per_page=8&top=30`);
+      if (res.ok) {
+        const data = await res.json();
+        const filtered = (data || [])
+          .filter(
+            (a) =>
+              a.title &&
+              a.description &&
+              !/interview|coding|leetcode|javascript|react|python/i.test(a.title)
+          )
+          .slice(0, 5);
+        filtered.forEach((a) => {
+          collected.push({
+            id: `dev-${a.id}`,
+            devId: a.id,
+            source: 'DEV.to Wellness',
+            title: a.title,
+            author: a.user?.name || 'Community Writer',
+            readTime: `${a.reading_time_minutes || 3} min read`,
+            coverImage: a.cover_image || null,
+            body: a.description,
+            takeaway: 'Slow down first; your mind follows when your body feels safe.',
           });
-        }
-      } catch {}
+        });
+      }
+    } catch {}
 
-      try {
+    try {
+      if (pageNum === 1) {
         const wikiResults = await Promise.all(
           WIKI_WELLNESS_TOPICS.map(async (topic) => {
             const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${topic}`);
@@ -129,18 +137,71 @@ export const StoriesTab = ({
             });
           }
         });
-      } catch {}
-
-      if (!cancelled) {
-        setLiveArticles(collected);
-        setLoadingArticles(false);
+      } else {
+        const offset = (pageNum - 2) * 5;
+        const wikiSearchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
+          'mindfulness emotional resilience stress management'
+        )}&sroffset=${offset}&srlimit=5&format=json&origin=*`;
+        const srRes = await fetch(wikiSearchUrl);
+        if (srRes.ok) {
+          const srJson = await srRes.json();
+          const hits = srJson?.query?.search || [];
+          hits.forEach((h) => {
+            const cleanSnippet = (h.snippet || '').replace(/<[^>]+>/g, '');
+            collected.push({
+              id: `wiki-${h.pageid}`,
+              wikiTitle: h.title,
+              source: 'Wellness Encyclopedia',
+              title: h.title,
+              author: 'Evidence-Based Guide',
+              readTime: '4 min read',
+              coverImage: null,
+              body: cleanSnippet,
+              takeaway: 'Understanding how your mind responds gives you gentler choices.',
+            });
+          });
+        }
       }
-    })();
+    } catch {}
 
-    return () => {
-      cancelled = true;
-    };
+    setLiveArticles((prev) => {
+      if (!append) return collected;
+      const seen = new Set(prev.map((p) => p.id));
+      return [...prev, ...collected.filter((c) => !seen.has(c.id))];
+    });
+    setArticlesPage(pageNum);
+    setLoadingArticles(false);
+    setLoadingMoreArticles(false);
+  }
+
+  useEffect(() => {
+    fetchArticlesPage(1, false);
+    chillLibraryStorage
+      .getAll()
+      .then((saved) => setSavedArticleIds(new Set(saved.map((i) => String(i.id)))))
+      .catch(() => {});
   }, [primaryFocus]);
+
+  async function handleToggleSaveArticle(art) {
+    const { isSaved } = await chillLibraryStorage.toggleSave({
+      id: art.id,
+      category: art.source || 'WELLNESS ESSAY',
+      title: art.title,
+      desc: art.body,
+      body: art.fullBody || art.body,
+      author: art.author,
+      duration: art.readTime,
+      bg: '#F0EAFA',
+      color: '#492542',
+      icon: '📖',
+    });
+    setSavedArticleIds((prev) => {
+      const next = new Set(prev);
+      if (isSaved) next.add(String(art.id));
+      else next.delete(String(art.id));
+      return next;
+    });
+  }
 
   // Fetch full article text when user opens an external DEV.to or Wikipedia essay
   useEffect(() => {
@@ -370,12 +431,37 @@ export const StoriesTab = ({
                 >
                   {art.title}
                 </Text>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                   <Text style={{ fontSize: 11, color: theme?.textMuted || '#7E726D' }}>⏱ {art.readTime}</Text>
-                  <Text style={{ fontSize: 11.5, fontWeight: '800', color: theme?.accent || '#42213D' }}>Read ↗</Text>
+                  <TouchableOpacity onPress={() => handleToggleSaveArticle(art)}>
+                    <Text style={{ fontSize: 11.5, fontWeight: '800', color: theme?.accent || '#42213D' }}>
+                      {savedArticleIds.has(String(art.id)) ? '🔖 Saved' : '🏷️ Save'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={[
+                styles.card,
+                {
+                  width: 170,
+                  padding: 14,
+                  marginBottom: 0,
+                  backgroundColor: theme?.heroBg || '#F0EAFA',
+                  borderColor: theme?.divider || '#E8DFF2',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}
+              onPress={() => fetchArticlesPage(articlesPage + 1, true)}
+              disabled={loadingMoreArticles}
+            >
+              <Text style={{ fontSize: 24, marginBottom: 6 }}>🌿</Text>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: theme?.accent || '#42213D', textAlign: 'center' }}>
+                {loadingMoreArticles ? 'Loading...' : 'Load More Essays →'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       )}
