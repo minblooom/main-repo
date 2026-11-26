@@ -2,42 +2,34 @@
 
 > **"Polepole, your pace. A little breathing room, a little more belonging."**
 
-MindBloom is a compassionate, stigma-free digital mental health sanctuary crafted specifically for youth and young adults (teens to late twenties) across Kenya, Uganda, Tanzania, Rwanda, Ethiopia, and beyond. Designed around gentle check-ins, culturally resonant companions, localized dialects (English, Kiswahili, and Sheng), and private reflective spaces, MindBloom meets young people where they are without judgment, clinical coldness, or intrusive data collection.
+MindBloom is a compassionate, stigma-free digital mental health sanctuary crafted for youth and young adults (teens `13–17` and young adults `18+`) across Kenya, Uganda, Tanzania, Rwanda, Ethiopia, and beyond. Designed around gentle check-ins, culturally resonant companions, localized dialects (English, Kiswahili, and Sheng), strict age-cohort community isolation, and private reflective spaces, MindBloom meets young people where they are without judgment or clinical coldness.
 
 ---
 
 ## 🌟 What MindBloom Does
 
-MindBloom reimagines mental wellness support through warm, culturally grounded interactions:
-
 ### 1. Culturally Attuned Onboarding & Intentional Personalization
-- **Safe & Anonymous Account Creation**: Fast guest exploration or seamless authentication powered by Supabase and local storage (`@react-native-async-storage/async-storage`).
-- **Country & Dialect Selection**: Immediate adaptation to regional crisis helplines and language preferences (e.g., Kenya, Uganda, Tanzania, Rwanda, Ethiopia, and international support).
-- **Relatable Companions**: Users choose a gentle companion mascot (like **Taz** the patient turtle, **Noodle** the mindful sloth, or **Kiko**) who stays by their side with comforting notes throughout the day.
-- **Root Focus Areas**: Gentle selection of what's currently heavy on the heart (academic stress, loneliness, anxiety, burnout, relationship turbulence).
-- **Youth Passion & Interest Selection**: Selection of up to 5 genuine youth passions (Afrobeats & Drill, street photography, streetwear thrifting, gaming, creative writing, spoken word, anime, sports). This pairs members into safe, intimate community pods (capped at 12 members) with shared lived experiences and hobbies.
+- **Safe & Anonymous Account Creation**: Fast exploration or authentication backed by local persistence (`@react-native-async-storage/async-storage`) and API sync, with onboarding completion gating in `SplashScreen` and `LoginScreen` so incomplete profiles always finish onboarding (`GentleHello` → `ReadyToBloom`).
+- **Country & Dialect Selection**: Adaptation to regional crisis helplines and language preferences (Kenya, Uganda, Tanzania, Rwanda, Ethiopia, and international support).
+- **Relatable Companions**: Users choose a gentle companion mascot (like **Taz**, **Noodle**, **Pip**, **Sunny**, or **Mochi**) who stays by their side with comforting notes throughout the day.
+- **Age-Band & Root Focus Matching**: Users select their age (`13–17`, `18–24`, `25+`), focus areas, and interests—automatically routing them into age-appropriate, cohort-locked Baraza circles.
 
-### 2. The Sanctuary (Home & Daily Check-Ins)
-- **"How's Your Heart Today?"**: Stigma-free daily emotional check-in with 5 gentle states (*Low*, *Anxious*, *Okay*, *Calm*, *Great*) and contextual tags (*Sleep*, *Studies/Work*, *Solitude*, *Small win*).
-- **Personalized Companion Encouragement**: Companions dynamically respond to the user's logged emotions with gentle affirmations.
-- **Dynamic User Recognition**: Real names or chosen aliases sync across every screen dynamically without hardcoded placeholders.
-- **Instant Emergency Access**: Discreet one-tap access to 24/7 verified local hotlines (e.g., Befrienders Kenya, Mental Health Uganda Lifeline, Tanzania Lifeline) tailored to the user's selected country.
+### 2. Community Baraza & Dedicated `13–17` Teen Space
+- **Strict Two-Way Cohort Isolation (`circleMatchingService.js`)**: `normalizeAgeBand()`, `isMinorCohort()`, and `canAccessCircle()` enforce strict separation—`13–17` teens only see and enter teen-only circles, and `18+` adults cannot enter teen circles (and vice versa).
+- **`13–17` Teen Sanctuary (`TeenSanctuaryBox` + `CommunityGreeting`)**: Age-locked peer space featuring rotating teen-specific encouragement notes, an interactive companion, and a spotlighted peer circle.
+- **Interactive "Drop Your Vibe" Table (`BarazaPresenceBar`)**:
+  - **For `13–17` Teens**: 16 vibes across 4 emotional zones (*Heavy*, *Lowkey*, *Steady*, *Hype*) with zone filter tabs, a **Roll vibe 🎲** randomizer, a live **Room Mood Meter**, one-tap peer echo boosts, and **direct deep links into Chill Space** (`Audio Sanctuary`, `Vibes`, or `Stories & Essays`) matched to the teen's selected vibe.
+  - **For `18+` Adults**: Classic Baraza lantern table (*Light a lantern*, *Pour chai*, *Leave a flower*, *Hold space*).
+- **Header "Today I…" Icon Popover (`CommunityHeader` + `TodayISurvivalBoard`)**: For `13–17` users, a minimal `🕯️` icon next to the `Encrypted` badge pops open (on hover on web, or tap on mobile) an interactive **"Today I…"** card deck with curated anonymous peer moments, **Me too 🫶** reactions, and a curated **+ Add yours** picker (no freetext).
+- **Daily Teen Pulse (`TeenDailyPulse`)**: Rotating daily **Question of the Day** with animated peer breakdown bars persisted per day in `AsyncStorage`.
+- **Guided Circle Starters (`BarazaGroupChatView`)**: Empty `13–17` circles offer 3 tappable conversation starter chips so teens don't freeze on a blank input box.
+- **Tiny Wins & Safe Vent Box (`QuickActionsGrid`, `SmallWinsSection`, `VentBoxSection`)**: Cohort-tailored quick actions for celebrating small wins or releasing emotional weight anonymously.
 
-### 3. Journal & Quiet Reflections
-- **Private Thought Canvas**: Encrypted local journal sanctuary supporting rich emotional reflections, gratitude logs, and uncensored thoughts.
-- **Audio & Voice Reflections**: Voice recordings and soundscape integration for when words feel too difficult to type.
-- **Discreet Privacy Shield**: Instant masking toggle that disguises titles and notifications when using the app in public spaces, shared dorms, or matatus.
-- **Spark Banners & Prompts**: Culturally relatable reflection starters ("What gave you peace today?", "A small win no one else saw").
-
-### 4. Interactive Sanctuary & Tools
-- **Blooms Arcade**: Mini micro-interventions and interactive grounding exercises designed to de-escalate anxiety and sensory overload gently.
-- **Chill & Soundscapes**: Soothing ambient audio environments (rainfall, Nairobi night ambience, gentle acoustic chords, ocean breeze).
-- **Aurora AI Guide**: Compassionate AI confidant providing non-judgmental active listening, grounding prompts, and cognitive reframing.
-- **Community Baraza**: Safe, moderated micro-spaces (affinity pods capped at 12 peers) matching users based on age band, shared challenges, and common creative interests.
-
-### 5. Profile & Comfort Sanctuary
-- **Sanctuary Hero Card**: Clean, affirming profile card highlighting the user's chosen avatar mascot, bio motto, and streak without diagnostic labels.
-- **Full Settings Customization**: Live modal controls for changing companion mascots, updating dialects/regions, fine-tuning gentle notifications, and toggling dark/light sanctuary themes.
+### 3. The Sanctuary (Home, Journal, Chill Space, Arcade, Aurora)
+- **Home & Daily Check-Ins**: Stigma-free daily emotional check-ins (*Low*, *Anxious*, *Okay*, *Calm*, *Great*) with contextual tags and companion encouragement.
+- **Journal & Quiet Reflections**: Private local journal sanctuary with voice reflections, reflection prompts, and a discreet privacy mask toggle.
+- **Chill Space (`ChillScreen`)**: Interactive sanctuary with **Stories & Essays**, **Audio Sanctuary**, **Vibes**, and **Events** tabs—accepting `initialTab` and `vibeLabel` route params when launched from Baraza's **Drop your vibe**.
+- **Blooms Arcade & Aurora AI Guide**: Grounding minigames, sensory exercises, and compassionate AI active listening.
 
 ---
 
@@ -45,7 +37,7 @@ MindBloom reimagines mental wellness support through warm, culturally grounded i
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Framework** | [React Native](https://reactnative.dev/) with [Expo SDK 52](https://expo.dev/) (Managed Workflow) |
+| **Framework** | [React Native](https://reactnative.dev/) with [Expo SDK 52](https://expo.dev/) |
 | **Platforms** | Android, iOS, and Web (`react-native-web`) |
 | **Navigation** | React Navigation v7 (Native Stack + Bottom Tabs) |
 | **UI & Styling** | Custom Design System inspired by warm African earthy palettes (`#FAF6EF`, `#4A283D`, `#5B8A72`, `#E07A5F`) |
@@ -58,34 +50,41 @@ MindBloom reimagines mental wellness support through warm, culturally grounded i
 
 ## 📁 Project Architecture
 
-```
-frontend/
-├── assets/                       # Mascot images, cutouts, fonts, and ambient soundscapes
+```text
+main-repo/
+├── assets/
 ├── src/
-│   ├── assets/                   # Vector SVGs, icons, and illustration assets
-│   ├── components/               # Cross-app reusable components
-│   │   ├── arcade/               # Grounding minigame widgets
-│   │   ├── auth/                 # Form inputs and authentication UI
-│   │   └── navigation/           # Tab bars, top headers, and side drawer components
-│   ├── constants/                # Companion configs, regional helplines, dialects, passions
-│   ├── core/                     # API client (`apiClient.js`), safety protocols, storage keys
-│   ├── hooks/                    # `useResponsiveLayout`, `useTheme`, `useAuth`
-│   ├── navigation/               # Stack and Tab route definitions (`AppNavigator.jsx`)
+│   ├── components/                    # Reusable UI (navigation, companion, voice, auth)
+│   ├── constants/                     # Companions, helplines, dialects, passions
+│   ├── core/
+│   │   ├── api/                       # apiClient.js, authService.js
+│   │   └── safety/                    # safetyFilter.js
+│   ├── features/
+│   │   └── community/
+│   │       ├── baraza/                # BarazaPresenceBar, CommunityGreeting, CommunitySpaceCard, BackButton
+│   │       ├── circles/               # BarazaGroupChatView, SharingCircleView
+│   │       ├── data/                  # communityData, encouragementMessages, resourceItems
+│   │       ├── services/              # circleMatchingService (cohort isolation)
+│   │       ├── smallWins/             # SmallWinsSection
+│   │       ├── store/                 # communityStore (encryptedStorage-backed)
+│   │       └── vent/                  # VentBoxSection
+│   ├── hooks/                         # useResponsiveLayout, etc.
+│   ├── navigation/                    # AppNavigator.jsx
 │   ├── screens/
-│   │   ├── arcade/               # Blooms Arcade games & interactive grounding
-│   │   ├── aurora/               # Aurora AI chat interface
-│   │   ├── auth/                 # Sign In, Sign Up, and Forgot Password
-│   │   ├── chill/                # Soothing soundscapes and breathing timers
-│   │   ├── home/                 # The Sanctuary Dashboard & Mood Check-In
-│   │   ├── journal/              # Journal editor, archive modals, and privacy masks
-│   │   ├── onboarding/           # Welcome, Country/Dialect, Companions, Passions, & Rhythms
-│   │   └── profile/              # Sanctuary profile card, modals, and localized comfort settings
-│   ├── services/                 # AuthService, I18n translation engine, journal storage
-│   └── theme/                    # Color tokens, typography, spacing, and dark/light palettes
-├── App.js                        # Top-level providers (SafeArea, I18n, Theme, Navigation)
-├── index.js                      # Expo entry point
-├── app.json                      # Expo configuration & app metadata
-└── package.json                  # Dependencies and execution scripts
+│   │   ├── arcade/                    # Blooms Arcade
+│   │   ├── aurora/                    # Aurora AI chat
+│   │   ├── auth/                      # Splash, Welcome, Signup, Login, VerifyOtp, ForgotPassword
+│   │   ├── chill-space/               # ChillScreen (Stories, Audio Sanctuary, Vibes, Events)
+│   │   ├── community/                 # CommunityScreen & components (CommunityHeader, TeenSanctuaryBox, TeenDailyPulse, QuickActionsGrid, CirclesFeedSection)
+│   │   ├── home/                      # HomeScreen
+│   │   ├── journal/                   # JournalScreen
+│   │   ├── onboarding/                # GentleHello -> ReadyToBloom
+│   │   └── profile/                   # ProfileScreen & safety resources
+│   ├── services/                      # encryptedStorage, onboardingStorage, i18n, voiceNoteService
+│   └── theme/                         # Color tokens & dark/light palettes
+├── App.js
+├── app.json
+└── package.json
 ```
 
 ---
@@ -94,8 +93,8 @@ frontend/
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18.x or v20.x recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- [Expo Go](https://expo.dev/go) on your mobile device (iOS / Android) or Google Chrome / Edge for web testing
+- [npm](https://www.npmjs.com/)
+- [Expo Go](https://expo.dev/go) (iOS / Android) or a modern browser for web testing
 
 ### Installation
 
