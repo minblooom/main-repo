@@ -43,6 +43,23 @@ const SOUNDSCAPES = [
   { id: 'meditation', emoji: '🕯️', label: 'Warm Room Hum' },
 ];
 
+function getPodcastVisual(ep) {
+  const txt = `${ep.title || ''} ${ep.collectionName || ''}`.toLowerCase();
+  if (/sleep|night|slumber|bedtime|insomnia/.test(txt)) {
+    return { icon: '🌙', label: 'Calm & Sleep', bg: '#EEF2FF', color: '#3730A3' };
+  }
+  if (/breath|meditat|mindful|calm/.test(txt)) {
+    return { icon: '🫁', label: 'Mindfulness & Breath', bg: '#ECFDF5', color: '#065F46' };
+  }
+  if (/africa|kenya|nairobi|legally clueless/.test(txt)) {
+    return { icon: '🌍', label: 'African Voices', bg: '#FFF7ED', color: '#9A3412' };
+  }
+  if (/anxi|panic|stress|overwhelm|therapy/.test(txt)) {
+    return { icon: '🧠', label: 'Anxiety & Healing', bg: '#F5F3FF', color: '#5B21B6' };
+  }
+  return { icon: '🎙️', label: 'Wellness Voice', bg: '#FCEFE9', color: '#8A531C' };
+}
+
 export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePlay }) => {
   const { theme, companionId } = useTheme();
   const [searchText, setSearchText] = useState('');
@@ -109,7 +126,7 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
             title: item.trackName,
             collectionName: item.collectionName,
             description: item.description || 'Listen to this calming wellness episode.',
-            artworkUrl: item.artworkUrl100 || item.artworkUrl60,
+            artworkUrl: item.artworkUrl600 || item.artworkUrl100 || item.artworkUrl60,
             audioUrl: item.episodeUrl,
             durationMins: Math.max(1, Math.round((item.trackTimeMillis || 0) / 60000)),
           });
@@ -467,6 +484,7 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
         episodes.map((ep) => {
           const isCurrent = currentEpisode?.id === ep.id;
           const isCurrentPlaying = isCurrent && isPlaying;
+          const visual = getPodcastVisual(ep);
 
           return (
             <View
@@ -480,12 +498,25 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
               ]}
             >
               <View style={styles.podRow}>
-                <Image
-                  source={{ uri: ep.artworkUrl }}
-                  style={styles.podCover}
-                  resizeMode="cover"
-                />
+                {ep.artworkUrl ? (
+                  <Image
+                    source={{ uri: ep.artworkUrl }}
+                    style={styles.podCover}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.podCover, { backgroundColor: visual.bg, alignItems: 'center', justifyContent: 'center' }]}>
+                    <Text style={{ fontSize: 28 }}>{visual.icon}</Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <View style={{ backgroundColor: visual.bg, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: visual.color }}>
+                        {visual.icon} {visual.label}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={[styles.tagText, { color: theme?.accent || '#E06D3B' }]} numberOfLines={1}>
                     {ep.collectionName}
                   </Text>
@@ -497,7 +528,7 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
 
                 <TouchableOpacity
                   style={[styles.playBtn, { backgroundColor: theme?.accent || '#42213D' }]}
-                  onPress={() => (isCurrent ? onTogglePlay() : onSelectEpisode(ep))}
+                  onPress={() => (isCurrent ? onTogglePlay() : onSelectEpisode(ep, episodes))}
                 >
                   <Text style={styles.playBtnText}>{isCurrentPlaying ? '⏸' : '▶'}</Text>
                 </TouchableOpacity>

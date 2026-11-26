@@ -163,8 +163,8 @@ export const ChillContent = () => {
     );
   }
 
-  function handleSelectEpisode(episode) {
-    playEpisode(episode);
+  function handleSelectEpisode(episode, episodeQueue = null) {
+    playEpisode(episode, episodeQueue);
   }
 
   return (

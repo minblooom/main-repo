@@ -3,8 +3,10 @@
 // Seamlessly syncs local AsyncStorage state with backend cloud saves via ArcadeSyncService.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getGameById } from './gameRegistry';
+import { UNIVERSAL_ARCADE_GAMES, getGameById } from './gameRegistry';
 import { ArcadeSyncService } from '../../../core/api/arcadeSyncService';
+
+const UNIVERSAL_IDS = new Set(UNIVERSAL_ARCADE_GAMES.map((g) => g.id));
 
 const RECENT_KEY = '@mindbloom:arcade:recently_played';
 const FAVOURITES_KEY = '@mindbloom:arcade:favourites';
@@ -24,8 +26,8 @@ export const gameSessionManager = {
         await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(ids));
       }
 
-      // Strict deduplication
-      const uniqueIds = Array.from(new Set(ids));
+      // Strict deduplication & keep only the 6 universal arcade games
+      const uniqueIds = Array.from(new Set(ids)).filter((id) => UNIVERSAL_IDS.has(id));
 
       const games = await Promise.all(
         uniqueIds.map(async (id) => {
