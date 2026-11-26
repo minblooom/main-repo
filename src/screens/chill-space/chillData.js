@@ -1,4 +1,4 @@
-﻿// Seed data for stories, guided meditations, memes, and East Africa wellness events
+// Seed data for stories, guided meditations, memes, and East Africa wellness events
 
 export const initialStories = [
   {

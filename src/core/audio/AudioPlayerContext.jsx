@@ -150,82 +150,84 @@ export const AudioPlayerProvider = ({ children }) => {
 
 export const useAudioPlayer = () => useContext(AudioPlayerContext);
 
-export const GlobalFloatingMiniPlayer = () => {
+export const NavbarAudioPlayer = ({ variant = 'sidebar' }) => {
   const { currentEpisode, isPlaying, togglePlay, closePlayer } = useAudioPlayer();
 
   if (!currentEpisode) return null;
 
+  const isSidebar = variant === 'sidebar';
+
   return (
-    <View style={styles.floatingWrap} pointerEvents="box-none">
-      <View style={styles.miniPlayer}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title} numberOfLines={1}>
-            🎙️ {currentEpisode.title}
-          </Text>
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {currentEpisode.host || currentEpisode.collectionName || 'Podcast'} ·{' '}
-            {isPlaying ? 'Playing in background...' : 'Paused'}
-          </Text>
-        </View>
-
-        <TouchableOpacity style={styles.playBtn} onPress={togglePlay} activeOpacity={0.85}>
-          <Text style={{ fontSize: 14 }}>{isPlaying ? '⏸️' : '▶️'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={closePlayer} style={styles.closeBtn} activeOpacity={0.8}>
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>✕</Text>
-        </TouchableOpacity>
+    <View style={isSidebar ? styles.sidebarPlayer : styles.bottomBarPlayer}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title} numberOfLines={1}>
+          🎙️ {currentEpisode.title}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {currentEpisode.host || currentEpisode.collectionName || 'Podcast'} ·{' '}
+          {isPlaying ? 'Playing' : 'Paused'}
+        </Text>
       </View>
+
+      <TouchableOpacity
+        style={[styles.playBtn, isSidebar && { width: 30, height: 30, borderRadius: 15 }]}
+        onPress={togglePlay}
+        activeOpacity={0.85}
+      >
+        <Text style={{ fontSize: isSidebar ? 12 : 14 }}>{isPlaying ? '⏸️' : '▶️'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={closePlayer} style={styles.closeBtn} activeOpacity={0.8}>
+        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>✕</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  floatingWrap: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: Platform.OS === 'web' ? 20 : 76,
-    zIndex: 999,
-    alignItems: 'center',
-  },
-  miniPlayer: {
-    width: '100%',
-    maxWidth: 520,
+  sidebarPlayer: {
+    marginTop: 'auto',
+    marginBottom: 10,
     backgroundColor: '#2A192E',
-    borderRadius: 18,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  bottomBarPlayer: {
+    width: '100%',
+    backgroundColor: '#2A192E',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
   },
   title: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
   },
   subtitle: {
     color: '#D6CCC2',
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10.5,
+    marginTop: 1,
   },
   playBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#E06D3B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtn: {
-    padding: 6,
+    padding: 4,
   },
 });

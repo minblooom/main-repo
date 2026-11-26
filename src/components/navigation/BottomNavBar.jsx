@@ -6,6 +6,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { COMPANION_MAP } from '../../constants/companions';
 import { useTheme } from '../../theme/ThemeContext';
+import { NavbarAudioPlayer } from '../../core/audio/AudioPlayerContext';
 
 const BOTTOM_TABS = [
   { id: 'home', label: 'Home' },
@@ -25,7 +26,9 @@ export const BottomNavBar = ({
   const companion = COMPANION_MAP[companionKey] || COMPANION_MAP.noodle;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.cardBg, borderTopColor: theme.divider }]}>
+    <View>
+      <NavbarAudioPlayer variant="bottom" />
+      <View style={[styles.container, { backgroundColor: theme.cardBg, borderTopColor: theme.divider }]}>
       {BOTTOM_TABS.map((tab) => {
         const isActive = activeRoute === tab.id;
         const isSanctuary = tab.id === 'sanctuary';
@@ -63,6 +66,7 @@ export const BottomNavBar = ({
           </TouchableOpacity>
         );
       })}
+      </View>
     </View>
   );
 };

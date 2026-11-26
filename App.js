@@ -9,7 +9,7 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { I18nProvider } from './src/services/i18n';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { registerForPushNotifications } from './src/services/notificationService';
-import { AudioPlayerProvider, GlobalFloatingMiniPlayer } from './src/core/audio/AudioPlayerContext';
+import { AudioPlayerProvider } from './src/core/audio/AudioPlayerContext';
 
 const AppContent = () => {
   const { theme, isDark } = useTheme();
@@ -23,7 +23,6 @@ const AppContent = () => {
     <View style={[styles.root, { backgroundColor: theme?.bg || '#FAF6EF' }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} translucent backgroundColor="transparent" />
       <AppNavigator />
-      <GlobalFloatingMiniPlayer />
     </View>
   );
 };

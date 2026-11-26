@@ -1,8 +1,8 @@
 // src/screens/home/components/HeroBanners.jsx
-// Side-by-side hero cards: Aurora AI Companion (with Dynamic Animated Companion) & Podcast of the Day.
-// Fully integrated with dynamic theme context.
+// Side-by-side hero cards: Aurora AI Companion & Podcast of the Day
+// (fetches a real daily podcast episode tailored to the user's selected issues and plays it immediately).
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,83 +10,27 @@ import {
 } from 'react-native';
 import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useAudioPlayer } from '../../../core/audio/AudioPlayerContext';
 import { styles } from '../styles/HeroBanners.styles';
 
-const DAILY_PODCAST_CATALOG = {
-  anxiety: [
-    {
-      title: 'Calming the Overwhelmed Mind',
-      desc: 'Gentle grounding when thoughts are racing too fast.',
-    },
-    {
-      title: 'Unwinding the Nervous System',
-      desc: 'A soft 10-minute pause to reset tension.',
-    },
-    {
-      title: 'Soft Space in a Loud World',
-      desc: 'Permission to slow down and breathe without apology.',
-    },
-  ],
-  burnout: [
-    {
-      title: 'Rest Is Not a Reward',
-      desc: 'Unlearning the guilt of quiet, restful hours.',
-    },
-    {
-      title: 'Unplugging from the Hustle',
-      desc: 'Healthy boundary lines that protect your peace.',
-    },
-    {
-      title: 'Pacing Your Energy',
-      desc: 'Moving through your day without running on empty.',
-    },
-  ],
-  sleep: [
-    {
-      title: 'Night Calm & Gentle Slumber',
-      desc: 'Letting the day fade away so tomorrow can breathe.',
-    },
-    {
-      title: 'Quieting Bedtime Chatter',
-      desc: 'Soothing guided words for restful night calm.',
-    },
-  ],
-  low_mood: [
-    {
-      title: 'Gentle Steps on Heavy Days',
-      desc: 'Showing up for yourself when energy is quiet.',
-    },
-    {
-      title: "You Don't Have to Force Joy",
-      desc: 'Embracing where you are today with tenderness.',
-    },
-  ],
-  body: [
-    {
-      title: 'Making Peace with Yourself',
-      desc: 'A gentler, kinder relationship with your body.',
-    },
-  ],
-  strong_one: [
-    {
-      title: "When You're Always the Strong One",
-      desc: "A safe haven where you don't have to carry it all.",
-    },
-  ],
-  default: [
-    {
-      title: 'Breathing Room for Your Mind',
-      desc: 'A daily 10-minute sanctuary to reset your pace.',
-    },
-    {
-      title: 'Polepole: Moving at Your Rhythm',
-      desc: 'Slowing down without feeling like you are falling behind.',
-    },
-    {
-      title: 'Finding Stillness in the Noise',
-      desc: 'Curated audio to bring peace to your day.',
-    },
-  ],
+const ISSUE_PODCAST_QUERIES = {
+  anxiety: 'anxiety relief mindfulness calm',
+  burnout: 'burnout recovery rest boundaries',
+  sleep: 'sleep calm guided meditation',
+  low_mood: 'depression healing self compassion',
+  body: 'body positivity self love wellness',
+  strong_one: 'setting boundaries emotional rest',
+  default: 'mental health mindfulness calm',
+};
+
+const DAILY_PODCAST_FALLBACK = {
+  anxiety: { title: 'Calming the Overwhelmed Mind', desc: 'Gentle grounding when thoughts are racing too fast.' },
+  burnout: { title: 'Rest Is Not a Reward', desc: 'Unlearning the guilt of quiet, restful hours.' },
+  sleep: { title: 'Night Calm & Gentle Slumber', desc: 'Letting the day fade away so tomorrow can breathe.' },
+  low_mood: { title: 'Gentle Steps on Heavy Days', desc: 'Showing up for yourself when energy is quiet.' },
+  body: { title: 'Making Peace with Yourself', desc: 'A gentler, kinder relationship with your body.' },
+  strong_one: { title: "When You're Always the Strong One", desc: "A safe haven where you don't have to carry it all." },
+  default: { title: 'Breathing Room for Your Mind', desc: 'A daily sanctuary episode to reset your pace.' },
 };
 
 export const HeroBanners = ({
@@ -97,13 +41,63 @@ export const HeroBanners = ({
   onPodcastPress,
 }) => {
   const { theme } = useTheme();
+  const { currentEpisode, isPlaying, playEpisode } = useAudioPlayer();
+  const [dailyEpisode, setDailyEpisode] = useState(null);
+  const [loadingEpisode, setLoadingEpisode] = useState(false);
 
-  const dailyPodcast = useMemo(() => {
-    const primaryKey = userFocusAreas?.[0] || 'default';
-    const playlist = DAILY_PODCAST_CATALOG[primaryKey] || DAILY_PODCAST_CATALOG.default;
+  const primaryKey = userFocusAreas?.[0] || 'default';
+  const fallbackCopy = useMemo(
+    () => DAILY_PODCAST_FALLBACK[primaryKey] || DAILY_PODCAST_FALLBACK.default,
+    [primaryKey]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const query = ISSUE_PODCAST_QUERIES[primaryKey] || ISSUE_PODCAST_QUERIES.default;
     const dayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-    return playlist[dayIndex % playlist.length];
-  }, [userFocusAreas]);
+
+    (async () => {
+      setLoadingEpisode(true);
+      try {
+        const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
+          query
+        )}&media=podcast&entity=podcastEpisode&limit=15`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const json = await res.json();
+        const playable = (json.results || []).filter((item) => item.episodeUrl);
+        if (!cancelled && playable.length > 0) {
+          const pick = playable[dayIndex % playable.length];
+          setDailyEpisode({
+            id: `daily_${pick.trackId}`,
+            title: pick.trackName,
+            collectionName: pick.collectionName,
+            description: (pick.description || fallbackCopy.desc).replace(/<[^>]+>/g, ''),
+            artworkUrl: pick.artworkUrl100 || pick.artworkUrl60,
+            audioUrl: pick.episodeUrl,
+            durationMins: Math.max(1, Math.round((pick.trackTimeMillis || 0) / 60000)),
+          });
+        }
+      } catch {
+      } finally {
+        if (!cancelled) setLoadingEpisode(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [primaryKey, fallbackCopy.desc]);
+
+  const isDailyPlaying = Boolean(dailyEpisode && currentEpisode?.id === dailyEpisode.id && isPlaying);
+
+  const handleListenDaily = () => {
+    if (dailyEpisode) {
+      playEpisode(dailyEpisode);
+      return;
+    }
+    onPodcastPress?.();
+  };
 
   return (
     <View style={[styles.container, isWide && styles.containerWide]}>
@@ -145,23 +139,34 @@ export const HeroBanners = ({
       {/* -- CARD 2: PODCAST OF THE DAY (Mint Green Curated Audio) ------------------ */}
       <View style={[styles.card, styles.breathCard, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
         <View style={styles.tagPillMint}>
-          <Text style={styles.tagPillTextMint}>PODCAST OF THE DAY · FOR YOU</Text>
+          <Text style={styles.tagPillTextMint}>
+            PODCAST OF THE DAY · {primaryKey.replace('_', ' ').toUpperCase()}
+          </Text>
         </View>
 
-        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
-          {dailyPodcast.title}
+        <Text style={[styles.cardTitle, { color: theme.textPrimary }]} numberOfLines={2}>
+          {dailyEpisode?.title || fallbackCopy.title}
         </Text>
 
-        <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-          {dailyPodcast.desc}
+        <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]} numberOfLines={2}>
+          {dailyEpisode
+            ? `${dailyEpisode.collectionName} · ${dailyEpisode.durationMins} min`
+            : fallbackCopy.desc}
         </Text>
 
         <TouchableOpacity
           style={styles.breathActionBtn}
-          onPress={onPodcastPress}
+          onPress={handleListenDaily}
           activeOpacity={0.88}
+          disabled={loadingEpisode && !dailyEpisode}
         >
-          <Text style={styles.breathActionBtnText}>Listen now →</Text>
+          <Text style={styles.breathActionBtnText}>
+            {isDailyPlaying
+              ? '⏸ Pause today’s episode'
+              : dailyEpisode
+                ? '▶ Play today’s episode'
+                : 'Listen now →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

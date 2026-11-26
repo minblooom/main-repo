@@ -336,25 +336,20 @@ export const JournalContent = ({
           <View style={styles.editorCol}>
             <JournalEditor
               dateString="MONDAY, 16 NOVEMBER"
-              editorMode={editorMode}
-              onChangeEditorMode={(m) => {
-                setEditorMode(m);
-                setDraftState(m === 'vent' ? 'Zero-trace vent' : 'New entry');
-              }}
               title={title}
               onChangeTitle={(t) => {
                 setTitle(t);
-                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
+                setDraftState('Unsaved draft');
               }}
               body={body}
               onChangeBody={(b) => {
                 setBody(b);
-                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
+                setDraftState('Unsaved draft');
               }}
               voiceNote={voiceNote}
               onChangeVoiceNote={(vn) => {
                 setVoiceNote(vn);
-                setDraftState(editorMode === 'vent' ? 'Zero-trace vent' : 'Unsaved draft');
+                setDraftState('Unsaved draft');
               }}
               selectedFeeling={feeling}
               onSelectFeeling={setFeeling}
@@ -365,7 +360,6 @@ export const JournalContent = ({
               onHidePrompt={() => setIsSparkVisible(false)}
               onShowPrompt={() => setIsSparkVisible(true)}
               onSave={handleSaveEntry}
-              onReleaseToWorld={handleReleaseToWorld}
               onNewEntry={handleNewEntry}
               draftState={draftState}
               isEditingExisting={Boolean(editingEntryId)}

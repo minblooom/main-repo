@@ -16,9 +16,7 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { analyzeTextSafety } from '../../../core/safety/safetyFilter';
-import { useCommunityStore } from '../store/communityStore';
 import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
-import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 
 const ANGER_WORDS = [
   'angry', 'mad', 'hate', 'furious', 'screaming', 'tired of', 'burnout',
@@ -104,7 +102,6 @@ function getDetectedEmotion(text) {
 
 export const VentBoxSection = () => {
   const { theme } = useTheme();
-  const { vents, addVent, deleteVent, toggleHugVent, toggleCandleVent } = useCommunityStore();
   const [ventText, setVentText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [isBurning, setIsBurning] = useState(false);
@@ -116,10 +113,20 @@ export const VentBoxSection = () => {
   // Real-time emotion detection
   const emotion = useMemo(() => getDetectedEmotion(ventText), [ventText]);
 
-  const handleBurnWorry = () => {
+  const handleReleaseVent = (mode = 'universe') => {
     if (!ventText.trim() && !draftVoiceNote) {
-      Alert.alert('Empty Release', 'Write or record what is weighing on your mind first before releasing it to the embers.');
+      const msg = 'Write or record what is weighing on your mind first before releasing it.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Empty Release', msg);
       return;
+    }
+
+    const safety = analyzeTextSafety(ventText);
+    if (safety.isCritical) {
+      const helplineMsg =
+        'It sounds like you may be carrying something very heavy right now. Please consider talking to a caring helpline:\n\n• Befrienders Kenya: +254 722 178 177\n• Kenya Red Cross: 1199\n• Uganda: 0800 21 21 21\n• Rwanda: 114\n• Global: findahelpline.com';
+      if (Platform.OS === 'web') window.alert(helplineMsg);
+      else Alert.alert("You're Not Alone 💛", helplineMsg);
     }
 
     soundService.playPop();
@@ -137,47 +144,18 @@ export const VentBoxSection = () => {
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start(() => {
+      // Strictly zero-trace: wipe from memory completely, never saved anywhere
       setVentText('');
       setDraftVoiceNote(null);
       burnOpacity.setValue(1);
       burnScale.setValue(1);
       setIsBurning(false);
       soundService.playVictory();
-      Alert.alert(
-        'Imeyeyuka (Released) 🔥',
-        'Your note has been cleared to ashes. Take a quiet, steady breath. You are free from carrying this weight right now.'
-      );
+      const title = mode === 'burn' ? 'Imeyeyuka (Burned to Ashes) 🔥' : 'Released to the Universe 🌌';
+      const body = 'Your words have dissolved completely — nothing was saved or tracked. Take a quiet, steady breath.';
+      if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
+      else Alert.alert(title, body);
     });
-  };
-
-  const handlePostAnonymous = () => {
-    if (!ventText.trim() && !draftVoiceNote) return;
-    const safety = analyzeTextSafety(ventText);
-    if (safety.isCritical) {
-      const msg =
-        'It sounds like you may be carrying something very heavy right now. Please consider talking to a caring helpline:\n\n• Befrienders Kenya: +254 722 178 177\n• Kenya Red Cross: 1199\n• Uganda: 0800 21 21 21\n• Global: findahelpline.com';
-      if (Platform.OS === 'web') window.alert(msg);
-      else Alert.alert("You're Not Alone 💛", msg);
-      return;
-    }
-    soundService.playPop();
-    addVent(ventText.trim(), draftVoiceNote);
-    setVentText('');
-    setDraftVoiceNote(null);
-    Alert.alert(
-      'Shared Anonymously 🫂',
-      'Your thought was placed into the quiet sanctuary. You are seen and supported.'
-    );
-  };
-
-  const handleToggleHug = (id) => {
-    soundService.playPop();
-    toggleHugVent(id);
-  };
-
-  const handleToggleCandle = (id) => {
-    soundService.playPop();
-    toggleCandleVent(id);
   };
 
   return (
@@ -186,7 +164,7 @@ export const VentBoxSection = () => {
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>The Release Box 💨</Text>
         <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-          Write what is on your chest. You can share anonymously for peer warmth, or burn it completely to ashes.
+          Zero-trace sanctuary: write or speak what is on your chest, then release it to the universe or burn it to ashes. Nothing is ever saved or tracked.
         </Text>
       </View>
 
@@ -244,7 +222,7 @@ export const VentBoxSection = () => {
           {/* Burn Worry Button */}
           <TouchableOpacity
             style={[styles.burnBtn, { borderColor: '#E53E3E' }]}
-            onPress={handleBurnWorry}
+            onPress={() => handleReleaseVent('burn')}
             disabled={isBurning}
             activeOpacity={0.8}
           >
@@ -252,104 +230,28 @@ export const VentBoxSection = () => {
             <Text style={styles.burnBtnText}>Choma (Burn to Ashes)</Text>
           </TouchableOpacity>
 
-          {/* Post Anonymously */}
+          {/* Release to Universe */}
           <TouchableOpacity
             style={[
               styles.postBtn,
               { backgroundColor: theme.accent, opacity: ventText.trim() || draftVoiceNote ? 1 : 0.6 },
             ]}
-            onPress={handlePostAnonymous}
+            onPress={() => handleReleaseVent('universe')}
             disabled={isBurning || (!ventText.trim() && !draftVoiceNote)}
             activeOpacity={0.8}
           >
-            <Text style={styles.postBtnText}>Post Anonymously 🫂</Text>
+            <Text style={styles.postBtnText}>Release to Universe 🌌</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      {/* Anonymous Vent Feed */}
-      <View style={styles.feed}>
-        <Text style={[styles.feedTitle, { color: theme.textSecondary }]}>Safe Anonymous Voices</Text>
-        {vents.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-            <Text style={styles.emptyEmoji}>🍃</Text>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Safe & Silent Sanctuary</Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
-              No anonymous notes shared yet. Write what is on your chest above to release it to the embers or place it gently here.
-            </Text>
-          </View>
-        ) : (
-          vents.map((v) => (
-            <View
-              key={v.id}
-              style={[styles.ventCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}
-            >
-              <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-                <Text style={[styles.anonTag, { color: theme.textMuted }]}>
-                  🍃 Anonymous Sanctuary Voice · {v.createdAt || v.time || 'Recently'}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (Platform.OS === 'web') {
-                      if (window.confirm('Remove this vent note?')) deleteVent(v.id);
-                    } else {
-                      Alert.alert('Remove Note', 'Remove this vent note?', [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Remove', style: 'destructive', onPress: () => deleteVent(v.id) },
-                      ]);
-                    }
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C0392B' }}>🗑️ Delete</Text>
-                </TouchableOpacity>
-              </View>
-
-              {!!v.text && (
-                <Text style={[styles.cardText, { color: theme.textPrimary }]}>{v.text}</Text>
-              )}
-
-              {v.voiceNote && (
-                <View style={{ marginBottom: 12 }}>
-                  <VoiceNotePlayer voiceNote={v.voiceNote} compact />
-                </View>
-              )}
-
-              {/* Hug & Candle Reactions */}
-              <View style={styles.reactionsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.reactBtn,
-                    { borderColor: theme.divider },
-                    v.hasHugged && [styles.reactBtnActive, { backgroundColor: 'rgba(217, 107, 67, 0.15)', borderColor: '#D96B43' }],
-                  ]}
-                  onPress={() => handleToggleHug(v.id)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.reactEmoji}>🫂</Text>
-                  <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasHugged && { color: '#D96B43', fontWeight: '800' }]}>
-                    {v.hugs} {v.hasHugged ? 'Hugged' : 'Send Hug'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.reactBtn,
-                    { borderColor: theme.divider },
-                    v.hasCandle && [styles.reactBtnActive, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#F59E0B' }],
-                  ]}
-                  onPress={() => handleToggleCandle(v.id)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.reactEmoji}>🕯️</Text>
-                  <Text style={[styles.reactLabel, { color: theme.textSecondary }, v.hasCandle && { color: '#F59E0B', fontWeight: '800' }]}>
-                    {v.candles} {v.hasCandle ? 'Lit' : 'Light Candle'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        )}
+      {/* Zero-Trace Guarantee Note */}
+      <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider, marginTop: 12 }]}>
+        <Text style={styles.emptyEmoji}>🍃</Text>
+        <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>Zero-Trace Safe Vent</Text>
+        <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
+          We never store, log, or track anything you release here. Once you let it go, it is gone completely.
+        </Text>
       </View>
     </View>
   );

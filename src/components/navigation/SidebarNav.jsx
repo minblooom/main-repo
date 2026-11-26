@@ -7,6 +7,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { COMPANION_MAP } from '../../constants/companions';
 import { useTheme } from '../../theme/ThemeContext';
+import { NavbarAudioPlayer } from '../../core/audio/AudioPlayerContext';
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Home' },
@@ -135,6 +136,9 @@ export const SidebarNav = ({
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Persistent Podcast Player on Sidebar Navbar */}
+      <NavbarAudioPlayer variant="sidebar" />
 
       {/* Footer Muted Tagline */}
       <View style={styles.footer}>
