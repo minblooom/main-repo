@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Production Render API URL (set EXPO_PUBLIC_API_URL in Vercel env vars to override)
-const PRODUCTION_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mindbloom-api.onrender.com/api/v1';
+const PRODUCTION_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mainrepo-backend.onrender.com/api/v1';
 
 // Local dev server fallback (10.0.2.2 for Android emulator, localhost for Web/iOS)
 const DEV_API_URL =

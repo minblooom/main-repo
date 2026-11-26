@@ -102,6 +102,15 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
 
       setCompanionId(chosenCompanion);
       await onboardingStorage.setOnboardingCompleted(true);
+      // Map frontend gender ids to backend enum values
+      const genderMap = {
+        female: 'FEMALE',
+        male: 'MALE',
+        non_binary: 'NON_BINARY',
+        prefer_not: 'PREFER_NOT_TO_SAY',
+      };
+      const backendGender = genderMap[params.gender] || 'PREFER_NOT_TO_SAY';
+
       await onboardingStorage.savePreferences({
         companion: chosenCompanion,
         companionId: chosenCompanion,
@@ -118,13 +127,27 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
         completedAt: new Date().toISOString(),
       });
 
-      apiClient
-        .patch('/user/profile', {
-          primaryStruggles: params.focusAreas || [],
-          interests: params.interests || [],
-          ageBand: resolvedAgeBand,
-        })
-        .catch(() => {});
+      // Synchronize focus areas, interests, age, and gender with backend if user is authenticated
+      apiClient.patch('/user/profile', {
+        primaryStruggles: params.focusAreas || [],
+        interests: params.interests || [],
+        ageBand: resolvedAgeBand,
+        gender: backendGender,
+      }).catch(() => {});
+
+      // Keep stored user session updated with struggles, passions, and ageBand
+      try {
+        const storedUser = await AuthService.getStoredUser();
+        if (storedUser) {
+          const updatedUser = {
+            ...storedUser,
+            primaryStruggles: params.focusAreas || [],
+            interests: params.interests || [],
+            ageBand: resolvedAgeBand,
+          };
+          await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
+        }
+      } catch { }
     } catch {
       // Memory fallback active
     }

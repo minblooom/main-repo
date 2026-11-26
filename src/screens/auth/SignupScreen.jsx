@@ -32,6 +32,7 @@ import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { LegalModal } from '../legal/LegalScreen';
+import { VerifyOtpModal } from './VerifyOtpModal';
 import { AuthService } from '../../core/api/authService';
 import { useI18n } from '../../services/i18n';
 
@@ -49,6 +50,9 @@ export const SignupScreen = ({ navigation }) => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [otpContact, setOtpContact] = useState('');
+  const [otpDevCode, setOtpDevCode] = useState('');
 
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -94,8 +98,23 @@ export const SignupScreen = ({ navigation }) => {
       errs.contact = 'Please enter your email or phone number.';
     } else if (c.includes('@')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const domain = c.split('@')[1]?.toLowerCase() || '';
+      const typoSuggestions = {
+        'gmial.com': 'gmail.com',
+        'gmal.com': 'gmail.com',
+        'gmai.com': 'gmail.com',
+        'gmail.co': 'gmail.com',
+        'gamil.com': 'gmail.com',
+        'yaho.com': 'yahoo.com',
+        'yahooo.com': 'yahoo.com',
+        'hotmal.com': 'hotmail.com',
+        'outlok.com': 'outlook.com',
+        'iclod.com': 'icloud.com',
+      };
       if (!emailRegex.test(c)) {
         errs.contact = 'Please enter a valid email address.';
+      } else if (typoSuggestions[domain]) {
+        errs.contact = `This email doesn't seem to exist — did you mean @${typoSuggestions[domain]}?`;
       }
     } else {
       const digits = c.replace(/\D/g, '');
@@ -140,9 +159,20 @@ export const SignupScreen = ({ navigation }) => {
       await onboardingStorage.setOnboardingCompleted(false);
       await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
 
-      if (navigation) {
-        navigation.replace('GentleHello', { nickname: name, contact: contactVal });
+      let devCode = '';
+      try {
+        const otpRes = await AuthService.sendOtp({
+          contact: contactVal,
+          purpose: 'VERIFY_CONTACT',
+        });
+        if (otpRes?.devCode) devCode = otpRes.devCode;
+      } catch {
+        // Non-blocking if OTP email service is temporarily unavailable
       }
+
+      setOtpContact(contactVal);
+      setOtpDevCode(devCode);
+      setOtpModalVisible(true);
     } catch (backendErr) {
       const status = backendErr?.response?.status;
       const code = backendErr?.response?.data?.error?.code;
@@ -157,6 +187,15 @@ export const SignupScreen = ({ navigation }) => {
         setErrors({
           contact: 'An account with this email or phone already exists.',
           contactTaken: true,
+        });
+      } else if (
+        code === 'EMAIL_DOMAIN_INVALID' ||
+        code === 'INVALID_CONTACT' ||
+        msg.toLowerCase().includes("doesn't seem to exist") ||
+        msg.toLowerCase().includes('domain')
+      ) {
+        setErrors({
+          contact: msg || "That email doesn't seem to exist. Please use a real email address.",
         });
       } else {
         setErrors({
@@ -438,6 +477,20 @@ export const SignupScreen = ({ navigation }) => {
         visible={!!legalModalTab}
         initialTab={legalModalTab || 'terms'}
         onClose={() => setLegalModalTab(null)}
+      />
+
+      {/* Cute 6-Digit OTP Verification Popup */}
+      <VerifyOtpModal
+        visible={otpModalVisible}
+        contact={otpContact}
+        initialDevCode={otpDevCode}
+        onVerified={() => {
+          setOtpModalVisible(false);
+          if (navigation) {
+            navigation.replace('GentleHello');
+          }
+        }}
+        onClose={() => setOtpModalVisible(false)}
       />
     </SafeAreaView>
   );

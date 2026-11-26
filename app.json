@@ -38,6 +38,11 @@
       ],
       "expo-asset",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "377ebd25-b92f-4374-8f99-1e9c44ed33a3"
+      }
+    }
   }
 }

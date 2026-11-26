@@ -1,23 +1,36 @@
 // src/core/audio/AudioPlayerContext.jsx
-// Global persistent audio player context so podcasts continue playing
-// while browsing the app or switching to other apps on mobile/web until paused.
+// Global persistent audio player context with auto-next queue so podcasts
+// continue playing across screens, in the background, and advance to the next episode automatically.
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Platform, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 
 const AudioPlayerContext = createContext({
   currentEpisode: null,
   isPlaying: false,
+  queue: [],
   playEpisode: () => {},
+  playNext: () => {},
   togglePlay: () => {},
   closePlayer: () => {},
 });
 
 export const AudioPlayerProvider = ({ children }) => {
   const [currentEpisode, setCurrentEpisode] = useState(null);
+  const [queue, setQueue] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const soundRef = useRef(null);
+  const queueRef = useRef([]);
+  const currentRef = useRef(null);
+
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
+  useEffect(() => {
+    currentRef.current = currentEpisode;
+  }, [currentEpisode]);
 
   // Configure expo-av for background playback across screens & phone surfing
   useEffect(() => {
@@ -36,6 +49,23 @@ export const AudioPlayerProvider = ({ children }) => {
       }
     };
   }, []);
+
+  const playNext = () => {
+    const list = queueRef.current || [];
+    const curr = currentRef.current;
+    if (!curr || list.length === 0) {
+      setIsPlaying(false);
+      return;
+    }
+    const idx = list.findIndex((item) => String(item.id) === String(curr.id));
+    const nextIdx = idx >= 0 ? idx + 1 : 0;
+    if (nextIdx < list.length) {
+      setCurrentEpisode(list[nextIdx]);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  };
 
   // Load new episode when currentEpisode changes
   useEffect(() => {
@@ -65,22 +95,28 @@ export const AudioPlayerProvider = ({ children }) => {
           { shouldPlay: true }
         );
 
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status?.isLoaded && status.didJustFinish && !status.isLooping) {
+            playNext();
+          }
+        });
+
         if (mounted) {
           soundRef.current = sound;
           setIsPlaying(true);
 
-          // Update OS MediaSession metadata on web for lockscreen/browser controls
           if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
             try {
               navigator.mediaSession.metadata = new window.MediaMetadata({
                 title: currentEpisode.title || 'MindBloom Podcast',
                 artist: currentEpisode.collectionName || currentEpisode.host || 'MindBloom Audio',
                 artwork: currentEpisode.artworkUrl
-                  ? [{ src: currentEpisode.artworkUrl, sizes: '100x100', type: 'image/jpeg' }]
+                  ? [{ src: currentEpisode.artworkUrl, sizes: '300x300', type: 'image/jpeg' }]
                   : [],
               });
               navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true));
               navigator.mediaSession.setActionHandler('pause', () => setIsPlaying(false));
+              navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
             } catch {}
           }
         } else {
@@ -113,8 +149,13 @@ export const AudioPlayerProvider = ({ children }) => {
     syncState();
   }, [isPlaying]);
 
-  const playEpisode = (episode) => {
+  const playEpisode = (episode, episodeQueue = null) => {
     if (!episode) return;
+    if (Array.isArray(episodeQueue) && episodeQueue.length > 0) {
+      setQueue(episodeQueue);
+    } else if (queueRef.current.length === 0) {
+      setQueue([episode]);
+    }
     if (currentEpisode?.id === episode.id) {
       setIsPlaying((prev) => !prev);
       return;
@@ -141,7 +182,7 @@ export const AudioPlayerProvider = ({ children }) => {
 
   return (
     <AudioPlayerContext.Provider
-      value={{ currentEpisode, isPlaying, playEpisode, togglePlay, closePlayer }}
+      value={{ currentEpisode, isPlaying, queue, playEpisode, playNext, togglePlay, closePlayer }}
     >
       {children}
     </AudioPlayerContext.Provider>
@@ -151,17 +192,26 @@ export const AudioPlayerProvider = ({ children }) => {
 export const useAudioPlayer = () => useContext(AudioPlayerContext);
 
 export const NavbarAudioPlayer = ({ variant = 'sidebar' }) => {
-  const { currentEpisode, isPlaying, togglePlay, closePlayer } = useAudioPlayer();
+  const { currentEpisode, isPlaying, queue, togglePlay, playNext, closePlayer } = useAudioPlayer();
 
   if (!currentEpisode) return null;
 
   const isSidebar = variant === 'sidebar';
+  const hasNext = queue.length > 1;
 
   return (
     <View style={isSidebar ? styles.sidebarPlayer : styles.bottomBarPlayer}>
+      {currentEpisode.artworkUrl ? (
+        <Image
+          source={{ uri: currentEpisode.artworkUrl }}
+          style={isSidebar ? styles.thumbSidebar : styles.thumbBottom}
+          resizeMode="cover"
+        />
+      ) : null}
+
       <View style={{ flex: 1 }}>
         <Text style={styles.title} numberOfLines={1}>
-          🎙️ {currentEpisode.title}
+          {currentEpisode.title}
         </Text>
         <Text style={styles.subtitle} numberOfLines={1}>
           {currentEpisode.host || currentEpisode.collectionName || 'Podcast'} ·{' '}
@@ -170,12 +220,18 @@ export const NavbarAudioPlayer = ({ variant = 'sidebar' }) => {
       </View>
 
       <TouchableOpacity
-        style={[styles.playBtn, isSidebar && { width: 30, height: 30, borderRadius: 15 }]}
+        style={[styles.playBtn, isSidebar && { width: 28, height: 28, borderRadius: 14 }]}
         onPress={togglePlay}
         activeOpacity={0.85}
       >
-        <Text style={{ fontSize: isSidebar ? 12 : 14 }}>{isPlaying ? '⏸️' : '▶️'}</Text>
+        <Text style={{ fontSize: isSidebar ? 11 : 13 }}>{isPlaying ? '⏸️' : '▶️'}</Text>
       </TouchableOpacity>
+
+      {hasNext && (
+        <TouchableOpacity onPress={playNext} style={styles.nextBtn} activeOpacity={0.8}>
+          <Text style={{ color: '#FFFFFF', fontSize: isSidebar ? 12 : 14 }}>⏭️</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={closePlayer} style={styles.closeBtn} activeOpacity={0.8}>
         <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>✕</Text>
@@ -190,11 +246,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#2A192E',
     borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
@@ -208,6 +264,16 @@ const styles = StyleSheet.create({
     gap: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)',
+  },
+  thumbSidebar: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+  },
+  thumbBottom: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
   },
   title: {
     color: '#FFFFFF',
@@ -227,7 +293,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  nextBtn: {
+    padding: 3,
+  },
   closeBtn: {
-    padding: 5,
+    padding: 4,
   },
 });
