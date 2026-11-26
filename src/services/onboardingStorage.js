@@ -1,3 +1,4 @@
+
 // src/services/onboardingStorage.js
 // Safe, persistent storage for MindBloom onboarding completion and user preferences
 // Uses @react-native-async-storage/async-storage with an in-memory fallback for high resilience
@@ -41,10 +42,16 @@ export const onboardingStorage = {
   },
 
   /**
-   * Save user onboarding preferences
+   * Save user onboarding preferences (merges with existing preferences so partial saves never wipe age/gender)
    */
   async savePreferences(preferences = {}) {
-    const json = JSON.stringify(preferences);
+    let existing = {};
+    try {
+      const current = await this.getPreferences();
+      if (current && typeof current === 'object') existing = current;
+    } catch {}
+    const merged = { ...existing, ...preferences };
+    const json = JSON.stringify(merged);
     memoryStore[KEYS.PREFERENCES] = json;
     try {
       await AsyncStorage.setItem(KEYS.PREFERENCES, json);

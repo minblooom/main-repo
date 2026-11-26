@@ -83,6 +83,17 @@ export const LoginScreen = ({ navigation }) => {
     return errs;
   };
 
+  const navigateAfterLogin = async (user = null) => {
+    if (!navigation) return;
+    const completed = await onboardingStorage.isOnboardingCompleted();
+    const targetRoute = completed ? 'Home' : 'GentleHello';
+    if (typeof navigation.replace === 'function') {
+      navigation.replace(targetRoute);
+    } else {
+      navigation.navigate(targetRoute);
+    }
+  };
+
   const handleLogin = async () => {
     setSubmitted(true);
     const errs = validateLogin();
@@ -93,33 +104,27 @@ export const LoginScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const session = await AuthService.login({ identifier: identifier.trim(), password });
+      const prefUpdates = {};
       if (session?.user?.nickname) {
-        await onboardingStorage.savePreferences({ nickname: session.user.nickname });
+        prefUpdates.nickname = session.user.nickname;
       } else if (!identifier.includes('@')) {
-        await onboardingStorage.savePreferences({ nickname: identifier.trim() });
+        prefUpdates.nickname = identifier.trim();
       }
-      // Success — go home
-      if (navigation) {
-        if (typeof navigation.replace === 'function') {
-          navigation.replace('Home');
-        } else {
-          navigation.navigate('Home');
-        }
+      if (session?.user?.ageBand) {
+        prefUpdates.ageBand = session.user.ageBand;
       }
+      if (Object.keys(prefUpdates).length > 0) {
+        await onboardingStorage.savePreferences(prefUpdates);
+      }
+      await navigateAfterLogin(session?.user);
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'We couldn’t quite get you in. Check your details and try again.';
       // Friendly error messages with seamless offline entry
       if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused') || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('err_connection')) {
-        // Safe offline entry: ensure user isn't locked out of their personal sanctuary
+        // Safe offline entry: ensure user isn't locked out, but still route through onboarding if incomplete
         const nick = identifier.includes('@') ? identifier.split('@')[0] : identifier.trim();
         await onboardingStorage.savePreferences({ nickname: nick });
-        if (navigation) {
-          if (typeof navigation.replace === 'function') {
-            navigation.replace('Home');
-          } else {
-            navigation.navigate('Home');
-          }
-        }
+        await navigateAfterLogin(null);
         return;
       } else if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
         setErrors({ general: 'Hmm, those details don\'t match. Double-check and try again.' });

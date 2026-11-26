@@ -2,6 +2,10 @@
 // Exact implementation of Figma "Mindbloom · Sign up or sign in" screen
 // Serves as the warm welcome landing right after the splash screen
 
+// src/screens/auth/WelcomeScreen.jsx
+// Exact implementation of Figma "Mindbloom · Sign up or sign in" screen
+// Serves as the warm welcome landing right after the splash screen
+
 import React, { useRef, useEffect } from 'react';
 import {
   View,
@@ -15,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { styles } from './styles/WelcomeScreen.styles';
 
 export const WelcomeScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -111,7 +116,7 @@ export const WelcomeScreen = ({ navigation }) => {
                 </Text>
 
                 <Text style={styles.privateDisclaimer}>
-                  * 100% private space. Rooted in real mental wellbeing.
+                  - 100% private space. Rooted in real mental wellbeing.
                 </Text>
               </View>
 
@@ -170,5 +175,3 @@ export const WelcomeScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-import { styles } from './styles/WelcomeScreen.styles';

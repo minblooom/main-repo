@@ -1,8 +1,4 @@
 // src/screens/onboarding/AgeSelectScreen.jsx
-// "What season are you in?" — Figma screen 06
-// Direct age input + tailored age brackets for teenagers (13+) and twenties
-// Strictly enforces 13+ age requirement with protective youth safety warning.
-
 import React, { useState } from 'react';
 import {
   View,
@@ -18,6 +14,7 @@ import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
 import { COMPANION_MAP } from '../../constants/companions';
+import { styles } from './styles/AgeSelectScreen.styles';
 
 const AGE_GROUPS = [
   { id: '13-17', min: 13, max: 17, defaultVal: '16', label: '13–17', desc: 'Finding who you are' },
@@ -25,7 +22,6 @@ const AGE_GROUPS = [
   { id: '22-25', min: 22, max: 25, defaultVal: '23', label: '22–25', desc: 'Navigating work, study & change' },
   { id: '26-29+', min: 26, max: 99, defaultVal: '27', label: '26–29+', desc: 'Building life on your own terms' },
 ];
-
 
 const GENDER_OPTIONS = [
   { id: 'female', label: 'Female', emoji: '🌸' },
@@ -81,11 +77,20 @@ export const AgeSelectScreen = ({ navigation, route }) => {
     }
 
     if (!navigation) return;
-    const finalAge = typedAge || '22';
+
+    const matchedGroup =
+      AGE_GROUPS.find((g) => g.id === selectedGroup) ||
+      AGE_GROUPS.find((g) => !isNaN(ageNum) && ageNum >= g.min && ageNum <= g.max) ||
+      AGE_GROUPS[2];
+
+    const finalAge = typedAge ? String(ageNum) : matchedGroup.defaultVal;
+    const finalAgeGroup = matchedGroup.id;
+
     navigation.navigate('FocusAreas', {
       ...(route?.params ?? {}),
       age: finalAge,
-      ageGroup: selectedGroup,
+      ageGroup: finalAgeGroup,
+      ageBand: finalAgeGroup,
       gender,
     });
   };
@@ -101,7 +106,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
           <OnboardingHeader navigation={navigation} />
 
           <View style={[s.mainLayout, isWide && s.mainLayoutWide]}>
-            {/* Left hero card */}
             <OnboardingHeroCard
               tag="LITTLE STEPS, REAL YOU."
               heading={"Growing isn't\na race."}
@@ -111,7 +115,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
               isWide={isWide}
             />
 
-            {/* Right content */}
             <View style={[s.contentContainer, isWide && s.contentContainerWide]}>
               <Text style={s.stepTag}>STEP 4 OF 7 · YOUR SEASON</Text>
               <Text style={s.title}>What season are you in?</Text>
@@ -119,7 +122,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 Your age helps us suggest relevant support and peer circles. MindBloom is tailored for youth and twenties.
               </Text>
 
-              {/* Direct Age Input Box */}
               <View style={styles.inputCard}>
                 <Text style={styles.inputCardLabel}>Your age</Text>
                 <View style={styles.inputRow}>
@@ -140,7 +142,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
-              {/* Underage Protective Warning */}
               {isUnderage && (
                 <View style={styles.underageWarningBox}>
                   <Text style={styles.underageWarningTitle}>⚠️ Must Be 13 or Older to Register</Text>
@@ -152,8 +153,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 </View>
               )}
 
-              
-              {/* Gender Identity Picker */}
               <Text style={[styles.orGroupLabel, { marginTop: 18, marginBottom: 8 }]}>Your gender identity (optional):</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {GENDER_OPTIONS.map((item) => {
@@ -182,10 +181,9 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                   );
                 })}
               </View>
-  
+
               <Text style={styles.orGroupLabel}>Or choose your age group:</Text>
 
-              {/* Age Bracket Options */}
               <View style={styles.bracketGroup}>
                 {AGE_GROUPS.map((g) => {
                   const isSelected = selectedGroup === g.id;
@@ -208,7 +206,6 @@ export const AgeSelectScreen = ({ navigation, route }) => {
                 })}
               </View>
 
-              {/* Action Button: Disabled when age < 13 */}
               <TouchableOpacity
                 style={[
                   s.primaryBtn,
@@ -232,4 +229,4 @@ export const AgeSelectScreen = ({ navigation, route }) => {
   );
 };
 
-import { styles } from './styles/AgeSelectScreen.styles';
+export default AgeSelectScreen;

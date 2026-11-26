@@ -2,6 +2,10 @@
 // "Look at you. You showed up." — Figma screen 09
 // Warm onboarding summary / welcome moment before entering main sanctuary
 
+// src/screens/onboarding/ReadyToBloomScreen.jsx
+// "Look at you. You showed up." — Figma screen 09
+// Warm onboarding summary / welcome moment before entering main sanctuary
+
 import React, { useRef, useEffect } from 'react';
 import {
   View,
@@ -20,6 +24,7 @@ import { OnboardingHeader } from './components/OnboardingHeader';
 import { onboardingStyles as s } from './onboardingStyles';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { apiClient } from '../../core/api/client';
+import { styles } from './styles/ReadyToBloomScreen.styles';
 
 const FOCUS_LABEL_MAP = {
   anxiety: 'Anxiety & Overwhelm',
@@ -88,6 +93,13 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
   const handleEnter = async () => {
     try {
       const chosenCompanion = params.companion || 'noodle';
+      const resolvedAgeBand =
+        params.age && Number(params.age) <= 17
+          ? 'TEEN_13_17'
+          : Number(params.age) <= 24
+          ? 'YOUNG_ADULT_18_24'
+          : 'ADULT_25_PLUS';
+
       setCompanionId(chosenCompanion);
       await onboardingStorage.setOnboardingCompleted(true);
       await onboardingStorage.savePreferences({
@@ -101,28 +113,18 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
         language: params.language || 'English',
         age: params.age || '22',
         ageGroup: params.ageGroup || '22-25',
+        ageBand: resolvedAgeBand,
+        gender: params.gender || 'prefer_not',
         completedAt: new Date().toISOString(),
       });
 
-      // Synchronize focus areas, interests, and age with backend if user is authenticated
-      apiClient.patch('/user/profile', {
-        primaryStruggles: params.focusAreas || [],
-        interests: params.interests || [],
-        ageBand: params.age && Number(params.age) <= 17 ? 'TEEN_13_17' : Number(params.age) <= 24 ? 'YOUNG_ADULT_18_24' : 'ADULT_25_PLUS',
-      }).catch(() => {});
-
-      // Keep stored user session updated with struggles and passions
-      try {
-        const storedUser = await AuthService.getStoredUser();
-        if (storedUser) {
-          const updatedUser = {
-            ...storedUser,
-            primaryStruggles: params.focusAreas || [],
-            interests: params.interests || [],
-          };
-          await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
-        }
-      } catch { }
+      apiClient
+        .patch('/user/profile', {
+          primaryStruggles: params.focusAreas || [],
+          interests: params.interests || [],
+          ageBand: resolvedAgeBand,
+        })
+        .catch(() => {});
     } catch {
       // Memory fallback active
     }
@@ -154,7 +156,6 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
           <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
             <OnboardingHeader navigation={navigation} showBack={true} />
 
-            {/* Hero banner */}
             <Animated.View
               style={[
                 styles.heroBanner,
@@ -183,7 +184,6 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
               </Animated.View>
             </Animated.View>
 
-            {/* Starter kit */}
             <Text style={styles.kitTitle}>Your little starter kit</Text>
             <Text style={styles.kitSub}>Nothing set in stone. You can change it later.</Text>
 
@@ -203,8 +203,7 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
                 <Text style={styles.kitCardTitle}>A little more ease.</Text>
                 <Text style={styles.kitCardDesc}>
                   {focusAreas.length > 0
-                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${focusAreas.length > 2 ? ' & more.' : '.'
-                    }`
+                    ? `Based on: ${focusAreas.slice(0, 2).join(', ')}${focusAreas.length > 2 ? ' & more.' : '.'}`
                     : "We'll personalise as you go."}
                 </Text>
               </View>
@@ -219,7 +218,6 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
               </View>
             </View>
 
-            {/* CTA */}
             <TouchableOpacity style={s.primaryBtn} onPress={handleEnter} activeOpacity={0.88}>
               <Text style={s.primaryBtnText}>Enter my sanctuary →</Text>
             </TouchableOpacity>
@@ -231,5 +229,3 @@ export const ReadyToBloomScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
-import { styles } from './styles/ReadyToBloomScreen.styles';

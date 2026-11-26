@@ -1,7 +1,4 @@
 // src/screens/auth/SplashScreen.jsx
-// Exact implementation of Figma splash screen for MindBloom
-// Responsive: 2-column on desktop/tablet, bottom sheet on mobile
-
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -14,28 +11,45 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { AuthService } from '../../core/api/authService';
+import { onboardingStorage } from '../../services/onboardingStorage';
+import { styles } from './styles/SplashScreen.styles';
 
 export const SplashScreen = ({ onFinish, navigation }) => {
   const { height, isDesktop, isTablet, containerMaxWidth } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
 
-  // Floating gentle breath animation for the hero arch
   const floatAnim = useRef(new Animated.Value(0)).current;
   const pulseScale = useRef(new Animated.Value(1)).current;
-
-  // Progress bar fill animation
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const hasProceededRef = useRef(false);
+
+  const handleProceed = async () => {
+    if (hasProceededRef.current) return;
+    hasProceededRef.current = true;
+
+    if (onFinish) {
+      onFinish();
+      return;
+    }
+    if (navigation) {
+      const remembered = await AuthService.hasValidSession();
+      if (remembered) {
+        const completed = await onboardingStorage.isOnboardingCompleted();
+        navigation.replace(completed ? 'Home' : 'GentleHello');
+      } else {
+        navigation.replace('Welcome');
+      }
+    }
+  };
 
   useEffect(() => {
-    // Fade in whole view
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
       useNativeDriver: Platform.OS !== 'web',
     }).start();
 
-    // Gentle breathing loop
     const breathLoop = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -66,34 +80,22 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     );
     breathLoop.start();
 
-    // Progress bar fill to 100% (2.8 seconds)
-    Animated.timing(progressAnim, {
+    const progressTimer = Animated.timing(progressAnim, {
       toValue: 1,
       duration: 2800,
       useNativeDriver: false,
-    }).start(({ finished }) => {
+    });
+    progressTimer.start(({ finished }) => {
       if (finished) {
         handleProceed();
       }
     });
 
-    return () => breathLoop.stop();
+    return () => {
+      breathLoop.stop();
+      progressTimer.stop();
+    };
   }, []);
-
-  const handleProceed = async () => {
-    if (onFinish) {
-      onFinish();
-      return;
-    }
-    if (navigation) {
-      const remembered = await AuthService.hasValidSession();
-      if (remembered) {
-        navigation.replace('Home');
-      } else {
-        navigation.navigate('Welcome');
-      }
-    }
-  };
 
   const archWidth = isWide ? 280 : Math.min(containerMaxWidth * 0.65, 250);
   const archHeight = isWide ? 340 : Math.min(height * 0.35, 300);
@@ -107,9 +109,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <Animated.View style={[styles.mainWrapper, { opacity: fadeAnim }]}>
         <View style={[styles.pageWrapper, isWide && styles.pageWrapperWide]}>
-          {/* -- 2-COLUMN LAYOUT ON DESKTOP / STACK ON MOBILE ---------------- */}
           <View style={[styles.contentLayout, isWide && styles.contentLayoutWide]}>
-            {/* -- LEFT SECTION: BRAND + ARCHED FLORAL HERO ------------------- */}
             <View style={[styles.leftSection, isWide && styles.leftSectionWide]}>
               <View style={[styles.brandContainer, isWide && styles.brandContainerWide]}>
                 <Text style={styles.brandTitle}>mindbloom</Text>
@@ -126,13 +126,11 @@ export const SplashScreen = ({ onFinish, navigation }) => {
                   },
                 ]}
               >
-                {/* Decorative floating dots */}
                 <View style={[styles.dot, styles.dotUpperLeft]} />
                 <View style={[styles.dot, styles.dotUpperRight]} />
                 <View style={[styles.dot, styles.dotLowerRight]} />
                 <View style={[styles.dot, styles.dotLowerLeft]} />
 
-                {/* Arched Matting Frame */}
                 <View
                   style={[
                     styles.archMattingFrame,
@@ -150,7 +148,6 @@ export const SplashScreen = ({ onFinish, navigation }) => {
               <Text style={styles.leftTagline}>Your space. Your pace.</Text>
             </View>
 
-            {/* -- RIGHT SECTION: LAVENDER CARD WITH PROGRESS BAR ------------ */}
             <TouchableOpacity
               style={[styles.lavenderCard, isWide && styles.lavenderCardWide]}
               onPress={handleProceed}
@@ -187,6 +184,7 @@ export const SplashScreen = ({ onFinish, navigation }) => {
   );
 };
 
-import { styles } from './styles/SplashScreen.styles';
+
+
 
 

@@ -2,6 +2,18 @@
 // MindBloom Account Creation Screen
 // Wired to AuthService.register() — creates real account then flows to onboarding
 
+// src/screens/auth/SignupScreen.jsx
+// MindBloom Account Creation Screen
+// Wired to AuthService.register() — creates real account then flows to onboarding
+
+// src/screens/auth/SignupScreen.jsx
+// MindBloom Account Creation Screen
+// Wired to AuthService.register() — creates real account then flows to onboarding
+
+// src/screens/auth/SignupScreen.jsx
+// MindBloom Account Creation Screen
+// Wired to AuthService.register() — creates real account then flows to onboarding
+
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -38,7 +50,6 @@ export const SignupScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
 
-  // Gentle float animation for the sloth mascot
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -120,27 +131,17 @@ export const SignupScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await AuthService.register({
+     await AuthService.register({
         nickname: name,
         contact: contactVal,
         password,
       });
 
+      await onboardingStorage.setOnboardingCompleted(false);
       await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
 
-      let devCode = '';
-      try {
-        const otpRes = await AuthService.sendOtp({
-          contact: contactVal,
-          purpose: 'VERIFY_CONTACT',
-        });
-        if (otpRes?.devCode) devCode = otpRes.devCode;
-      } catch {
-        // Non-blocking if OTP email service is temporarily unavailable
-      }
-
       if (navigation) {
-        navigation.navigate('VerifyOtp', { contact: contactVal, devCode });
+        navigation.replace('GentleHello', { nickname: name, contact: contactVal });
       }
     } catch (backendErr) {
       const status = backendErr?.response?.status;
@@ -233,7 +234,6 @@ export const SignupScreen = ({ navigation }) => {
               <Text style={s.formTitle}>Create your space.</Text>
               <Text style={s.formSubhead}>Free, private, and entirely yours.</Text>
 
-              {/* Segmented tab switcher — matches LoginScreen layout */}
               <View style={s.segmentedTabsContainer}>
                 <View style={[s.tabButton, s.tabButtonActive]}>
                   <Text style={[s.tabText, s.tabTextActive]}>Create account</Text>
@@ -247,14 +247,12 @@ export const SignupScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* General error banner */}
               {errors.general ? (
                 <View style={s.errorBanner}>
                   <Text style={s.errorBannerText}>{errors.general}</Text>
                 </View>
               ) : null}
 
-              {/* Fields */}
               <View style={s.fieldsBlock}>
 
                 {/* 1. Nickname */}
@@ -436,7 +434,6 @@ export const SignupScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* In-App Terms, Privacy & Disclaimer Modal Popup */}
       <LegalModal
         visible={!!legalModalTab}
         initialTab={legalModalTab || 'terms'}
