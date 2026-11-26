@@ -16,13 +16,22 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { ArrowUp, ShieldAlert, Sparkles, X } from 'lucide-react-native';
+import { ArrowUp, Mic, RotateCcw, ShieldAlert, Sparkles, X } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useI18n } from '../../services/i18n';
 import { AnimatedCompanion } from '../../components/companion/AnimatedCompanion';
 import { CrisisShieldModal } from '../../components/CrisisShieldModal';
 import { analyzeTextSafety } from '../../core/safety/safetyFilter';
 import { apiClient } from '../../core/api/client';
+import { onboardingStorage } from '../../services/onboardingStorage';
+import { encryptedStorage } from '../../services/encryptedStorage';
+import { normalizeAgeBand } from '../../features/community/services/circleMatchingService';
+import {
+  isSpeechRecognitionSupported,
+  createDictationSession,
+} from '../../services/voiceNoteService';
+
+const AURORA_STORAGE_KEY = 'mindbloom:aurora:thread:v1';
 
 const MODE_CONFIG = {
   vent: {
@@ -51,11 +60,18 @@ const MODE_RESPONSE_STYLE = {
   guide: 'Give a clear 3-step practical plan with direct action language and a follow-up checkpoint.',
 };
 
-const STARTER_PROMPTS = [
+const ADULT_STARTER_PROMPTS = [
   { text: 'Feeling overwhelmed by everything today 🌿', mode: 'vent' },
   { text: 'Help me reframe an anxious thought 💭', mode: 'reflect' },
   { text: 'Take me through a 2-minute breathing reset 🌬️', mode: 'guide' },
   { text: 'Work & study pressure is getting heavy 💼', mode: 'vent' },
+];
+
+const TEEN_STARTER_PROMPTS = [
+  { text: 'School & exam pressure is getting loud 🎒', mode: 'vent' },
+  { text: 'Feeling left out or misunderstood lately 🫧', mode: 'reflect' },
+  { text: 'Take me through a 2-minute breathing reset 🌬️', mode: 'guide' },
+  { text: 'I cannot stop overthinking tonight 🌙', mode: 'reflect' },
 ];
 
 const DISTRESS_MARKERS = {
@@ -282,9 +298,31 @@ const inferSuggestedSupport = (text, avoidedMethods = []) => {
   return firstAllowed || {};
 };
 
+const detectTopicContext = (text) => {
+  const n = stripForCompare(text);
+  if (/(exam|school|grade|study|teacher|homework|assignment|class)/.test(n)) {
+    return 'School and exam pressure can make every mistake feel permanent, even when it is just one chapter.';
+  }
+  if (/(sleep|insomnia|cant sleep|awake|night|3am|2am)/.test(n)) {
+    return 'Nighttime tends to amplify worries because everything else goes quiet.';
+  }
+  if (/(friend|lonely|left out|alone|ignored|nobody|fit in)/.test(n)) {
+    return 'Feeling unseen or disconnected from peers hurts deeply—it is human to want people who actually get you.';
+  }
+  if (/(parent|mom|dad|family|home|expectation)/.test(n)) {
+    return 'Navigating expectations at home while trying to protect your own peace is exhausting.';
+  }
+  if (/(fail|not good enough|stupid|loser|compare|comparison)/.test(n)) {
+    return 'That inner critic sounds loud right now, but a harsh thought is not a fact about your worth.';
+  }
+  return null;
+};
+
 const buildLocalCoachingReply = ({ text, mode, profile }) => {
+  const topicNote = detectTopicContext(text);
+
   if (mode === 'vent') {
-    const validatingLine = chooseVariant(
+    const validatingLine = topicNote || chooseVariant(
       [
         'That sounds really heavy, and it makes sense your system feels overloaded right now.',
         'I hear how much you are carrying right now, and I am glad you shared it here.',
@@ -300,7 +338,7 @@ const buildLocalCoachingReply = ({ text, mode, profile }) => {
   }
 
   if (mode === 'reflect') {
-    const opening = chooseVariant(
+    const opening = topicNote || chooseVariant(
       [
         'Let us slow this down and get clearer together.',
         'We can map what is happening inside without judging it.',
@@ -318,7 +356,7 @@ const buildLocalCoachingReply = ({ text, mode, profile }) => {
     return `${opening}\n\nTry this reflection:\n1) ${promptA}\n2) ${promptB}\n3) ${promptC}`;
   }
 
-  const opening = chooseVariant(
+  const opening = topicNote || chooseVariant(
     [
       'Let us make a short plan you can use immediately.',
       'Here is a clear step-by-step reset for the next few minutes.',
@@ -345,6 +383,115 @@ const normalizeAuroraReply = ({ apiReply, text, mode, profile, recentAssistantMe
   return trimmedApiReply;
 };
 
+const BREATH_PHASES = [
+  { label: 'Inhale gently', secs: 4 },
+  { label: 'Hold softly', secs: 6 },
+  { label: 'Exhale slow', secs: 8 },
+];
+
+const GROUNDING_STEPS = [
+  '5 things you can see',
+  '4 things you can feel',
+  '3 things you can hear',
+  '2 things you can smell',
+  '1 thing you can taste',
+];
+
+const InlineMicroTool = ({ method, accent, theme }) => {
+  const [running, setRunning] = useState(false);
+  const [phaseIdx, setPhaseIdx] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(BREATH_PHASES[0].secs);
+  const [checkedSteps, setCheckedSteps] = useState([]);
+
+  useEffect(() => {
+    if (!running || method !== 'box-breathing') return;
+    const id = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev > 1) return prev - 1;
+        setPhaseIdx((p) => {
+          const next = (p + 1) % BREATH_PHASES.length;
+          setSecondsLeft(BREATH_PHASES[next].secs);
+          return next;
+        });
+        return 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running, method]);
+
+  if (method === 'box-breathing') {
+    const phase = BREATH_PHASES[phaseIdx];
+    return (
+      <View style={[styles.microToolBox, { backgroundColor: theme?.bg || '#FAF6EF', borderColor: theme?.divider || '#E8DFF2' }]}>
+        <View style={styles.microToolRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.microToolTitle, { color: theme?.textPrimary || '#2A192E' }]}>
+              🌬️ 4-6-8 Breathing Reset
+            </Text>
+            <Text style={[styles.microToolSub, { color: theme?.textSecondary || '#5C4D60' }]}>
+              {running ? `${phase.label} · ${secondsLeft}s` : 'Tap start for a guided 4-6-8 cycle'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              if (running) {
+                setRunning(false);
+              } else {
+                setPhaseIdx(0);
+                setSecondsLeft(BREATH_PHASES[0].secs);
+                setRunning(true);
+              }
+            }}
+            activeOpacity={0.8}
+            style={[styles.microToolBtn, { backgroundColor: accent }]}
+          >
+            <Text style={styles.microToolBtnText}>{running ? 'Pause' : 'Start'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (method === 'grounding-54321') {
+    return (
+      <View style={[styles.microToolBox, { backgroundColor: theme?.bg || '#FAF6EF', borderColor: theme?.divider || '#E8DFF2' }]}>
+        <Text style={[styles.microToolTitle, { color: theme?.textPrimary || '#2A192E' }]}>
+          🌿 5-4-3-2-1 Tap Checklist
+        </Text>
+        <View style={styles.groundingChips}>
+          {GROUNDING_STEPS.map((step) => {
+            const done = checkedSteps.includes(step);
+            return (
+              <TouchableOpacity
+                key={step}
+                onPress={() =>
+                  setCheckedSteps((prev) =>
+                    prev.includes(step) ? prev.filter((s) => s !== step) : [...prev, step]
+                  )
+                }
+                activeOpacity={0.8}
+                style={[
+                  styles.groundingChip,
+                  {
+                    backgroundColor: done ? accent : theme?.cardBg || '#FFFFFF',
+                    borderColor: done ? accent : theme?.divider || '#E8DFF2',
+                  },
+                ]}
+              >
+                <Text style={[styles.groundingChipText, { color: done ? '#FFFFFF' : theme?.textPrimary || '#2A192E' }]}>
+                  {done ? `✓ ${step}` : step}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }
+
+  return null;
+};
+
 export const AuroraContent = ({
   companionId: propCompanionId,
   userName,
@@ -356,17 +503,26 @@ export const AuroraContent = ({
   const { countryData } = useI18n();
   const activeCompanionId = propCompanionId || globalCompanionId || 'noodle';
 
+  const makeGreetingMsg = () => ({
+    id: '1',
+    role: 'assistant',
+    content:
+      'Hello friend. I am Aurora. Whether you want to vent, reflect, or just sit quietly together, I am here with you.',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    emotion: '🌸',
+  });
+
   const [mode, setMode] = useState('reflect');
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      role: 'assistant',
-      content:
-        'Hello friend. I am Aurora. Whether you want to vent, reflect, or just sit quietly together, I am here with you.',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      emotion: '🌸',
-    },
-  ]);
+  const [messages, setMessages] = useState([makeGreetingMsg()]);
+  const [userPrefs, setUserPrefs] = useState({
+    ageBand: '18-24',
+    nickname: userName || 'Friend',
+    focusAreas: ['wellness'],
+    language: 'en',
+  });
+  const [isDictating, setIsDictating] = useState(false);
+  const [dictationNotice, setDictationNotice] = useState('');
+  const [showIntensityPicker, setShowIntensityPicker] = useState(false);
 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -377,6 +533,109 @@ export const AuroraContent = ({
   const [activeCheckIn, setActiveCheckIn] = useState(null);
 
   const flatListRef = useRef(null);
+  const dictationRef = useRef(null);
+  const speechSupported = isSpeechRecognitionSupported();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [prefs, savedRaw] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          encryptedStorage.getItem(AURORA_STORAGE_KEY),
+        ]);
+        if (!active) return;
+        if (prefs) {
+          setUserPrefs({
+            ageBand: normalizeAgeBand(prefs.ageBand || prefs.ageGroup || prefs.age),
+            nickname: prefs.nickname || userName || 'Friend',
+            focusAreas: Array.isArray(prefs.focusAreas) && prefs.focusAreas.length > 0 ? prefs.focusAreas : ['wellness'],
+            language: prefs.language || 'en',
+          });
+        }
+        if (savedRaw) {
+          const parsed = JSON.parse(savedRaw);
+          if (Array.isArray(parsed?.messages) && parsed.messages.length > 0) {
+            setMessages(parsed.messages);
+          }
+          if (Array.isArray(parsed?.failedMethods)) {
+            setFailedMethods(parsed.failedMethods);
+          }
+          if (Array.isArray(parsed?.intensityLog)) {
+            setIntensityLog(parsed.intensityLog);
+          }
+        }
+      } catch {}
+    })();
+    return () => {
+      active = false;
+      if (dictationRef.current) {
+        try {
+          dictationRef.current.stop();
+        } catch {}
+      }
+    };
+  }, [userName]);
+
+  useEffect(() => {
+    encryptedStorage
+      .setItem(
+        AURORA_STORAGE_KEY,
+        JSON.stringify({
+          messages: messages.slice(-40),
+          failedMethods,
+          intensityLog: intensityLog.slice(-20),
+        })
+      )
+      .catch(() => {});
+  }, [messages, failedMethods, intensityLog]);
+
+  const handleClearChat = async () => {
+    setMessages([makeGreetingMsg()]);
+    setFailedMethods([]);
+    setActiveCheckIn(null);
+    await encryptedStorage.removeItem(AURORA_STORAGE_KEY).catch(() => {});
+  };
+
+  const toggleDictation = () => {
+    if (!speechSupported) {
+      setDictationNotice('Voice dictation requires Chrome or Edge on web — you can type anytime below.');
+      setTimeout(() => setDictationNotice(''), 4000);
+      return;
+    }
+    setDictationNotice('');
+    if (isDictating && dictationRef.current) {
+      try {
+        dictationRef.current.stop();
+      } catch {}
+      dictationRef.current = null;
+      setIsDictating(false);
+      return;
+    }
+    const session = createDictationSession({
+      onTranscript: (transcript) => {
+        if (transcript) {
+          setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+        }
+      },
+      onEnd: () => {
+        setIsDictating(false);
+        dictationRef.current = null;
+      },
+      onError: () => {
+        setIsDictating(false);
+        dictationRef.current = null;
+      },
+    });
+    if (session) {
+      dictationRef.current = session;
+      setIsDictating(true);
+      session.start();
+    }
+  };
+
+  const starterPrompts =
+    userPrefs.ageBand === '13-17' ? TEEN_STARTER_PROMPTS : ADULT_STARTER_PROMPTS;
 
   const rollingSummary = useMemo(() => {
     const recentUserMessages = messages
@@ -544,7 +803,13 @@ export const AuroraContent = ({
         mode: currentMode,
         modeDirective: MODE_RESPONSE_STYLE[currentMode],
         history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
-        userProfile: { name: userName || 'Friend', primaryIssue: 'wellness' },
+        userProfile: {
+          name: userPrefs.nickname || userName || 'Friend',
+          ageBand: userPrefs.ageBand,
+          primaryIssue: userPrefs.focusAreas[0] || 'wellness',
+          focusAreas: userPrefs.focusAreas,
+          language: userPrefs.language,
+        },
         intensity: intensityRating,
         failedMethods,
         summary: rollingSummary,
@@ -668,13 +933,26 @@ export const AuroraContent = ({
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.shieldBtn}
-            onPress={() => setCrisisVisible(true)}
-            activeOpacity={0.8}
-          >
-            <ShieldAlert size={16} color="#D32F2F" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {messages.length > 1 && (
+              <TouchableOpacity
+                style={[styles.headerIconButton, { padding: 6 }]}
+                onPress={handleClearChat}
+                accessibilityRole="button"
+                accessibilityLabel="Clear Aurora chat"
+                activeOpacity={0.75}
+              >
+                <RotateCcw size={16} color={textSec} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.shieldBtn}
+              onPress={() => setCrisisVisible(true)}
+              activeOpacity={0.8}
+            >
+              <ShieldAlert size={16} color="#D32F2F" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Mode Selector Banner (Vent / Reflect / Guide) */}
@@ -706,34 +984,47 @@ export const AuroraContent = ({
           <Text style={[styles.modeSubtitle, { color: textMuted }]}>{MODE_CONFIG[mode].desc}</Text>
         </View>
 
-        {/* Distress Intensity (0-10) */}
+        {/* Compact Distress Intensity Toggle */}
         <View style={[styles.intensityCard, { backgroundColor: cardBg, borderColor: borderCol }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <Text style={[styles.intensityTitle, { color: textMuted }]}>DISTRESS INTENSITY (0-10)</Text>
-            <Text style={[styles.intensityValue, { color: textPrim }]}>
-              {intensityRating === null ? 'Optional' : `${intensityRating}/10`}
+          <TouchableOpacity
+            onPress={() => setShowIntensityPicker((prev) => !prev)}
+            activeOpacity={0.8}
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <Text style={[styles.intensityTitle, { color: textMuted }]}>DISTRESS INTENSITY (0–10)</Text>
+            <Text style={[styles.intensityValue, { color: accent }]}>
+              {intensityRating === null ? 'Tap to rate ▾' : `${intensityRating}/10 ▾`}
             </Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.intensityRow}>
-            {Array.from({ length: 11 }, (_, idx) => {
-              const active = intensityRating === idx;
-              return (
-                <TouchableOpacity
-                  key={`current-${idx}`}
-                  style={[
-                    styles.intensityChip,
-                    { backgroundColor: active ? accent : (theme?.bg || '#F2ECE4') },
-                  ]}
-                  onPress={() => setIntensityRating(idx)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.intensityChipText, { color: active ? '#FFFFFF' : textSec }]}>
-                    {idx}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          </TouchableOpacity>
+          {showIntensityPicker && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[styles.intensityRow, { marginTop: 8 }]}
+            >
+              {Array.from({ length: 11 }, (_, idx) => {
+                const active = intensityRating === idx;
+                return (
+                  <TouchableOpacity
+                    key={`current-${idx}`}
+                    style={[
+                      styles.intensityChip,
+                      { backgroundColor: active ? accent : (theme?.bg || '#F2ECE4') },
+                    ]}
+                    onPress={() => {
+                      setIntensityRating(idx);
+                      setShowIntensityPicker(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.intensityChipText, { color: active ? '#FFFFFF' : textSec }]}>
+                      {idx}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         {/* Post-Method Check-in */}
@@ -754,25 +1045,6 @@ export const AuroraContent = ({
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.intensityChipText, { color: textPrim }]}>{idx}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Quick Starters */}
-        {messages.length <= 1 && (
-          <View style={styles.starterContainer}>
-            <Text style={[styles.starterHeader, { color: textMuted }]}>QUICK STARTERS</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.starterScroll}>
-              {STARTER_PROMPTS.map((prompt, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.starterPill, { backgroundColor: cardBg, borderColor: borderCol }]}
-                  onPress={() => handleSendPrompt(prompt.text, prompt.mode)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.starterText, { color: textPrim }]}>{prompt.text}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -813,6 +1085,14 @@ export const AuroraContent = ({
                     {item.content}
                   </Text>
 
+                  {!isUser && (item.suggestedMethod === 'box-breathing' || item.suggestedMethod === 'grounding-54321') && (
+                    <InlineMicroTool
+                      method={item.suggestedMethod}
+                      accent={accent}
+                      theme={theme}
+                    />
+                  )}
+
                   {item.suggestedTool && item.suggestedTab && onNavigateSoundscapes && (
                     <TouchableOpacity
                       style={styles.toolSuggestionPill}
@@ -848,6 +1128,31 @@ export const AuroraContent = ({
           }}
         />
 
+        {/* Quick Starters anchored above Input Bar */}
+        {messages.length <= 1 && (
+          <View style={styles.starterContainer}>
+            <Text style={[styles.starterHeader, { color: textMuted }]}>QUICK STARTERS</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.starterScroll}>
+              {starterPrompts.map((prompt, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.starterPill, { backgroundColor: cardBg, borderColor: borderCol }]}
+                  onPress={() => handleSendPrompt(prompt.text, prompt.mode)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.starterText, { color: textPrim }]}>{prompt.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {Boolean(dictationNotice) && (
+          <Text style={[styles.dictationNoticeText, { color: textMuted }]}>
+            {dictationNotice}
+          </Text>
+        )}
+
         {/* Input Bar */}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -869,6 +1174,19 @@ export const AuroraContent = ({
               returnKeyType="send"
               multiline={false}
             />
+
+            <TouchableOpacity
+              style={[
+                styles.micBtn,
+                isDictating && { backgroundColor: 'rgba(211, 47, 47, 0.12)' },
+              ]}
+              onPress={toggleDictation}
+              accessibilityRole="button"
+              accessibilityLabel={isDictating ? 'Stop voice dictation' : 'Start voice dictation'}
+              activeOpacity={0.8}
+            >
+              <Mic size={18} color={isDictating ? '#D32F2F' : textMuted} />
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[
@@ -912,7 +1230,7 @@ export const AuroraScreen = ({ navigation, route }) => {
       <AuroraContent
         companionId={route?.params?.companion || companionId}
         onNavigateHome={() => navigation.goBack()}
-        onNavigateSoundscapes={() => navigation.navigate('Chill')}
+        onNavigateSoundscapes={() => navigation.navigate('Chill', { initialTab: 'pods' })}
         isWide={false}
       />
     </SafeAreaView>
@@ -977,6 +1295,59 @@ const styles = StyleSheet.create({
     borderColor: '#EF9A9A',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  micBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  microToolBox: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+  },
+  microToolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  microToolTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  microToolSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  microToolBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 99,
+  },
+  microToolBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  groundingChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  groundingChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 99,
+    borderWidth: 1,
+  },
+  groundingChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   modeBanner: {
     borderRadius: 18,
@@ -1088,8 +1459,16 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   messageList: {
-    paddingVertical: 8,
-    paddingBottom: 12,
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  dictationNoticeText: {
+    fontSize: 11.5,
+    textAlign: 'center',
+    marginBottom: 6,
+    paddingHorizontal: 12,
   },
   bubbleContainer: {
     marginBottom: 10,
