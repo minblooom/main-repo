@@ -493,7 +493,6 @@ export const JournalScreen = ({ navigation, route }) => {
             activeRoute="journal"
             onNavigate={handleNavigate}
             companionId={companionId}
-            showSupportCards={true}
           />
         )}
 

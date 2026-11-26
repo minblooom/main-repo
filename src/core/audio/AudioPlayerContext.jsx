@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
   bottomBarPlayer: {
     width: '100%',
     backgroundColor: '#2A192E',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)',
   },
@@ -220,14 +220,14 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   playBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#E06D3B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtn: {
-    padding: 4,
+    padding: 5,
   },
 });

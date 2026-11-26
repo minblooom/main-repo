@@ -107,11 +107,12 @@ export const ArcadeContent = ({
             setUserInterests(backendCatalog.interests);
           }
         } catch { }
+        const universalIds = new Set(UNIVERSAL_ARCADE_GAMES.map((g) => g.id));
         const recents = await gameSessionManager.getRecentlyPlayed();
-        setRecentlyPlayed(recents);
+        setRecentlyPlayed(recents.filter((g) => universalIds.has(g.id)));
 
         const favs = await gameSessionManager.getFavourites();
-        setFavourites(favs);
+        setFavourites(favs.filter((g) => universalIds.has(g.id)));
 
         // Fetch optional external public mindfulness games in background
         ArcadeApiService.fetchExternalMindfulnessGames().catch(() => {});
@@ -152,9 +153,10 @@ export const ArcadeContent = ({
 
   const handleToggleFavourite = async (gameId) => {
     soundService.playClick();
-    const isNowFav = await gameSessionManager.toggleFavourite(gameId);
+    await gameSessionManager.toggleFavourite(gameId);
     const updatedFavs = await gameSessionManager.getFavourites();
-    setFavourites(updatedFavs);
+    const universalIds = new Set(UNIVERSAL_ARCADE_GAMES.map((g) => g.id));
+    setFavourites(updatedFavs.filter((g) => universalIds.has(g.id)));
   };
 
   const handlePlayGame = (game, options = {}) => {
@@ -196,7 +198,8 @@ export const ArcadeContent = ({
             setResumeMode(false);
             // Refresh recents
             const updatedRecents = await gameSessionManager.getRecentlyPlayed();
-            setRecentlyPlayed(updatedRecents);
+            const universalIds = new Set(UNIVERSAL_ARCADE_GAMES.map((g) => g.id));
+            setRecentlyPlayed(updatedRecents.filter((g) => universalIds.has(g.id)));
           }}
         />
       </View>

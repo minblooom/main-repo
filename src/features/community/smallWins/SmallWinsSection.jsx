@@ -13,12 +13,15 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { COMPANION_MAP } from '../../../constants/companions';
+import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
 import { GardenStrip } from '../encouragement/GardenStrip';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { useCommunityStore } from '../store/communityStore';
 import { onboardingStorage } from '../../../services/onboardingStorage';
 import { VoiceInputControls } from '../../../components/voice/VoiceInputControls';
 import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
+import { Modal } from 'react-native';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Wins 🌱' },
@@ -28,14 +31,17 @@ const CATEGORIES = [
   { id: 'healing', label: 'Healing/Body 🌺' },
 ];
 
-export const SmallWinsSection = ({ companionId = 'noodle' }) => {
-  const { theme } = useTheme();
+export const SmallWinsSection = ({ companionId: propCompanionId = 'noodle' }) => {
+  const { theme, companionId: globalCompanionId } = useTheme();
+  const activeCompanionId = propCompanionId || globalCompanionId || 'noodle';
+  const companion = COMPANION_MAP[activeCompanionId] || COMPANION_MAP.noodle;
   const { wins, addWin, toggleCheerWin } = useCommunityStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newWinText, setNewWinText] = useState('');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [postCategory, setPostCategory] = useState('personal');
   const [authorName, setAuthorName] = useState('You · MindBloom');
+  const [celebrationWin, setCelebrationWin] = useState(null);
 
   useEffect(() => {
     async function loadUserName() {
@@ -61,9 +67,11 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
   const handlePostWin = () => {
     if (!newWinText.trim() && !draftVoiceNote) return;
     soundService.playVictory();
+    const postedText = newWinText.trim() || 'Voice small win 🎙️';
     addWin(newWinText.trim(), postCategory, authorName, draftVoiceNote);
     setNewWinText('');
     setDraftVoiceNote(null);
+    setCelebrationWin(postedText);
   };
 
   const dynamicPlants = wins.map((w, idx) => ({
@@ -230,6 +238,55 @@ export const SmallWinsSection = ({ companionId = 'noodle' }) => {
           ))}
         </View>
       )}
+
+      {/* Companion Celebration Modal when user posts a Small Win */}
+      <Modal
+        visible={!!celebrationWin}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCelebrationWin(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(20, 12, 24, 0.6)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              backgroundColor: theme.cardBg || '#FFFFFF',
+              borderRadius: 28,
+              padding: 24,
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderColor: theme.heroBorder || '#E8DFF2',
+            }}
+          >
+            <Text style={{ fontSize: 28, marginBottom: 6 }}>🎉✨🌸</Text>
+            <AnimatedCompanion
+              companionId={activeCompanionId}
+              size={104}
+              state="happy"
+              interactive={false}
+            />
+            <Text style={{ fontSize: 18, fontWeight: '900', color: theme.textPrimary || '#2A192E', textAlign: 'center', marginTop: 10 }}>
+              {companion.name} is cheering for you!
+            </Text>
+            <Text style={{ fontSize: 13.5, color: theme.textSecondary || '#5C4D60', textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+              "Look at you go! Every small win matters — whether it's resting, drinking water, or showing up today. Your garden just bloomed brighter."
+            </Text>
+            <View style={{ backgroundColor: theme.heroBg || '#F7F3FB', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, marginTop: 14, width: '100%' }}>
+              <Text style={{ fontSize: 12.5, fontStyle: 'italic', color: theme.accent || '#42213D', textAlign: 'center', fontWeight: '700' }} numberOfLines={2}>
+                "{celebrationWin}"
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.postBtn, { backgroundColor: theme.accent || '#42213D', width: '100%', marginTop: 16 }]}
+              onPress={() => setCelebrationWin(null)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.postBtnText}>Thank you, {companion.name} 💛</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

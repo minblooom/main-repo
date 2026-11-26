@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Easing,
+  Modal,
   Alert,
   Platform,
 } from 'react-native';
@@ -106,9 +108,20 @@ export const VentBoxSection = () => {
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
   const [isBurning, setIsBurning] = useState(false);
 
-  // Dissolve/Burn Animation
-  const burnOpacity = useRef(new Animated.Value(1)).current;
-  const burnScale = useRef(new Animated.Value(1)).current;
+  // Tactile Ritual Modal state ('burn' | 'universe' | null)
+  const [ritualMode, setRitualMode] = useState(null);
+  const [ritualSnippet, setRitualSnippet] = useState('');
+  const [ritualDone, setRitualDone] = useState(false);
+
+  // Animations for paper-to-fire & release-to-universe
+  const paperTranslateY = useRef(new Animated.Value(0)).current;
+  const paperRotate = useRef(new Animated.Value(0)).current;
+  const paperScale = useRef(new Animated.Value(1)).current;
+  const paperOpacity = useRef(new Animated.Value(1)).current;
+  const fireScale = useRef(new Animated.Value(0.8)).current;
+  const sparkOpacity = useRef(new Animated.Value(0)).current;
+  const starTranslateY = useRef(new Animated.Value(0)).current;
+  const starScale = useRef(new Animated.Value(1)).current;
 
   // Real-time emotion detection
   const emotion = useMemo(() => getDetectedEmotion(ventText), [ventText]);
@@ -130,32 +143,62 @@ export const VentBoxSection = () => {
     }
 
     soundService.playPop();
+    const snippet = ventText.trim() || 'Voice vent 🎙️';
+    // Strictly zero-trace: wipe from memory immediately
+    setVentText('');
+    setDraftVoiceNote(null);
     setIsBurning(true);
+    setRitualSnippet(snippet);
+    setRitualDone(false);
+    setRitualMode(mode);
 
-    Animated.parallel([
-      Animated.timing(burnOpacity, {
-        toValue: 0,
-        duration: 900,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-      Animated.timing(burnScale, {
-        toValue: 0.85,
-        duration: 900,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-    ]).start(() => {
-      // Strictly zero-trace: wipe from memory completely, never saved anywhere
-      setVentText('');
-      setDraftVoiceNote(null);
-      burnOpacity.setValue(1);
-      burnScale.setValue(1);
-      setIsBurning(false);
-      soundService.playVictory();
-      const title = mode === 'burn' ? 'Imeyeyuka (Burned to Ashes) 🔥' : 'Released to the Universe 🌌';
-      const body = 'Your words have dissolved completely — nothing was saved or tracked. Take a quiet, steady breath.';
-      if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
-      else Alert.alert(title, body);
-    });
+    const useNative = Platform.OS !== 'web';
+
+    if (mode === 'burn') {
+      paperTranslateY.setValue(-40);
+      paperRotate.setValue(0);
+      paperScale.setValue(1);
+      paperOpacity.setValue(1);
+      fireScale.setValue(0.85);
+      sparkOpacity.setValue(0);
+
+      Animated.sequence([
+        // Toss crumpled paper down into the fire
+        Animated.parallel([
+          Animated.timing(paperTranslateY, { toValue: 68, duration: 750, easing: Easing.in(Easing.quad), useNativeDriver: useNative }),
+          Animated.timing(paperRotate, { toValue: 1, duration: 750, useNativeDriver: useNative }),
+          Animated.timing(paperScale, { toValue: 0.78, duration: 750, useNativeDriver: useNative }),
+          Animated.timing(fireScale, { toValue: 1.35, duration: 750, useNativeDriver: useNative }),
+        ]),
+        // Paper chars & turns to embers/ashes
+        Animated.parallel([
+          Animated.timing(paperScale, { toValue: 0.15, duration: 900, useNativeDriver: useNative }),
+          Animated.timing(paperOpacity, { toValue: 0, duration: 900, useNativeDriver: useNative }),
+          Animated.timing(sparkOpacity, { toValue: 1, duration: 500, useNativeDriver: useNative }),
+          Animated.timing(fireScale, { toValue: 0.95, duration: 900, useNativeDriver: useNative }),
+        ]),
+      ]).start(() => {
+        setIsBurning(false);
+        setRitualDone(true);
+        soundService.playVictory();
+      });
+    } else {
+      starTranslateY.setValue(40);
+      starScale.setValue(1);
+      paperOpacity.setValue(1);
+      sparkOpacity.setValue(0.3);
+
+      Animated.parallel([
+        Animated.timing(starTranslateY, { toValue: -150, duration: 1700, easing: Easing.out(Easing.cubic), useNativeDriver: useNative }),
+        Animated.timing(starScale, { toValue: 0.25, duration: 1700, useNativeDriver: useNative }),
+        Animated.timing(paperOpacity, { toValue: 0, duration: 1650, useNativeDriver: useNative }),
+        Animated.timing(sparkOpacity, { toValue: 1, duration: 1200, useNativeDriver: useNative }),
+      ]).start(() => {
+        setIsBurning(false);
+        setRitualDone(true);
+        soundService.playVictory();
+      });
+    }
   };
 
   return (
@@ -168,16 +211,14 @@ export const VentBoxSection = () => {
         </Text>
       </View>
 
-      {/* Dynamic Emotion-Matching Animated Write Card */}
-      <Animated.View
+      {/* Dynamic Emotion-Matching Write Card */}
+      <View
         style={[
           styles.writeCard,
           {
             backgroundColor: emotion.bg,
             borderColor: emotion.border,
             shadowColor: emotion.accent,
-            opacity: burnOpacity,
-            transform: [{ scale: burnScale }],
           },
         ]}
       >
@@ -243,7 +284,7 @@ export const VentBoxSection = () => {
             <Text style={styles.postBtnText}>Release to Universe 🌌</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
 
       {/* Zero-Trace Guarantee Note */}
       <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.divider, marginTop: 12 }]}>
@@ -253,6 +294,116 @@ export const VentBoxSection = () => {
           We never store, log, or track anything you release here. Once you let it go, it is gone completely.
         </Text>
       </View>
+
+      {/* Tactile Paper-to-Fire / Release-to-Universe Ritual Modal */}
+      <Modal
+        visible={!!ritualMode}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isBurning && setRitualMode(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: ritualMode === 'burn' ? 'rgba(24, 10, 8, 0.88)' : 'rgba(11, 16, 38, 0.9)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <View style={{ width: '100%', maxWidth: 380, alignItems: 'center', minHeight: 320, justifyContent: 'center' }}>
+            {ritualMode === 'burn' ? (
+              <>
+                <Animated.View
+                  style={{
+                    backgroundColor: '#FFF7ED',
+                    borderColor: '#FDBA74',
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    padding: 16,
+                    width: '86%',
+                    opacity: paperOpacity,
+                    transform: [
+                      { translateY: paperTranslateY },
+                      { scale: paperScale },
+                      {
+                        rotate: paperRotate.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '-14deg'],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#9A3412', marginBottom: 4 }}>
+                    📄 YOUR PAPER NOTE
+                  </Text>
+                  <Text style={{ fontSize: 13, color: '#431407', fontStyle: 'italic' }} numberOfLines={3}>
+                    "{ritualSnippet}"
+                  </Text>
+                </Animated.View>
+
+                <Animated.View style={{ marginTop: 24, transform: [{ scale: fireScale }], alignItems: 'center' }}>
+                  <Text style={{ fontSize: 64 }}>🔥</Text>
+                </Animated.View>
+
+                <Animated.Text style={{ opacity: sparkOpacity, fontSize: 20, marginTop: -12, letterSpacing: 8 }}>
+                  ✨ 💨 ✨
+                </Animated.Text>
+              </>
+            ) : (
+              <>
+                <Animated.Text style={{ opacity: sparkOpacity, fontSize: 22, letterSpacing: 10, marginBottom: 24 }}>
+                  ✨ 🌟 💫 🌙
+                </Animated.Text>
+
+                <Animated.View
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.14)',
+                    borderColor: 'rgba(196,181,253,0.5)',
+                    borderWidth: 1,
+                    borderRadius: 24,
+                    padding: 18,
+                    width: '86%',
+                    alignItems: 'center',
+                    opacity: paperOpacity,
+                    transform: [{ translateY: starTranslateY }, { scale: starScale }],
+                  }}
+                >
+                  <Text style={{ fontSize: 28, marginBottom: 6 }}>🏮</Text>
+                  <Text style={{ fontSize: 13, color: '#F5F3FF', textAlign: 'center', fontStyle: 'italic' }} numberOfLines={3}>
+                    "{ritualSnippet}"
+                  </Text>
+                </Animated.View>
+              </>
+            )}
+
+            {ritualDone && (
+              <View style={{ alignItems: 'center', marginTop: 20 }}>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: '#FFFFFF', textAlign: 'center' }}>
+                  {ritualMode === 'burn' ? 'Imeyeyuka — Burned to Ashes' : 'Released to the Universe'}
+                </Text>
+                <Text style={{ fontSize: 13.5, color: '#E2E8F0', textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+                  Your words have dissolved completely — nothing was saved or tracked. Take a slow, peaceful breath.
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    marginTop: 20,
+                    backgroundColor: ritualMode === 'burn' ? '#EA580C' : '#7C3AED',
+                    paddingHorizontal: 26,
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                  }}
+                  onPress={() => setRitualMode(null)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>I feel lighter ✓</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
