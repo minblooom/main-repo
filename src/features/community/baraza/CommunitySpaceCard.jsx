@@ -1,5 +1,7 @@
 // src/features/community/baraza/CommunitySpaceCard.jsx
 // src/features/community/baraza/CommunitySpaceCard.jsx
+// src/features/community/baraza/CommunitySpaceCard.jsx
+// src/features/community/baraza/CommunitySpaceCard.jsx
 import React from 'react';
 import { Pressable, View, Text } from 'react-native';
 import { useSpaceTone } from '../utils/spaceTones';
@@ -40,15 +42,9 @@ export const CommunitySpaceCard = ({
             <Text style={[styles.badge, { color: t.accent }]}>JOINED</Text>
           ) : (
             !!quickLabel && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${quickLabel} ${title}`}
-                onPress={onQuick}
-                hitSlop={6}
-                style={[styles.quick, { borderColor: t.accent }]}
-              >
+              <View style={[styles.quick, { borderColor: t.accent }]}>
                 <Text style={[styles.quickText, { color: t.accent }]}>{quickLabel}</Text>
-              </Pressable>
+              </View>
             )
           )}
         </View>

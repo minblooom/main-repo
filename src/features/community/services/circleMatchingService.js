@@ -7,6 +7,15 @@
 // 4. Shared Passion / Interest (>= 1 common passion, picks up to 5)
 // 5. Hard Capacity Cap (<= 12 members per circle, auto-locks when full)
 
+// src/features/community/services/circleMatchingService.js
+// Dynamic Baraza Circle Matching Engine
+// Enforces the 5 Non-Negotiable Invariants:
+// 1. Strict Age Cohort (13–17, 18–24, 25+)
+// 2. Gender Alignment (gender-specific spaces like Sisterhood / Men's Grounding only shown to matching gender)
+// 3. Shared Clinical Issue / Struggle (>= 1 common struggle)
+// 4. Shared Passion / Interest (>= 1 common passion, picks up to 5)
+// 5. Hard Capacity Cap (<= 12 members per circle, auto-locks when full)
+
 import { barazaCircles } from '../data/communityData.js';
 
 /**
@@ -31,6 +40,40 @@ export function getAgeBand(age) {
 }
 
 /**
+ * Normalizes any age value or onboarding ageGroup/ageBand string
+ * into one of the three strict Baraza cohorts: '13-17', '18-24', or '25+'.
+ */
+export function normalizeAgeBand(ageOrBand) {
+  if (ageOrBand === null || ageOrBand === undefined) return '18-24';
+  const raw = String(ageOrBand).trim().replace(/–/g, '-').toUpperCase();
+  if (!raw) return '18-24';
+
+  if (raw === '13-17' || raw === 'TEEN_13_17') return '13-17';
+  if (raw === '18-24' || raw === '18-21' || raw === '22-25' || raw === 'YOUNG_ADULT_18_24') {
+    return '18-24';
+  }
+  if (raw === '25+' || raw === '26-29+' || raw === 'ADULT_25_PLUS') return '25+';
+
+  return getAgeBand(raw);
+}
+
+/**
+ * Returns true if the user belongs to the 13-17 minor cohort.
+ */
+export function isMinorCohort(ageOrBand) {
+  return normalizeAgeBand(ageOrBand) === '13-17';
+}
+
+/**
+ * Enforces strict two-way cohort isolation:
+ * 13-17 minors cannot access 18-24 / 25+ spaces, and 18-24 / 25+ cannot access 13-17 spaces.
+ */
+export function canAccessCircle(userAgeOrBand, circle) {
+  if (!circle) return false;
+  return normalizeAgeBand(userAgeOrBand) === normalizeAgeBand(circle.ageGroup || '18-24');
+}
+
+/**
  * Computes match resonance and ranks circles for a user
  *
  * @param {Object} params
@@ -46,9 +89,7 @@ export function getMatchingCirclesForUser({
   focusAreas = [],
   interests = [],
 }) {
-  const userAgeBand = typeof age === 'string' && (age.includes('-') || age.includes('+'))
-    ? age.replace(/–/g, '-')
-    : getAgeBand(age);
+  const userAgeBand = normalizeAgeBand(age);
 
   const normalizedGender = String(gender || 'prefer_not').toLowerCase().trim();
 
@@ -152,15 +193,18 @@ export function getMatchingCirclesForUser({
   });
 
   // Top candidate becomes Primary Matched Sanctuary Circle (Hero Card)
-  const primary = openCohorts[0] || scored.find((c) => c.isGenderMatch) || scored[0];
-  const primaryMatch = {
-    ...primary,
-    isPrimaryMatch: true,
-  };
+  // Strict cohort invariant: fallback must still respect age cohort.
+  const primary = openCohorts[0] || cohortCircles[0] || scored.find((c) => c.isAgeMatch) || null;
+  const primaryMatch = primary
+    ? {
+        ...primary,
+        isPrimaryMatch: true,
+      }
+    : null;
 
   // Remaining eligible circles in feed
   const eligibleCircles = openCohorts.map((c) =>
-    c.id === primaryMatch.id ? { ...c, isPrimaryMatch: true } : c
+    primaryMatch && c.id === primaryMatch.id ? { ...c, isPrimaryMatch: true } : c
   );
 
   return {

@@ -1,19 +1,30 @@
 // src/features/community/baraza/CommunityGreeting.jsx
 // src/features/community/baraza/CommunityGreeting.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
 
-export const CommunityGreeting = ({ companionId = 'noodle', message, onAnother }) => {
+export const CommunityGreeting = ({
+  companionId = 'noodle',
+  message,
+  onAnother,
+}) => {
   const { theme } = useTheme();
   const [happy, setHappy] = useState(false);
   const timer = useRef(null);
+  const textFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const handleRefresh = () => {
+    textFade.setValue(0.2);
     onAnother?.();
+    Animated.timing(textFade, {
+      toValue: 1,
+      duration: 240,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
     setHappy(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setHappy(false), 1800);
@@ -38,9 +49,12 @@ export const CommunityGreeting = ({ companionId = 'noodle', message, onAnother }
           </Text>
         </View>
 
-        <Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={3}>
+        <Animated.Text
+          style={[styles.title, { color: theme.textPrimary, opacity: textFade }]}
+          numberOfLines={3}
+        >
           {message || 'You don’t have to carry everything alone today.'}
-        </Text>
+        </Animated.Text>
 
         <TouchableOpacity
           accessibilityRole="button"

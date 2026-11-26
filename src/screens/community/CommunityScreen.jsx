@@ -11,16 +11,23 @@ import { BottomNavBar } from '../../components/navigation/BottomNavBar';
 import { BarazaGroupChatView } from '../../features/community/circles/BarazaGroupChatView';
 import { SmallWinsSection } from '../../features/community/smallWins/SmallWinsSection';
 import { VentBoxSection } from '../../features/community/vent/VentBoxSection';
-import { getMatchingCirclesForUser } from '../../features/community/services/circleMatchingService';
+import {
+  getMatchingCirclesForUser,
+  canAccessCircle,
+  isMinorCohort,
+} from '../../features/community/services/circleMatchingService';
 import { onboardingStorage } from '../../services/onboardingStorage';
+import { AuthService } from '../../core/api/authService';
 import { useCommunityStore } from '../../features/community/store/communityStore';
 import { CommunityHeader } from './components/CommunityHeader';
 import { QuickActionsGrid } from './components/QuickActionsGrid';
 import { PrimaryCircleCard } from './components/PrimaryCircleCard';
+import { TeenSanctuaryBox } from './components/TeenSanctuaryBox';
 import { CirclesFeedSection } from './components/CirclesFeedSection';
 import { CommunityFeatureModal } from './components/CommunityFeatureModal';
-
-const CATEGORIES = [
+import { BarazaPresenceBar } from '../../features/community/baraza/BarazaPresenceBar';
+import { TeenDailyPulse } from './components/TeenDailyPulse';
+const ADULT_CATEGORIES = [
   'All Circles',
   'Youth & Campus 🎓',
   'Nairobi Hustle 💼',
@@ -30,11 +37,20 @@ const CATEGORIES = [
   "Men's Grounding 🦁",
 ];
 
+const TEEN_CATEGORIES = [
+  'All Circles',
+  'School & Exams 🎒',
+  'After-School & Unwind 🎧',
+  'Creative & Identity 🎨',
+  'Sisterhood 🌸',
+  "Brothers' Grounding 🛡️",
+];
+
 export const CommunityScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
-  const companionId = route?.params?.companion || 'noodle';
+  const companionId = (route && route.params && route.params.companion) || 'noodle';
 
   const [selectedCategory, setSelectedCategory] = useState('All Circles');
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,16 +72,29 @@ export const CommunityScreen = ({ navigation, route }) => {
   useEffect(() => {
     async function loadUserPreferences() {
       try {
-        const prefs = await onboardingStorage.getPreferences();
-        if (prefs) {
+        const [prefs, storedUser] = await Promise.all([
+          onboardingStorage.getPreferences(),
+          AuthService.getStoredUser(),
+        ]);
+        if (prefs || storedUser) {
           setUserProfile({
-            age: prefs.age || prefs.ageBand || '18-24',
-            gender: prefs.gender || 'prefer_not',
-            focusAreas: prefs.focusAreas || prefs.primaryStruggles || [],
-            interests: prefs.interests || [],
+            age:
+              prefs?.age ||
+              prefs?.ageBand ||
+              prefs?.ageGroup ||
+              storedUser?.ageBand ||
+              storedUser?.age ||
+              '18-24',
+            gender: prefs?.gender || storedUser?.gender || 'prefer_not',
+            focusAreas:
+              prefs?.focusAreas ||
+              prefs?.primaryStruggles ||
+              storedUser?.primaryStruggles ||
+              [],
+            interests: prefs?.interests || storedUser?.interests || [],
           });
         }
-      } catch {}
+      } catch(_err){}
     }
     loadUserPreferences();
     const unsubscribe = navigation?.addListener?.('focus', loadUserPreferences);
@@ -83,14 +112,22 @@ export const CommunityScreen = ({ navigation, route }) => {
     [userProfile]
   );
 
+  const isTeenCohort = isMinorCohort(userAgeBand);
+
   const visibleCategories = useMemo(() => {
     const g = String(userProfile.gender || 'prefer_not').toLowerCase().trim();
-    return CATEGORIES.filter((cat) => {
+    const base = isTeenCohort ? TEEN_CATEGORIES : ADULT_CATEGORIES;
+    return base.filter((cat) => {
       if (cat === 'Sisterhood 🌸') return g === 'female';
-      if (cat === "Men's Grounding 🦁") return g === 'male';
+      if (cat === "Men's Grounding 🦁" || cat === "Brothers' Grounding 🛡️") return g === 'male';
       return true;
     });
-  }, [userProfile.gender]);
+  }, [userProfile.gender, isTeenCohort]);
+
+  const handleSelectCircle = (circle) => {
+    if (!canAccessCircle(userAgeBand, circle)) return;
+    setSelectedCircle(circle);
+  };
 
   useEffect(() => {
     if (!visibleCategories.includes(selectedCategory)) {
@@ -187,6 +224,7 @@ export const CommunityScreen = ({ navigation, route }) => {
           {selectedCircle ? (
             <BarazaGroupChatView
               circle={selectedCircle}
+              userAgeBand={userAgeBand}
               onBack={() => setSelectedCircle(null)}
             />
           ) : (
@@ -198,33 +236,82 @@ export const CommunityScreen = ({ navigation, route }) => {
               showsVerticalScrollIndicator={false}
             >
               <View style={[styles.maxWrapper, isWide && styles.maxWrapperWide]}>
-                <CommunityHeader />
+                <CommunityHeader userAgeBand={userAgeBand} />
 
                 <QuickActionsGrid
                   onOpenSmallWins={() => setActiveModal('small_wins')}
                   onOpenVentBox={() => setActiveModal('vent_box')}
+                  isTeenCohort={isTeenCohort}
                 />
 
-                <PrimaryCircleCard
-                  primaryMatch={primaryMatch}
-                  userAgeBand={userAgeBand}
-                  isJoined={joinedCircleIds.includes(primaryMatch?.id)}
-                  onPress={() => setSelectedCircle(primaryMatch)}
-                />
+                {isTeenCohort ? (
+                  <View style={{ gap: 20 }}>
+                    <TeenSanctuaryBox
+                      companionId={companionId}
+                      primaryMatch={primaryMatch}
+                      isJoined={joinedCircleIds.includes(primaryMatch?.id)}
+                      onSelectCircle={handleSelectCircle}
+                    />
 
-                <CirclesFeedSection
-                  userAgeBand={userAgeBand}
-                  joinedCircles={joinedCircles}
-                  joinedCircleIds={joinedCircleIds}
-                  visibleCategories={visibleCategories}
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                  searchQuery={searchQuery}
-                  onChangeSearchQuery={setSearchQuery}
-                  filteredCircles={filteredCircles}
-                  circleLastMessages={circleLastMessages}
-                  onSelectCircle={setSelectedCircle}
-                />
+                    <BarazaPresenceBar
+                      cohortKey={userAgeBand}
+                      onOpenChill={(initialTab, vibeLabel) =>
+                        navigation.navigate('Chill', { initialTab, vibeLabel })
+                      }
+                    />
+
+                    <TeenDailyPulse
+                      companionId={companionId}
+                      userAgeBand={userAgeBand}
+                    />
+
+                    <CirclesFeedSection
+                      userAgeBand={userAgeBand}
+                      joinedCircles={joinedCircles}
+                      joinedCircleIds={joinedCircleIds}
+                      visibleCategories={visibleCategories}
+                      selectedCategory={selectedCategory}
+                      onSelectCategory={setSelectedCategory}
+                      searchQuery={searchQuery}
+                      onChangeSearchQuery={setSearchQuery}
+                      filteredCircles={filteredCircles}
+                      circleLastMessages={circleLastMessages}
+                      onSelectCircle={handleSelectCircle}
+                    />
+                  </View>
+                ) : (
+                  <>
+                    <PrimaryCircleCard
+                      primaryMatch={primaryMatch}
+                      userAgeBand={userAgeBand}
+                      isJoined={joinedCircleIds.includes(primaryMatch?.id)}
+                      onPress={() => handleSelectCircle(primaryMatch)}
+                    />
+
+                    <CirclesFeedSection
+                      userAgeBand={userAgeBand}
+                      joinedCircles={joinedCircles}
+                      joinedCircleIds={joinedCircleIds}
+                      visibleCategories={visibleCategories}
+                      selectedCategory={selectedCategory}
+                      onSelectCategory={setSelectedCategory}
+                      searchQuery={searchQuery}
+                      onChangeSearchQuery={setSearchQuery}
+                      filteredCircles={filteredCircles}
+                      circleLastMessages={circleLastMessages}
+                      onSelectCircle={handleSelectCircle}
+                    />
+
+                    <View style={{ marginTop: 24 }}>
+                      <BarazaPresenceBar
+                      cohortKey={userAgeBand}
+                      onOpenChill={(initialTab, vibeLabel) =>
+                        navigation.navigate('Chill', { initialTab, vibeLabel })
+                      }
+                    />
+                    </View>
+                  </>
+                )}
               </View>
             </ScrollView>
           )}
@@ -273,3 +360,4 @@ const styles = StyleSheet.create({
   maxWrapper: { width: '100%' },
   maxWrapperWide: { maxWidth: 820, alignSelf: 'center' },
 });
+

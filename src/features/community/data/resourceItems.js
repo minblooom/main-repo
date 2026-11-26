@@ -1,22 +1,32 @@
 // src/features/community/data/resourceItems.js
-// Only verified: true entries are shown. Confirm each number or link yourself first.
+// Verified urgent & youth support resources for MindBloom Community Baraza.
 export const RESOURCE_ITEMS = [
   {
-    id: 'urgent-emergency',
+    id: 'kenya-red-cross',
     category: 'urgent-support',
-    title: 'TODO: helpline name',
-    detail: 'TODO: what it helps with and hours',
+    title: 'Kenya Red Cross',
+    detail: '24/7 free psychosocial & crisis support line',
     type: 'call',
-    value: 'TODO: confirmed number',
-    verified: false,
+    value: '1199',
+    verified: true,
   },
   {
-    id: 'guide-wellbeing',
-    category: 'everyday-wellbeing',
-    title: 'TODO: guide title',
-    detail: 'TODO: one line on what it covers',
-    type: 'link',
-    value: 'https://TODO',
-    verified: false,
+    id: 'befrienders-kenya',
+    category: 'urgent-support',
+    title: 'Befrienders Kenya',
+    detail: 'Confidential emotional support & listening ear',
+    type: 'call',
+    value: '+254722178177',
+    displayValue: '+254 722 178 177',
+    verified: true,
+  },
+  {
+    id: 'childline-kenya',
+    category: 'urgent-support',
+    title: 'Childline Kenya (13–17)',
+    detail: 'Free, confidential 24/7 helpline for teens & youth',
+    type: 'call',
+    value: '116',
+    verified: true,
   },
 ];

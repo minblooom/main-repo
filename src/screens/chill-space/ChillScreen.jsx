@@ -23,11 +23,17 @@ import { EventsTab } from './components/EventsTab';
 import { PodsTab } from './components/PodsTab';
 import { styles } from './styles/ChillScreen.styles';
 
-export const ChillContent = () => {
+export const ChillContent = ({ initialTab = 'stories', vibeLabel = null }) => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
   const { currentEpisode, isPlaying, playEpisode, togglePlay } = useAudioPlayer();
-  const [activeTab, setActiveTab] = useState('stories');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [stories, setStories] = useState(() =>
     initialStories.map((s) => ({ ...s, isSaved: false }))
   );
@@ -180,7 +186,9 @@ export const ChillContent = () => {
             Chill Space 🌴
           </Text>
           <Text style={[styles.subtitle, { color: mutedText }]}>
-            Interactive Sanctuary · Matched to {(userFocusAreas[0] || 'Peace').toUpperCase()}
+            {vibeLabel
+              ? `Interactive Sanctuary · Matched to your ${vibeLabel.toUpperCase()} vibe`
+              : `Interactive Sanctuary · Matched to ${(userFocusAreas[0] || 'Peace').toUpperCase()}`}
           </Text>
         </View>
         <TouchableOpacity
@@ -280,10 +288,12 @@ export const ChillContent = () => {
 };
 
 // Standalone ChillScreen with unified MindBloom sidebar & mobile navigation
-export const ChillScreen = ({ navigation }) => {
+export const ChillScreen = ({ navigation, route }) => {
   const { theme, companionId } = useTheme();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const isWide = isDesktop || isTablet;
+  const initialTab = route?.params?.initialTab || 'stories';
+  const vibeLabel = route?.params?.vibeLabel || null;
 
   const handleNavigate = (routeId) => {
     if (routeId === 'home') navigation?.navigate?.('Home', { tab: 'home' });
@@ -305,7 +315,7 @@ export const ChillScreen = ({ navigation }) => {
         )}
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           <ScrollView contentContainerStyle={{ padding: isWide ? 32 : 16 }}>
-            <ChillContent />
+            <ChillContent initialTab={initialTab} vibeLabel={vibeLabel} />
           </ScrollView>
           {!isWide && (
             <BottomNavBar

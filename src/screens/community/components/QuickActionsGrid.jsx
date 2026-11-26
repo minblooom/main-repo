@@ -3,7 +3,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 
-export const QuickActionsGrid = ({ onOpenSmallWins, onOpenVentBox }) => {
+export const QuickActionsGrid = ({
+  onOpenSmallWins,
+  onOpenVentBox,
+  isTeenCohort = false,
+}) => {
   const { theme } = useTheme();
 
   return (
@@ -25,10 +29,12 @@ export const QuickActionsGrid = ({ onOpenSmallWins, onOpenVentBox }) => {
           </View>
         </View>
         <Text style={[styles.actionButtonTitle, { color: theme.textPrimary }]}>
-          Small Wins Wall 🏆
+          {isTeenCohort ? 'Tiny Wins 🏆' : 'Small Wins Wall 🏆'}
         </Text>
         <Text style={[styles.actionButtonSub, { color: theme.textSecondary }]}>
-          Celebrate tiny acts of daily courage
+          {isTeenCohort
+            ? 'Even getting through today counts'
+            : 'Celebrate tiny acts of daily courage'}
         </Text>
       </TouchableOpacity>
 
@@ -49,10 +55,12 @@ export const QuickActionsGrid = ({ onOpenSmallWins, onOpenVentBox }) => {
           </View>
         </View>
         <Text style={[styles.actionButtonTitle, { color: theme.textPrimary }]}>
-          Safe Vent Box 💨
+          {isTeenCohort ? 'Safe Vent Box 🫧' : 'Safe Vent Box 💨'}
         </Text>
         <Text style={[styles.actionButtonSub, { color: theme.textSecondary }]}>
-          Release emotional weight anonymously
+          {isTeenCohort
+            ? '13–17 only · Let it out anonymously'
+            : 'Release emotional weight anonymously'}
         </Text>
       </TouchableOpacity>
     </View>

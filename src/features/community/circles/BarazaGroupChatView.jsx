@@ -2,6 +2,10 @@
 // Authentic real-time group chat for MindBloom Baraza Circles
 // Pure real user communication with AsyncStorage persistence, zero fake bots, and zero dummy seeds.
 
+// src/features/community/circles/BarazaGroupChatView.jsx
+// Authentic real-time group chat for MindBloom Baraza Circles
+// Pure real user communication with AsyncStorage persistence, zero fake bots, and zero dummy seeds.
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -25,6 +29,7 @@ import { useI18n } from '../../../services/i18n';
 import { soundService } from '../../../screens/arcade/audio/soundService';
 import { onboardingStorage } from '../../../services/onboardingStorage';
 import { useCommunityStore } from '../store/communityStore';
+import { canAccessCircle } from '../services/circleMatchingService';
 import { VoiceNotePlayer } from '../../../components/voice/VoiceNotePlayer';
 import {
   MAX_VOICE_NOTE_SECONDS,
@@ -45,11 +50,34 @@ function formatTimestamp(date = new Date()) {
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 }
 
-export const BarazaGroupChatView = ({ circle, onBack }) => {
+export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
   const circleId = circle?.id || 'campus_grounding';
   const storageKey = `mindbloom:baraza:chat:${circleId}:v2`;
+
+  if (userAgeBand && !canAccessCircle(userAgeBand, circle)) {
+    return (
+      <View style={[styles.chatRoot, { backgroundColor: theme.bg, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <View style={[styles.emptyChatCard, { backgroundColor: theme.cardBg, borderColor: theme.divider, maxWidth: 420 }]}>
+          <Text style={styles.emptyChatEmoji}>🔒</Text>
+          <Text style={[styles.emptyChatTitle, { color: theme.textPrimary }]}>
+            Cohort-Protected Space
+          </Text>
+          <Text style={[styles.emptyChatSubtitle, { color: theme.textSecondary }]}>
+            To keep 13–17 teen spaces and 18+ spaces safe and peer-only, circles are strictly locked to your age group ({userAgeBand}).
+          </Text>
+          <TouchableOpacity
+            onPress={onBack}
+            style={[styles.safeTag, { backgroundColor: theme.accentSoft, paddingHorizontal: 16, paddingVertical: 10, marginTop: 8 }]}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.safeTagText, { color: theme.accent }]}>‹ Back to Baraza</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const {
     joinedCircleIds,
@@ -535,6 +563,34 @@ export const BarazaGroupChatView = ({ circle, onBack }) => {
               <Text style={[styles.emptyChatSubtitle, { color: theme.textMuted }]}>
                 No messages have been sent here yet today. Be the first to share a quiet thought, dictate, or send a voice note below.
               </Text>
+              {(userAgeBand === '13-17' || circle?.ageGroup === '13-17') && (
+                <View style={styles.promptStartersWrap}>
+                  <Text style={[styles.promptStartersLabel, { color: theme.textSecondary }]}>
+                    Not sure what to say? Tap a starter:
+                  </Text>
+                  <View style={styles.promptChipsRow}>
+                    {[
+                      "Right now I'm carrying...",
+                      'One thing that helped today was...',
+                      'Anyone else feeling...',
+                    ].map((starter) => (
+                      <TouchableOpacity
+                        key={starter}
+                        onPress={() => setInputText(`${starter} `)}
+                        activeOpacity={0.8}
+                        style={[
+                          styles.promptChip,
+                          { backgroundColor: theme.accentSoft, borderColor: theme.divider },
+                        ]}
+                      >
+                        <Text style={[styles.promptChipText, { color: theme.accent }]}>
+                          {starter}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           ) : (
             (() => {
@@ -1128,6 +1184,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     maxWidth: 320,
+  },
+  promptStartersWrap: {
+    marginTop: 10,
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+  },
+  promptStartersLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  promptChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  promptChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 99,
+    borderWidth: 1,
+  },
+  promptChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   peerBubbleRow: {
     flexDirection: 'row',
