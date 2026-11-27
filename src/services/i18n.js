@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onboardingStorage } from './onboardingStorage';
+import { apiClient, AUTH_STORAGE_KEYS, TokenStorage } from '../core/api/client';
 
 const LANGUAGE_KEY = '@mindbloom:selected_language';
 const COUNTRY_KEY = '@mindbloom:selected_country';
@@ -250,6 +251,31 @@ export const I18nProvider = ({ children }) => {
           } catch {}
         } else if (prefs?.userLocation) {
           setCustomLocation(prefs.userLocation);
+        } else {
+          // Hydrate saved location from backend user profile when signed in on a new device
+          const token = await TokenStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+          if (token) {
+            apiClient
+              .get('/user/me')
+              .then((res) => {
+                const u = res?.data?.data;
+                if (u?.city) {
+                  const serverLoc = {
+                    city: u.city,
+                    country: u.country || COUNTRY_DATA[u.countryId]?.name || 'Kenya',
+                    countryId: u.countryId || 'ke',
+                    lat: typeof u.locationLat === 'number' ? u.locationLat : COUNTRY_DATA[u.countryId]?.lat ?? -1.2921,
+                    lon: typeof u.locationLon === 'number' ? u.locationLon : COUNTRY_DATA[u.countryId]?.lon ?? 36.8219,
+                  };
+                  setCustomLocation(serverLoc);
+                  if (u.countryId && COUNTRY_DATA[u.countryId]) {
+                    setCountryState(u.countryId);
+                  }
+                  AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(serverLoc)).catch(() => {});
+                }
+              })
+              .catch(() => {});
+          }
         }
 
         setLanguageState('en');
@@ -299,6 +325,17 @@ export const I18nProvider = ({ children }) => {
       setCustomLocation(nextLoc);
       await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(nextLoc));
       await onboardingStorage.savePreferences({ country: norm, userLocation: nextLoc, location: `${nextLoc.city}, ${nextLoc.country}` });
+      TokenStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN).then((token) => {
+        if (token) {
+          apiClient.patch('/user/profile', {
+            city: nextLoc.city,
+            country: nextLoc.country,
+            countryId: nextLoc.countryId,
+            locationLat: nextLoc.lat,
+            locationLon: nextLoc.lon,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
     } catch {}
   };
 
@@ -326,6 +363,17 @@ export const I18nProvider = ({ children }) => {
         userLocation: nextLoc,
         location: `${nextLoc.city}, ${nextLoc.country}`,
       });
+      TokenStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN).then((token) => {
+        if (token) {
+          apiClient.patch('/user/profile', {
+            city: nextLoc.city,
+            country: nextLoc.country,
+            countryId: nextLoc.countryId,
+            locationLat: nextLoc.lat,
+            locationLon: nextLoc.lon,
+          }).catch(() => {});
+        }
+      }).catch(() => {});
     } catch {}
   };
 

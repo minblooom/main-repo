@@ -259,14 +259,14 @@ export async function getRsvpPasses() {
   }
 }
 
-export async function saveRsvpPass(event, attendeeName = 'MindBloom Member') {
+export async function saveRsvpPass(event, attendeeName = 'MindBloom Member', forcedTicketCode) {
   const passes = await getRsvpPasses();
-  if (!passes[event.id]) {
+  if (!passes[event.id] || (forcedTicketCode && passes[event.id].ticketCode !== forcedTicketCode)) {
     passes[event.id] = {
       eventId: event.id,
-      ticketCode: generatePassCode(event.id),
+      ticketCode: forcedTicketCode || passes[event.id]?.ticketCode || generatePassCode(event.id),
       attendeeName,
-      rsvpedAt: new Date().toISOString(),
+      rsvpedAt: passes[event.id]?.rsvpedAt || new Date().toISOString(),
       isOnline: !!event.isOnline,
       title: event.title,
       locationStr: event.locationStr,

@@ -139,15 +139,28 @@ export const EventsTab = () => {
 
     apiClient
       .get('/community/events/rsvps')
-      .then((res) => {
+      .then(async (res) => {
         const data = res?.data?.data;
         if (!mounted || !data) return;
         const myIds = new Set(data.myEventIds || []);
         const counts = data.counts || {};
+        const serverPasses = data.myPasses || {};
+
+        // Hydrate local pass store with canonical server ticketCodes for cross-device sync
+        let updatedLocalPasses = { ...rsvpPasses };
+        for (const evId of myIds) {
+          const code = serverPasses[evId];
+          if (code && (!updatedLocalPasses[evId] || updatedLocalPasses[evId].ticketCode !== code)) {
+            const matchedEv = [...baseEvents, ...localPublicEvents].find((e) => e.id === evId) || { id: evId };
+            updatedLocalPasses = await saveRsvpPass(matchedEv, attendeeName, code);
+          }
+        }
+        if (mounted) setRsvpPasses(updatedLocalPasses);
+
         setBaseEvents((prev) =>
           prev.map((ev) => ({
             ...ev,
-            isGoing: myIds.has(ev.id) || !!rsvpPasses[ev.id],
+            isGoing: myIds.has(ev.id) || !!updatedLocalPasses[ev.id],
             joinedCount: typeof counts[ev.id] === 'number' ? counts[ev.id] : ev.joinedCount,
           }))
         );
@@ -193,9 +206,11 @@ export const EventsTab = () => {
     const nextGoing = !targetEv.isGoing;
 
     // 1. Optimistic local pass & UI update
+    let localTicketCode;
     if (nextGoing) {
       const updatedPasses = await saveRsvpPass(targetEv, attendeeName);
       setRsvpPasses(updatedPasses);
+      localTicketCode = updatedPasses[id]?.ticketCode;
     } else {
       const updatedPasses = await removeRsvpPass(id);
       setRsvpPasses(updatedPasses);
@@ -233,9 +248,14 @@ export const EventsTab = () => {
       const res = await apiClient.post(`/community/events/${id}/rsvp`, {
         eventTitle: targetEv.title,
         eventDateStr: targetEv.dateStr,
+        ticketCode: localTicketCode,
       });
       const serverData = res?.data?.data;
       if (serverData) {
+        if (serverData.isGoing && serverData.ticketCode) {
+          const syncedPasses = await saveRsvpPass(targetEv, attendeeName, serverData.ticketCode);
+          setRsvpPasses(syncedPasses);
+        }
         const syncServer = (list) =>
           list.map((ev) =>
             ev.id === id
