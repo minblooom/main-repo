@@ -452,7 +452,7 @@ export const BlockPuzzleGame = ({
 
       if (
         newBoard[r].every(
-          (cell) => cell === true || cell === 'obstacle'
+          (cell) => cell === true
         )
       ) {
         fullRows.push(r);
@@ -469,10 +469,7 @@ export const BlockPuzzleGame = ({
 
       for (let r = 0; r < BOARD_SIZE; r++) {
 
-        if (
-          newBoard[r][c] !== true &&
-          newBoard[r][c] !== 'obstacle'
-        ) {
+        if (newBoard[r][c] !== true) {
           columnFull = false;
           break;
         }
