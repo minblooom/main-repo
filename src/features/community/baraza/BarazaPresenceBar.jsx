@@ -485,7 +485,11 @@ export const BarazaPresenceBar = ({ cohortKey = '18-24', onOpenChill }) => {
                 >
                   <View style={styles.avatarWrap}>
                     <View style={[styles.avatarRing, { backgroundColor: accentBg, borderColor: isLit ? item.glowAccent : 'transparent' }]}>
-                      <Image source={item.companion.image} style={styles.avatarImg} resizeMode="cover" />
+                      <Image
+                        source={item.companion.cutoutImage || item.companion.image}
+                        style={styles.avatarImg}
+                        resizeMode="contain"
+                      />
                     </View>
                     <View style={[styles.badgeCircle, { backgroundColor: isLit ? item.glowAccent : theme.cardBg, borderColor: isLit ? item.glowBg : theme.divider }]}>
                       <Text style={styles.badgeEmoji}>{item.icon}</Text>
@@ -733,14 +737,14 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarImg: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 36,
+    height: 36,
   },
   badgeCircle: {
     position: 'absolute',

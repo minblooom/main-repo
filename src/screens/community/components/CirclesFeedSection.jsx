@@ -71,7 +71,7 @@ export const CirclesFeedSection = ({
       {/* Other Circles Header */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-          Other Circles in Your Age Group ({userAgeBand})
+          Explore Peer Circles
         </Text>
       </View>
 
@@ -147,7 +147,7 @@ export const CirclesFeedSection = ({
           >
             <Text style={{ fontSize: 28 }}>🌿</Text>
             <Text style={[styles.circleItemTitle, { color: theme.textPrimary, textAlign: 'center' }]}>
-              No circles in this filter for your cohort yet
+              No circles in this filter yet
             </Text>
             <TouchableOpacity
               style={[styles.categoryPill, { backgroundColor: theme.accent, borderColor: theme.accent }]}
@@ -227,11 +227,11 @@ export const CirclesFeedSection = ({
                     <View style={styles.circleActiveNowBadge}>
                       <View style={styles.liveGreenDotSmall} />
                       <Text style={[styles.circleActiveNowText, { color: '#16A34A' }]}>
-                        {circle.isOverflowCohort ? 'Cohort 2 · Open' : `${maxCap - memberCount} spots open`}
+                        {`${maxCap - memberCount} spots open`}
                       </Text>
                     </View>
                     <Text style={[styles.circleTimeText, { color: theme.textMuted }]}>
-                      {lastMsg?.time || `Age ${circle.ageGroup || userAgeBand}`}
+                      {lastMsg?.time || 'Active today'}
                     </Text>
                   </View>
                 </View>

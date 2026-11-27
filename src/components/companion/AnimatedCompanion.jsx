@@ -216,7 +216,7 @@ export const AnimatedCompanion = ({
   });
 
   const auraSize = size * 1.32;
-  const imageSize = size * 0.86;
+  const imageSize = size * 0.78;
 
   return (
     <View style={styles.container}>
