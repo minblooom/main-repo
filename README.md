@@ -127,7 +127,7 @@ The Expo Audio config plugin enables microphone access for voice notes and backg
 
 The app uses `EXPO_PUBLIC_API_URL` for its production backend URL. Vercel and EAS are configured to use the Render API at `https://mainrepo-backend.onrender.com/api/v1` by default. Local development uses `http://localhost:5000/api/v1` on web/iOS and `http://10.0.2.2:5000/api/v1` on the Android emulator.
 
-Authentication, profile, mood check-in, arcade sync, community, and Aurora requests require the backend. Signup currently creates a session without email or phone ownership verification; password-reset OTP still depends on email delivery. Aurora's normal chat requests go through Render to Gemini when `GEMINI_API_KEY` is configured on the backend. Chat text and recent turns are sent to Google; never put the Gemini key in this frontend.
+Authentication, profile, mood check-in, arcade sync, community, and Aurora requests require the backend. Signup currently creates a session without email or phone ownership verification; password-reset OTP still depends on email delivery. Aurora's normal chat requests go through Render to Gemini when `GEMINI_API_KEY` is configured on the backend. The current message and up to 6 recent messages are sent to Google; never put the Gemini key in this frontend.
 
 ---
 
@@ -142,7 +142,15 @@ MindBloom is built for cultural comfort:
 ---
 
 ## 🛡️ Safety & Privacy First
-MindBloom is **not a replacement for emergency clinical care**. If a user indicates crisis or acute distress, discreet and supportive crisis modals surface verified, toll-free hotlines for immediate professional care. All personal journal reflections, Safe Vent posts, and community chat messages are encrypted locally using **XChaCha20-Poly1305** with a 256-bit key stored in `expo-secure-store`, and auth tokens are stored in encrypted device storage on native platforms.
+MindBloom is **not a replacement for emergency clinical care**. If a user indicates crisis or acute distress, discreet and supportive crisis modals surface local support resources. Storage and transmission vary by feature; see the data-flow notes below.
+
+### Actual data storage and AI flow
+
+- Journal text and saved Aurora conversation history are encrypted in local storage: native apps use XChaCha20-Poly1305 with a key in `expo-secure-store`; web uses AES-GCM with a non-extractable key in IndexedDB. Native voice-note audio is stored locally but is not protected by the journal encryption wrapper.
+- Aurora sends the current message and up to 6 recent messages through the backend to Google Gemini for a reply. The backend does not persist Aurora transcripts in the account database; Google's processing and retention follow its applicable API terms.
+- Account/profile preferences, mood check-ins, community messages/posts, and some game progress are stored by backend services. They are not end-to-end encrypted by MindBloom.
+- Web speech dictation uses the browser's speech-recognition service and may process audio outside MindBloom. Web auth tokens use browser AsyncStorage and are readable by same-origin JavaScript; native tokens use SecureStore.
+- The web journal export is unencrypted plain text and excludes voice notes. Full account export, in-app account deletion, and cache-clearing controls are not currently implemented.
 
 ---
 

@@ -1,6 +1,6 @@
 // src/services/journalStorage.js
 // Local-First Encrypted Persistent Storage for MindBloom Private Journal Entries
-// Guarantees that personal reflections remain encrypted on the user's phone.
+// Stores journal data through the shared encrypted local-storage layer.
 
 import { encryptedStorage } from './encryptedStorage';
 
@@ -11,13 +11,8 @@ export const journalStorage = {
    * Get all saved journal entries
    */
   async getEntries() {
-    try {
-      const data = await encryptedStorage.getItem(JOURNAL_STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (err) {
-      console.warn('[journalStorage] Failed to read entries:', err);
-      return [];
-    }
+    const data = await encryptedStorage.getItem(JOURNAL_STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
   },
 
   /**
@@ -25,8 +20,7 @@ export const journalStorage = {
    */
   async saveEntries(entries) {
     try {
-      await encryptedStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
-      return true;
+      return await encryptedStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
     } catch (err) {
       console.warn('[journalStorage] Failed to save entries:', err);
       return false;
@@ -47,11 +41,13 @@ export const journalStorage = {
       } else {
         updated = [entry, ...current];
       }
-      await this.saveEntries(updated);
+      if (!(await this.saveEntries(updated))) {
+        throw new Error('Encrypted journal storage is unavailable.');
+      }
       return updated;
     } catch (err) {
       console.warn('[journalStorage] Failed to save entry:', err);
-      return [];
+      throw err;
     }
   },
 
@@ -62,11 +58,13 @@ export const journalStorage = {
     try {
       const current = await this.getEntries();
       const updated = current.filter((e) => e.id !== id);
-      await this.saveEntries(updated);
+      if (!(await this.saveEntries(updated))) {
+        throw new Error('Encrypted journal storage is unavailable.');
+      }
       return updated;
     } catch (err) {
       console.warn('[journalStorage] Failed to delete entry:', err);
-      return [];
+      throw err;
     }
   },
 };

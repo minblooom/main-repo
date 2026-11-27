@@ -78,7 +78,7 @@ export const TERMS_SECTIONS = [
   {
     id: 'termination',
     title: '7. Termination & Account Deletion',
-    content: `You may delete your account and wipe all stored entries at any time directly through the Profile > Privacy & Data menu. MindBloom reserves the right to suspend or remove access for violations of community safety rules.`,
+    content: `In-app account deletion is not currently available. Contact privacy@mindbloom.app to request deletion of backend account data. Locally stored journal entries and Aurora history must be cleared from their respective screens or removed from the device. MindBloom reserves the right to suspend or remove access for violations of community safety rules.`,
   },
   {
     id: 'governing_law',

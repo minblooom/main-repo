@@ -1,5 +1,5 @@
 // src/screens/profile/components/modals/PrivacyDataModal.jsx
-// Detailed breakdown of local device encryption, export data option, and cache management.
+// Explain current data storage and available privacy controls without overstating support.
 
 import React from 'react';
 import {
@@ -17,19 +17,15 @@ export const PrivacyDataModal = ({ visible, onClose, onViewLegal, theme: propThe
   const theme = propTheme || ctxTheme;
   const handleExport = () => {
     Alert.alert(
-      'Export Reflections',
-      'Your reflections, settings, and journal moments are packaged locally into a private backup format.'
+      'Export is not available yet',
+      'A complete export of your account and on-device data is not implemented yet.'
     );
   };
 
   const handleClearCache = () => {
     Alert.alert(
-      'Clear Cache',
-      'This clears temporary cached images and audio files. Your saved moments, journal, and profile preferences are completely safe.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', onPress: () => Alert.alert('Cache Cleared', 'Temporary app cache was cleared.') },
-      ]
+      'Cache clearing is not available yet',
+      'This control does not currently remove cached images or audio.'
     );
   };
 
@@ -39,7 +35,7 @@ export const PrivacyDataModal = ({ visible, onClose, onViewLegal, theme: propThe
         <View style={[styles.modalCard, { backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
             <View>
-              <Text style={[styles.tag, { color: theme.textMuted }]}>ZERO THIRD PARTIES</Text>
+              <Text style={[styles.tag, { color: theme.textMuted }]}>DATA STORAGE SUMMARY</Text>
               <Text style={[styles.title, { color: theme.textPrimary }]}>Privacy & Data</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -48,14 +44,14 @@ export const PrivacyDataModal = ({ visible, onClose, onViewLegal, theme: propThe
           </View>
 
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Your sanctuary is built on respect. Your information never leaves your side.
+            Some data stays on this device; account, mood, and community data can sync to MindBloom services.
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>🔒 On-Device Private Storage</Text>
+              <Text style={styles.infoTitle}>🔒 Private device storage</Text>
               <Text style={styles.infoText}>
-                Your mood reflections, focus preferences, and journal entries are saved strictly to your device's internal storage sandbox. No advertising trackers, no data brokers.
+                Journal text and saved Aurora history are encrypted on this device. Native voice-note audio is stored locally but is not protected by the same app-level encryption. Profile preferences and mood check-ins sync to MindBloom. Aurora sends your message and up to 6 recent messages to Google Gemini; MindBloom does not store chat transcripts in your account database.
               </Text>
             </View>
 
@@ -77,16 +73,16 @@ export const PrivacyDataModal = ({ visible, onClose, onViewLegal, theme: propThe
 
             <TouchableOpacity style={styles.actionRow} onPress={handleExport} activeOpacity={0.8}>
               <View>
-                <Text style={styles.actionTitle}>Export My Data (JSON)</Text>
-                <Text style={styles.actionDesc}>Download an offline copy of your sanctuary entries</Text>
+                <Text style={styles.actionTitle}>Export My Data · Not available yet</Text>
+                <Text style={styles.actionDesc}>A complete account and device data export is not implemented yet</Text>
               </View>
               <Text style={styles.actionArrow}>→</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionRow} onPress={handleClearCache} activeOpacity={0.8}>
               <View>
-                <Text style={styles.actionTitle}>Clear Temporary Cache</Text>
-                <Text style={styles.actionDesc}>Free up device storage without losing reflections</Text>
+                <Text style={styles.actionTitle}>Clear Temporary Cache · Not available yet</Text>
+                <Text style={styles.actionDesc}>This control does not currently clear cached media</Text>
               </View>
               <Text style={styles.actionArrow}>→</Text>
             </TouchableOpacity>

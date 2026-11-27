@@ -109,6 +109,10 @@ export const JournalContent = ({
         }
       } catch (err) {
         console.warn('Failed to load journal entries:', err);
+        Alert.alert(
+          'Private journal unavailable',
+          'MindBloom could not open encrypted journal storage on this device. Your saved entries have not been deleted.',
+        );
       }
     })();
   }, []);
@@ -162,7 +166,7 @@ export const JournalContent = ({
     setReleaseModalVisible(true);
   };
 
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     if (!title.trim() && !body.trim() && !voiceNote) {
       Alert.alert('Empty Reflection', 'Take your time. Even a single gentle word or voice note is enough.');
       return;
@@ -194,8 +198,11 @@ export const JournalContent = ({
           }
           : e
       );
+      if (!(await journalStorage.saveEntries(updatedEntries))) {
+        Alert.alert('Could not save securely', 'Your journal changes were not saved. Check device storage and try again.');
+        return;
+      }
       setEntries(updatedEntries);
-      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert('Updated', 'Your changes have been quietly saved to this moment.');
     } else {
@@ -212,8 +219,11 @@ export const JournalContent = ({
         dateString: `TODAY, ${dayStr} ${now.toLocaleString('default', { month: 'short' }).toUpperCase()}`,
       };
       const updatedEntries = [newEntry, ...entries];
+      if (!(await journalStorage.saveEntries(updatedEntries))) {
+        Alert.alert('Could not save securely', 'Your journal entry was not saved. Check device storage and try again.');
+        return;
+      }
       setEntries(updatedEntries);
-      journalStorage.saveEntries(updatedEntries);
       setDraftState('Saved · Just now');
       Alert.alert(
         'Saved in Your Sanctuary',
@@ -222,10 +232,13 @@ export const JournalContent = ({
     }
   };
 
-  const handleDeleteEntry = (id) => {
+  const handleDeleteEntry = async (id) => {
     const updated = entries.filter((e) => e.id !== id);
+    if (!(await journalStorage.saveEntries(updated))) {
+      Alert.alert('Could not delete securely', 'Your journal entry was not deleted. Check device storage and try again.');
+      return;
+    }
     setEntries(updated);
-    journalStorage.saveEntries(updated);
     if (editingEntryId === id) {
       handleNewEntry();
     }
@@ -289,14 +302,16 @@ export const JournalContent = ({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        window.alert('Plain-text export downloaded. This file is not encrypted; keep it somewhere private.');
       } catch (err) {
         console.error('Export download failed:', err);
+        window.alert('The journal text export could not be downloaded. Please try again.');
       }
     } else {
       Alert.alert(
-        'Archive Exported',
-        'Your moments have been formatted into an encrypted local text archive.'
+        'Journal export unavailable',
+        'Text export is currently available only on web. Voice-note audio is not included in the text export.'
       );
     }
   };

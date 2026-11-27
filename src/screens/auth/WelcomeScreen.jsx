@@ -116,7 +116,7 @@ export const WelcomeScreen = ({ navigation }) => {
                 </Text>
 
                 <Text style={styles.privateDisclaimer}>
-                  - 100% private space. Rooted in real mental wellbeing.
+                  - Private journaling and clear data practices.
                 </Text>
               </View>
 

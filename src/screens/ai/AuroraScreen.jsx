@@ -508,6 +508,8 @@ export const AuroraContent = ({
 
   const [mode, setMode] = useState('reflect');
   const [messages, setMessages] = useState([makeGreetingMsg()]);
+  const [historyReady, setHistoryReady] = useState(false);
+  const [storageError, setStorageError] = useState('');
   const [userPrefs, setUserPrefs] = useState({
     ageBand: '18-24',
     nickname: userName || 'Friend',
@@ -529,10 +531,14 @@ export const AuroraContent = ({
 
   const flatListRef = useRef(null);
   const dictationRef = useRef(null);
+  const historySaveQueueRef = useRef(Promise.resolve());
+  const skipNextHistorySaveRef = useRef(false);
   const speechSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
     let active = true;
+    setHistoryReady(false);
+    setStorageError('');
     (async () => {
       try {
         const [prefs, savedRaw] = await Promise.all([
@@ -560,7 +566,13 @@ export const AuroraContent = ({
             setIntensityLog(parsed.intensityLog);
           }
         }
-      } catch {}
+        setHistoryReady(true);
+      } catch (error) {
+        console.warn('Could not load encrypted Aurora history:', error);
+        if (active) {
+          setStorageError('Secure chat storage is unavailable. Aurora history cannot be loaded or saved on this device.');
+        }
+      }
     })();
     return () => {
       active = false;
@@ -573,23 +585,54 @@ export const AuroraContent = ({
   }, [userName]);
 
   useEffect(() => {
-    encryptedStorage
-      .setItem(
-        AURORA_STORAGE_KEY,
-        JSON.stringify({
-          messages: messages.slice(-40),
-          failedMethods,
-          intensityLog: intensityLog.slice(-20),
-        })
-      )
-      .catch(() => {});
-  }, [messages, failedMethods, intensityLog]);
+    if (!historyReady) return undefined;
+    if (skipNextHistorySaveRef.current) {
+      skipNextHistorySaveRef.current = false;
+      return undefined;
+    }
+
+    let active = true;
+    const saveHistory = historySaveQueueRef.current
+      .catch(() => {})
+      .then(async () => {
+        const saved = await encryptedStorage.setItem(
+          AURORA_STORAGE_KEY,
+          JSON.stringify({
+            messages: messages.slice(-40),
+            failedMethods,
+            intensityLog: intensityLog.slice(-20),
+          }),
+        );
+        if (active) {
+          setStorageError(saved ? '' : 'Aurora could not save this conversation securely on your device.');
+        }
+      });
+    historySaveQueueRef.current = saveHistory;
+    saveHistory.catch((error) => {
+      console.warn('Could not save encrypted Aurora history:', error);
+      if (active) setStorageError('Aurora could not save this conversation securely on your device.');
+    });
+    return () => {
+      active = false;
+    };
+  }, [messages, failedMethods, intensityLog, historyReady]);
 
   const handleClearChat = async () => {
+    if (!historyReady || loading) return;
+
+    skipNextHistorySaveRef.current = true;
     setMessages([makeGreetingMsg()]);
     setFailedMethods([]);
+    setIntensityLog([]);
     setActiveCheckIn(null);
-    await encryptedStorage.removeItem(AURORA_STORAGE_KEY).catch(() => {});
+    const clearHistory = historySaveQueueRef.current
+      .catch(() => {})
+      .then(() => encryptedStorage.removeItem(AURORA_STORAGE_KEY));
+    historySaveQueueRef.current = clearHistory.catch(() => {});
+    const removed = await clearHistory;
+    if (!removed) {
+      setStorageError('Aurora could not clear the saved conversation from this device.');
+    }
   };
 
   const toggleDictation = () => {
@@ -896,10 +939,12 @@ export const AuroraContent = ({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             {messages.length > 1 && (
               <TouchableOpacity
-                style={[styles.headerIconButton, { padding: 6 }]}
+                style={[styles.headerIconButton, { padding: 6, opacity: !historyReady || loading ? 0.5 : 1 }]}
                 onPress={handleClearChat}
+                disabled={!historyReady || loading}
                 accessibilityRole="button"
                 accessibilityLabel="Clear Aurora chat"
+                accessibilityState={{ disabled: !historyReady || loading }}
                 activeOpacity={0.75}
               >
                 <RotateCcw size={16} color={textSec} />
@@ -943,6 +988,18 @@ export const AuroraContent = ({
           </View>
           <Text style={[styles.modeSubtitle, { color: textMuted }]}>{MODE_CONFIG[mode].desc}</Text>
         </View>
+
+        <View style={[styles.privacyNotice, { backgroundColor: cardBg, borderColor: borderCol }]}>
+          <Text style={[styles.privacyNoticeTitle, { color: textPrim }]}>Your privacy</Text>
+          <Text style={[styles.privacyNoticeText, { color: textSec }]}>
+            History is encrypted on this device. Aurora sends your message and up to 6 recent messages to Google Gemini through MindBloom’s server; MindBloom does not save chat transcripts to your account. Google's API terms govern its processing.
+          </Text>
+        </View>
+        {storageError ? (
+          <Text style={styles.storageWarning} accessibilityRole="alert">
+            {storageError}
+          </Text>
+        ) : null}
 
         {/* Compact Distress Intensity Toggle */}
         <View style={[styles.intensityCard, { backgroundColor: cardBg, borderColor: borderCol }]}>
@@ -1352,6 +1409,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 6,
     textAlign: 'center',
+  },
+  privacyNotice: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 8,
+    gap: 3,
+  },
+  privacyNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  privacyNoticeText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  storageWarning: {
+    color: '#B42318',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
   },
   intensityCard: {
     borderWidth: 1,

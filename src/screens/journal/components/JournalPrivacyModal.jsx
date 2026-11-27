@@ -1,6 +1,6 @@
 // src/screens/journal/components/JournalPrivacyModal.jsx
 // Dedicated in-app Privacy Settings Modal for the Journal
-// Provides on-device encryption reassurance, Discreet Screen Shield toggle,
+// Explains local storage limits, provides the Discreet Screen Shield toggle,
 // text export, and direct link to full privacy policy.
 
 import React from 'react';
@@ -43,18 +43,18 @@ export const JournalPrivacyModal = ({
 
           <Text style={[styles.title, { color: theme.textPrimary }]}>Journal Privacy Settings</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Your words are sacred. Everything written here is protected by on-device isolation.
+            Journal text is encrypted on this device. Some related features have different privacy limits.
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* 1. On-Device Vault Guarantee */}
+            {/* 1. Local storage details */}
             <View style={[styles.infoCard, { backgroundColor: theme.heroBg, borderColor: theme.heroBorder }]}>
               <View style={styles.infoTitleTitleRow || styles.infoTitleRow}>
                 <Text style={styles.infoIcon}>🔒</Text>
-                <Text style={[styles.infoTitle, { color: theme.textPrimary }]}>100% On-Device Storage</Text>
+                <Text style={[styles.infoTitle, { color: theme.textPrimary }]}>On-device journal storage</Text>
               </View>
               <Text style={[styles.infoBody, { color: theme.textSecondary }]}>
-                Reflections are never synced to public clouds, advertising networks, or AI training servers. All moments live inside your device's private storage sandbox.
+                Journal text is encrypted locally and is not synced to MindBloom's account database. Voice-note audio is stored locally; on native devices it is not protected by the journal's app-level encryption layer.
               </Text>
             </View>
 
@@ -84,8 +84,8 @@ export const JournalPrivacyModal = ({
                   onExportEntries();
                 } else {
                   Alert.alert(
-                    'Export Reflections',
-                    'Your moments have been formatted into an encrypted local text archive ready to save.'
+                    'Journal export unavailable',
+                    'Text export is currently available only on web. Voice-note audio is not included.'
                   );
                 }
               }}
@@ -93,10 +93,10 @@ export const JournalPrivacyModal = ({
             >
               <View style={styles.actionLeft}>
                 <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>
-                  Export Journal Archive (.txt)
+                  Export Journal Text (.txt; unencrypted)
                 </Text>
                 <Text style={[styles.actionDesc, { color: theme.textMuted }]}>
-                  Keep a private personal backup of all your saved entries.
+                  Web only; exports text reflections, not voice notes. Anyone with the file can read it.
                 </Text>
               </View>
               <Text style={[styles.actionArrow, { color: theme.accent }]}>↓</Text>
@@ -116,7 +116,7 @@ export const JournalPrivacyModal = ({
                   MindBloom Privacy Policy
                 </Text>
                 <Text style={[styles.actionDesc, { color: theme.textMuted }]}>
-                  Learn how we safeguard youth data and adhere to East African privacy laws.
+                  Learn how data is stored and which services process it.
                 </Text>
               </View>
               <Text style={[styles.actionArrow, { color: theme.accent }]}>→</Text>
