@@ -17,10 +17,7 @@ export class AuthService {
       gender,
     });
 
-    if (res.data?.success && res.data?.data) {
-      await this.saveSession(res.data.data);
-      return res.data.data;
-    }
+    if (res.data?.success && res.data?.data) return res.data.data;
     throw new Error(res.data?.message || 'Registration failed');
   }
 
@@ -54,7 +51,12 @@ export class AuthService {
    */
   static async verifyOtp({ contact, code, purpose = 'VERIFY_CONTACT' }) {
     const res = await apiClient.post('/auth/verify-otp', { contact, code, purpose });
-    if (res.data?.success && res.data?.data) return res.data.data;
+    if (res.data?.success && res.data?.data) {
+      if (purpose === 'VERIFY_CONTACT' && res.data.data.accessToken) {
+        await this.saveSession(res.data.data);
+      }
+      return res.data.data;
+    }
     throw new Error(res.data?.message || 'Could not verify the code.');
   }
 
