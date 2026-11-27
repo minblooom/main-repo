@@ -17,7 +17,10 @@ export class AuthService {
       gender,
     });
 
-    if (res.data?.success && res.data?.data) return res.data.data;
+    if (res.data?.success && res.data?.data) {
+      await this.saveSession(res.data.data);
+      return res.data.data;
+    }
     throw new Error(res.data?.message || 'Registration failed');
   }
 
