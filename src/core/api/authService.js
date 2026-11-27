@@ -45,7 +45,8 @@ export class AuthService {
    */
   static async sendOtp({ contact, purpose = 'VERIFY_CONTACT' }) {
     const res = await apiClient.post('/auth/send-otp', { contact, purpose });
-    return res.data?.data || { sent: true };
+    if (res.data?.success && res.data?.data) return res.data.data;
+    throw new Error(res.data?.message || 'Could not send verification code.');
   }
 
   /**
@@ -53,7 +54,8 @@ export class AuthService {
    */
   static async verifyOtp({ contact, code, purpose = 'VERIFY_CONTACT' }) {
     const res = await apiClient.post('/auth/verify-otp', { contact, code, purpose });
-    return res.data?.data || { verified: true };
+    if (res.data?.success && res.data?.data) return res.data.data;
+    throw new Error(res.data?.message || 'Could not verify the code.');
   }
 
   /**

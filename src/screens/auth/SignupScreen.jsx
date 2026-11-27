@@ -54,6 +54,7 @@ export const SignupScreen = ({ navigation }) => {
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [otpContact, setOtpContact] = useState('');
   const [otpDevCode, setOtpDevCode] = useState('');
+  const [otpDeliveryError, setOtpDeliveryError] = useState('');
 
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -160,18 +161,23 @@ export const SignupScreen = ({ navigation }) => {
       await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
 
       let devCode = '';
+      let deliveryError = '';
       try {
         const otpRes = await AuthService.sendOtp({
           contact: contactVal,
           purpose: 'VERIFY_CONTACT',
         });
         if (otpRes?.devCode) devCode = otpRes.devCode;
-      } catch {
-        // Non-blocking if OTP email service is temporarily unavailable
+      } catch (err) {
+        deliveryError =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Your account was created, but the verification code could not be sent. Please try again.';
       }
 
       setOtpContact(contactVal);
       setOtpDevCode(devCode);
+      setOtpDeliveryError(deliveryError);
       setOtpModalVisible(true);
     } catch (backendErr) {
       const status = backendErr?.response?.status;
@@ -484,6 +490,7 @@ export const SignupScreen = ({ navigation }) => {
         visible={otpModalVisible}
         contact={otpContact}
         initialDevCode={otpDevCode}
+        initialError={otpDeliveryError}
         onVerified={() => {
           setOtpModalVisible(false);
           if (navigation) {

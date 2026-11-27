@@ -21,6 +21,7 @@ export const VerifyOtpModal = ({
   visible,
   contact = '',
   initialDevCode = '',
+  initialError = '',
   onVerified,
   onClose,
 }) => {
@@ -44,7 +45,7 @@ export const VerifyOtpModal = ({
   useEffect(() => {
     if (visible) {
       setDigits(['', '', '', '', '', '']);
-      setError('');
+      setError(initialError);
       setInfo('');
       setVerified(false);
       scaleAnim.setValue(0.92);
@@ -80,7 +81,7 @@ export const VerifyOtpModal = ({
         clearTimeout(timer);
       };
     }
-  }, [visible]);
+  }, [visible, initialError]);
 
   const code = digits.join('');
   const isEmail = contact.includes('@');
