@@ -32,6 +32,7 @@ import { authStyles as s } from './authStyles';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { LegalModal } from '../legal/LegalScreen';
+import { VerifyOtpModal } from './VerifyOtpModal';
 import { AuthService } from '../../core/api/authService';
 import { useI18n } from '../../services/i18n';
 import { showAlert } from '../../utils/alert';
@@ -50,6 +51,9 @@ export const SignupScreen = ({ navigation }) => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState(null); // 'terms' | 'privacy' | 'disclaimer' | null
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [otpContact, setOtpContact] = useState('');
+  const [otpDeliveryError, setOtpDeliveryError] = useState('');
 
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -154,7 +158,24 @@ export const SignupScreen = ({ navigation }) => {
 
       await onboardingStorage.setOnboardingCompleted(false);
       await onboardingStorage.savePreferences({ nickname: name, contact: contactVal });
-      if (navigation) navigation.replace('GentleHello');
+
+      if (contactVal.includes('@')) {
+        if (navigation) navigation.replace('GentleHello');
+      } else {
+        let deliveryError = '';
+        try {
+          await AuthService.sendOtp({ contact: contactVal, purpose: 'VERIFY_CONTACT' });
+        } catch (err) {
+          deliveryError =
+            err?.response?.data?.message ||
+            err?.message ||
+            'Your account was created, but the SMS code could not be sent. Please try again.';
+        }
+
+        setOtpContact(contactVal);
+        setOtpDeliveryError(deliveryError);
+        setOtpModalVisible(true);
+      }
     } catch (backendErr) {
       const status = backendErr?.response?.status;
       const code = backendErr?.response?.data?.error?.code;
@@ -461,6 +482,16 @@ export const SignupScreen = ({ navigation }) => {
         onClose={() => setLegalModalTab(null)}
       />
 
+      <VerifyOtpModal
+        visible={otpModalVisible}
+        contact={otpContact}
+        initialError={otpDeliveryError}
+        onVerified={() => {
+          setOtpModalVisible(false);
+          if (navigation) navigation.replace('GentleHello');
+        }}
+        onClose={() => setOtpModalVisible(false)}
+      />
     </SafeAreaView>
   );
 };

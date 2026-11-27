@@ -18,7 +18,7 @@ export class AuthService {
     });
 
     if (res.data?.success && res.data?.data) {
-      await this.saveSession(res.data.data);
+      if (res.data.data.accessToken) await this.saveSession(res.data.data);
       return res.data.data;
     }
     throw new Error(res.data?.message || 'Registration failed');
