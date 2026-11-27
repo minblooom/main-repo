@@ -94,7 +94,7 @@ The Expo Audio config plugin enables microphone access for voice notes and backg
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18.x or v20.x recommended)
+- [Node.js](https://nodejs.org/) (20.19.4+, 22.13.0+, or 24.3.0+)
 - [npm](https://www.npmjs.com/)
 - [Expo Go](https://expo.dev/go) (iOS / Android) or a modern browser for web testing
 
@@ -121,6 +121,13 @@ The Expo Audio config plugin enables microphone access for voice notes and backg
 
 4. **Running on Physical Devices**:
    - Open Expo Go on Android or the Camera app on iOS and scan the QR code displayed in your terminal.
+   - For local API access, keep the phone and development computer on the same network and configure the API URL for that device. The default `localhost` / `10.0.2.2` addresses are intended for web/iOS simulator and Android emulator development.
+
+### Backend configuration
+
+The app uses `EXPO_PUBLIC_API_URL` for its production backend URL. Vercel and EAS are configured to use the Render API at `https://mainrepo-backend.onrender.com/api/v1` by default. Local development uses `http://localhost:5000/api/v1` on web/iOS and `http://10.0.2.2:5000/api/v1` on the Android emulator.
+
+Authentication, profile, mood check-in, arcade sync, community, and Aurora requests require the backend. Signup currently creates a session without email or phone ownership verification; password-reset OTP still depends on email delivery. Aurora's normal chat requests go through Render to Gemini when `GEMINI_API_KEY` is configured on the backend. Chat text and recent turns are sent to Google; never put the Gemini key in this frontend.
 
 ---
 
@@ -141,7 +148,7 @@ MindBloom is **not a replacement for emergency clinical care**. If a user indica
 
 ## 🌐 External APIs & Endpoints Used
 
-MindBloom integrates external public APIs with `AbortController` timeouts and graceful offline fallbacks:
+Some features use external services. Availability and responses depend on those providers; offline fallbacks are feature-specific and do not guarantee that every network-backed feature works offline.
 
 1. **Open-Meteo Weather API** (Ambient Weather & Hydration Prompts — [weatherService.js](src/services/weatherService.js))
    - `GET https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
@@ -151,11 +158,17 @@ MindBloom integrates external public APIs with `AbortController` timeouts and gr
    - `GET https://api.theholisticcare.com/v1/mindfulness-games/feelings-detective`
 3. **Quotable API** (Post-Game Reflection Prompts — [arcadeApiService.js](src/services/arcadeApiService.js))
    - `GET https://api.quotable.io/random?tags=wisdom|mindfulness`
-4. **MindBloom Backend REST API** (Auth, Profile, Mood Telemetry, Arcade Checkpoints, Community Small Wins)
-   - Base URL: `http://localhost:5000/api/v1` (or `http://10.0.2.2:5000/api/v1` on Android emulator)
+4. **MindBloom Backend REST API** (Auth, Profile, Mood Check-Ins, Arcade, Community, Aurora)
+   - Production: `https://mainrepo-backend.onrender.com/api/v1` (override with `EXPO_PUBLIC_API_URL`)
+   - Local web/iOS: `http://localhost:5000/api/v1`
+   - Local Android emulator: `http://10.0.2.2:5000/api/v1`
 
 ---
 
-## 🧩 Challenges & Known Bugs
+## Validation notes and limitations
 
-- **Challenges / Known Bugs:** No unresolved challenges or known bugs at this stage. External API requests use bounded timeouts and automatic offline fallbacks so the app remains responsive even without connectivity.
+- Run `npx expo export --platform web` to verify that Metro can bundle the web app. This checks bundling/syntax, not every runtime flow.
+- This frontend is JavaScript/JSX; it currently has no TypeScript project config or installed ESLint dependency, so the existing `typecheck` and `lint` scripts are not usable static checks.
+- A successful bundle export does not prove that authenticated backend flows, external providers, or every screen have been exercised end to end.
+- The `expo-audio` plugin configures microphone access and background playback. Changes to native plugin settings require a new native build; recording and playback still need verification on physical iOS and Android devices.
+- Do not treat this README or automated checks as confirmation that every feature is complete. Test the actual deployed app and review provider configuration and logs for network-backed features.
