@@ -43,10 +43,12 @@ function buildGCalUrl(ev) {
 }
 
 function openUrl(url) {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) return;
+  const safeUrl = url.trim();
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(safeUrl, '_blank', 'noopener,noreferrer');
   } else {
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(safeUrl).catch(() => {});
   }
 }
 

@@ -3,9 +3,23 @@
 // Integrates with The Open Mindfulness API (The Holistic Care) and Open CBT metadata
 // with resilient local fallback for offline support.
 
+import { apiClient } from '../core/api/client';
+
 const THE_HOLISTIC_CARE_API = 'https://api.theholisticcare.com/v1';
 
 export class ArcadeApiService {
+  /**
+   * Fetches backend-proxied, sanitized free browser games with cover photos.
+   */
+  static async fetchPublicWebGames() {
+    try {
+      const res = await apiClient.get('/arcade/public-games');
+      const items = res?.data?.data;
+      return Array.isArray(items) ? items : [];
+    } catch {
+      return [];
+    }
+  }
   /**
    * Fetches live external mindfulness games and mini-interventions from The Holistic Care API
    */

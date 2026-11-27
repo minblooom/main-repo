@@ -11,6 +11,10 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Image,
+  TouchableOpacity,
+  Linking,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -72,6 +76,7 @@ export const ArcadeContent = ({
   const [displayName, setDisplayName] = useState(userName || 'friend');
   const [userFocusAreas, setUserFocusAreas] = useState([]);
   const [userInterests, setUserInterests] = useState([]);
+  const [publicWebGames, setPublicWebGames] = useState([]);
 
   // Load user data, recents, and favourites on mount
   useEffect(() => {
@@ -114,8 +119,15 @@ export const ArcadeContent = ({
         const favs = await gameSessionManager.getFavourites();
         setFavourites(favs.filter((g) => universalIds.has(g.id)));
 
-        // Fetch optional external public mindfulness games in background
+        // Fetch optional external public mindfulness & backend-proxied browser games in background
         ArcadeApiService.fetchExternalMindfulnessGames().catch(() => {});
+        ArcadeApiService.fetchPublicWebGames()
+          .then((list) => {
+            if (Array.isArray(list) && list.length > 0) {
+              setPublicWebGames(list);
+            }
+          })
+          .catch(() => {});
       } catch { }
     })();
   }, [userName]);
@@ -291,6 +303,62 @@ export const ArcadeContent = ({
           onPlayGame={handlePlayGame}
           onToggleFavourite={handleToggleFavourite}
         />
+
+        {/* Optional Backend-Proxied "More Free Web Games" Shelf (shown when online) */}
+        {publicWebGames.length > 0 && (
+          <View style={{ marginTop: 12, marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: theme.textPrimary, marginBottom: 4 }}>
+              More Free Web Games 🌐
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, marginBottom: 12 }}>
+              External browser games via safe MindBloom proxy (opens in new tab)
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+              {publicWebGames.map((wg) => (
+                <TouchableOpacity
+                  key={wg.id}
+                  style={{
+                    width: 210,
+                    borderRadius: 18,
+                    backgroundColor: theme.cardBg,
+                    borderWidth: 1,
+                    borderColor: theme.heroBorder,
+                    overflow: 'hidden',
+                  }}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    if (typeof wg.gameUrl === 'string' && /^https:\/\//i.test(wg.gameUrl)) {
+                      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                        window.open(wg.gameUrl, '_blank', 'noopener,noreferrer');
+                      } else {
+                        Linking.openURL(wg.gameUrl).catch(() => {});
+                      }
+                    }
+                  }}
+                >
+                  {wg.thumbnail ? (
+                    <Image
+                      source={{ uri: wg.thumbnail }}
+                      style={{ width: '100%', height: 112 }}
+                      resizeMode="cover"
+                    />
+                  ) : null}
+                  <View style={{ padding: 10, gap: 4 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: theme.accent }}>
+                      {(wg.genre || 'WEB').toUpperCase()}
+                    </Text>
+                    <Text style={{ fontSize: 13.5, fontWeight: '800', color: theme.textPrimary }} numberOfLines={1}>
+                      {wg.title}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted }} numberOfLines={2}>
+                      {wg.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Game Launch Preview Modal */}
         <GamePreviewModal
