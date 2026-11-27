@@ -35,6 +35,7 @@ import { LegalModal } from '../legal/LegalScreen';
 import { VerifyOtpModal } from './VerifyOtpModal';
 import { AuthService } from '../../core/api/authService';
 import { useI18n } from '../../services/i18n';
+import { showAlert } from '../../utils/alert';
 
 export const SignupScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -74,10 +75,9 @@ export const SignupScreen = ({ navigation }) => {
   }, []);
 
   const handleUrgentSupport = () => {
-    Alert.alert(
+    showAlert(
       'Urgent Support',
-      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.',
-      [{ text: 'Understood', style: 'default' }]
+      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.'
     );
   };
 

@@ -13,6 +13,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
+import { showAlert } from '../../utils/alert';
 import { COMPANION_MAP } from '../../constants/companions';
 import { styles } from './styles/AgeSelectScreen.styles';
 
@@ -69,7 +70,7 @@ export const AgeSelectScreen = ({ navigation, route }) => {
 
   const handleContinue = () => {
     if (isUnderage) {
-      Alert.alert(
+      showAlert(
         'Age Requirement (13+)',
         'MindBloom is designed for youth and young adults aged 13 and older. For your privacy and safety, independent registration is only permitted for ages 13+. Please explore wellness tools with a parent, guardian, or teacher.'
       );

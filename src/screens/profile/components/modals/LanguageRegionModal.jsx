@@ -2,7 +2,7 @@
 // Live modal allowing user to dynamically switch their home country base and preferred language.
 // Updates global i18n context, helplines, greetings, and regional settings immediately.
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { useI18n, COUNTRY_DATA, SUPPORTED_LANGUAGES } from '../../../../services/i18n';
+import { LocationPickerModal } from '../../../../components/modals/LocationPickerModal';
 import { styles } from '../../styles/LanguageRegionModal.styles';
 
 const COUNTRIES = [
@@ -26,7 +27,8 @@ const COUNTRIES = [
 export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
   const { theme: ctxTheme } = useTheme();
   const theme = propTheme || ctxTheme;
-  const { country, language, setCountry, setLanguage, availableLanguages, countryData } = useI18n();
+  const { country, location, language, setCountry, setLanguage, availableLanguages, countryData } = useI18n();
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
 
   const handleSelectCountry = (cId) => {
     setCountry(cId);
@@ -56,6 +58,35 @@ export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+            {/* Current City / Live Location */}
+            <View style={{ marginBottom: 14 }}>
+              <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Current City / Location</Text>
+              <TouchableOpacity
+                style={[
+                  styles.countryCard,
+                  {
+                    backgroundColor: theme.accentSoft,
+                    borderColor: theme.accent,
+                  },
+                ]}
+                onPress={() => setCityPickerOpen(true)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.countryLeft}>
+                  <Text style={{ fontSize: 20 }}>📍</Text>
+                  <View>
+                    <Text style={[styles.countryName, { color: theme.textPrimary }]}>
+                      {location?.city || countryData?.capital}, {location?.country || countryData?.name}
+                    </Text>
+                    <Text style={[styles.countryLangs, { color: theme.textMuted }]}>
+                      Tap to change city or neighborhood
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: theme.accent }}>Change</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Country / Home Base Selection */}
             <View>
               <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Home Base / Region</Text>
@@ -175,6 +206,7 @@ export const LanguageRegionModal = ({ visible, onClose, theme: propTheme }) => {
           </TouchableOpacity>
         </View>
       </View>
+      <LocationPickerModal visible={cityPickerOpen} onClose={() => setCityPickerOpen(false)} />
     </Modal>
   );
 };

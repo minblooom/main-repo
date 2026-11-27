@@ -8,6 +8,7 @@ import { onboardingStorage } from './onboardingStorage';
 
 const LANGUAGE_KEY = '@mindbloom:selected_language';
 const COUNTRY_KEY = '@mindbloom:selected_country';
+const LOCATION_KEY = '@mindbloom:user_location';
 
 export const SUPPORTED_LANGUAGES = [
   { id: 'en', code: 'EN', name: 'English' },
@@ -221,13 +222,15 @@ export const detectCountryFromTimezone = () => {
 export const I18nProvider = ({ children }) => {
   const [language, setLanguageState] = useState('en');
   const [country, setCountryState] = useState('ke');
+  const [customLocation, setCustomLocation] = useState(null); // { city, country, countryId, lat, lon }
 
   useEffect(() => {
     (async () => {
       try {
-        const [savedLang, savedCountry, prefs] = await Promise.all([
+        const [savedLang, savedCountry, savedLoc, prefs] = await Promise.all([
           AsyncStorage.getItem(LANGUAGE_KEY),
           AsyncStorage.getItem(COUNTRY_KEY),
+          AsyncStorage.getItem(LOCATION_KEY),
           onboardingStorage.getPreferences(),
         ]);
 
@@ -240,6 +243,14 @@ export const I18nProvider = ({ children }) => {
           resolvedCountry = detectCountryFromTimezone();
         }
         setCountryState(resolvedCountry);
+
+        if (savedLoc) {
+          try {
+            setCustomLocation(JSON.parse(savedLoc));
+          } catch {}
+        } else if (prefs?.userLocation) {
+          setCustomLocation(prefs.userLocation);
+        }
 
         setLanguageState('en');
       } catch (err) {
@@ -277,11 +288,58 @@ export const I18nProvider = ({ children }) => {
 
     try {
       await AsyncStorage.setItem(COUNTRY_KEY, norm);
-      await onboardingStorage.savePreferences({ country: norm });
+      // Update city/coords to match new country's capital when country switches
+      const nextLoc = {
+        city: nextCountryData.capital && nextCountryData.capital !== 'Global' ? nextCountryData.capital : 'Nairobi',
+        country: nextCountryData.name,
+        countryId: norm,
+        lat: nextCountryData.lat,
+        lon: nextCountryData.lon,
+      };
+      setCustomLocation(nextLoc);
+      await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(nextLoc));
+      await onboardingStorage.savePreferences({ country: norm, userLocation: nextLoc, location: `${nextLoc.city}, ${nextLoc.country}` });
     } catch {}
   };
 
-  const activeCountryData = COUNTRY_DATA[country] || COUNTRY_DATA.ke;
+  const setLocation = async ({ city, country: countryName, countryId, lat, lon }) => {
+    const resolvedId = (countryId || country || 'ke').toLowerCase();
+    const baseData = COUNTRY_DATA[resolvedId] || COUNTRY_DATA.ke;
+    const nextLoc = {
+      city: city || baseData.capital || 'Nairobi',
+      country: countryName || baseData.name || 'Kenya',
+      countryId: resolvedId,
+      lat: typeof lat === 'number' ? lat : baseData.lat,
+      lon: typeof lon === 'number' ? lon : baseData.lon,
+    };
+    setCustomLocation(nextLoc);
+    if (countryId && COUNTRY_DATA[resolvedId]) {
+      setCountryState(resolvedId);
+    }
+    try {
+      await AsyncStorage.setItem(LOCATION_KEY, JSON.stringify(nextLoc));
+      if (countryId && COUNTRY_DATA[resolvedId]) {
+        await AsyncStorage.setItem(COUNTRY_KEY, resolvedId);
+      }
+      await onboardingStorage.savePreferences({
+        country: resolvedId,
+        userLocation: nextLoc,
+        location: `${nextLoc.city}, ${nextLoc.country}`,
+      });
+    } catch {}
+  };
+
+  const baseCountryData = COUNTRY_DATA[country] || COUNTRY_DATA.ke;
+  const activeCountryData = {
+    ...baseCountryData,
+    capital: customLocation?.city || baseCountryData.capital,
+    lat: typeof customLocation?.lat === 'number' ? customLocation.lat : baseCountryData.lat,
+    lon: typeof customLocation?.lon === 'number' ? customLocation.lon : baseCountryData.lon,
+    city: customLocation?.city || (baseCountryData.capital !== 'Global' ? baseCountryData.capital : 'Nairobi'),
+    regionName: customLocation?.city
+      ? `${customLocation.city}, ${customLocation.country || baseCountryData.name}`
+      : baseCountryData.regionName,
+  };
   const allowedLangIds = activeCountryData.supportedLanguages || ['en'];
   const availableLanguages = allowedLangIds
     .map((id) => SUPPORTED_LANGUAGES.find((l) => l.id === id))
@@ -309,11 +367,19 @@ export const I18nProvider = ({ children }) => {
       value={{
         language,
         country,
+        location: customLocation || {
+          city: activeCountryData.city,
+          country: activeCountryData.name,
+          countryId: country,
+          lat: activeCountryData.lat,
+          lon: activeCountryData.lon,
+        },
         countryData: activeCountryData,
         availableLanguages,
         setLanguage,
         cycleLanguage,
         setCountry,
+        setLocation,
         t,
       }}
     >

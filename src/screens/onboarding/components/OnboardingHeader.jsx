@@ -2,9 +2,10 @@
 // Unified header for all onboarding screens, matching the Signup header in Screenshot 2
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { useI18n } from '../../../services/i18n';
+import { showAlert } from '../../../utils/alert';
 
 export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
   const { language, availableLanguages, cycleLanguage, t } = useI18n();
@@ -18,11 +19,7 @@ export const OnboardingHeader = ({ navigation, showBack = true, onBack }) => {
   };
 
   const handleSupportPress = () => {
-    Alert.alert(
-      'Urgent Support',
-      t('urgent_support_alert'),
-      [{ text: t('understood') || 'Understood', style: 'default' }]
-    );
+    showAlert('Urgent Support', t('urgent_support_alert'));
   };
 
   return (

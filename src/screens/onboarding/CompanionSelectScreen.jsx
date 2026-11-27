@@ -85,6 +85,7 @@ export const CompanionSelectScreen = ({ navigation, route }) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[s.scrollContainer, isWide && s.scrollContainerWide]}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={[s.pageWrapper, isWide && s.pageWrapperWide]}>
             <OnboardingHeader navigation={navigation} />

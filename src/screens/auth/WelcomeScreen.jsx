@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { styles } from './styles/WelcomeScreen.styles';
+import { showAlert } from '../../utils/alert';
 
 export const WelcomeScreen = ({ navigation }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -54,10 +55,9 @@ export const WelcomeScreen = ({ navigation }) => {
   }, []);
 
   const handleSupportPress = () => {
-    Alert.alert(
+    showAlert(
       'Urgent Support',
-      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.',
-      [{ text: 'Understood', style: 'default' }]
+      'If you need immediate help, reach out to the Kenya Red Cross Hotline at 1199 or Befrienders Kenya at +254 722 178 177. You are not alone.'
     );
   };
 

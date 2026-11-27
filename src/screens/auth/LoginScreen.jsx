@@ -17,6 +17,7 @@ import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { AuthService } from '../../core/api/authService';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { useI18n } from '../../services/i18n';
+import { showAlert } from '../../utils/alert';
 
 export const LoginScreen = ({ navigation }) => {
   const { isTablet, isDesktop } = useResponsiveLayout();
@@ -51,11 +52,7 @@ export const LoginScreen = ({ navigation }) => {
   }, []);
 
   const handleUrgentSupport = () => {
-    Alert.alert(
-      t('need_support'),
-      t('urgent_support_alert'),
-      [{ text: t('understood'), style: 'default' }]
-    );
+    showAlert(t('need_support'), t('urgent_support_alert'));
   };
 
   const validateLogin = (idVal, passVal) => {
@@ -83,15 +80,10 @@ export const LoginScreen = ({ navigation }) => {
     return errs;
   };
 
-  const navigateAfterLogin = async (user = null) => {
+  const navigateAfterLogin = async () => {
     if (!navigation) return;
-    const completed = await onboardingStorage.isOnboardingCompleted();
-    const targetRoute = completed ? 'Home' : 'GentleHello';
-    if (typeof navigation.replace === 'function') {
-      navigation.replace(targetRoute);
-    } else {
-      navigation.navigate(targetRoute);
-    }
+    await onboardingStorage.setOnboardingCompleted(true);
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
 
   const handleLogin = async () => {
@@ -116,15 +108,14 @@ export const LoginScreen = ({ navigation }) => {
       if (Object.keys(prefUpdates).length > 0) {
         await onboardingStorage.savePreferences(prefUpdates);
       }
-      await navigateAfterLogin(session?.user);
+      await navigateAfterLogin();
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'We couldn’t quite get you in. Check your details and try again.';
       // Friendly error messages with seamless offline entry
       if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('econnrefused') || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('err_connection')) {
-        // Safe offline entry: ensure user isn't locked out, but still route through onboarding if incomplete
         const nick = identifier.includes('@') ? identifier.split('@')[0] : identifier.trim();
         await onboardingStorage.savePreferences({ nickname: nick });
-        await navigateAfterLogin(null);
+        await navigateAfterLogin();
         return;
       } else if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
         setErrors({ general: 'Hmm, those details don\'t match. Double-check and try again.' });

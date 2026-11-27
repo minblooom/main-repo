@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useResponsiveLayout } from '../../../hooks/useResponsiveLayout';
 import { COMPANION_MAP } from '../../../constants/companions';
 import { styles } from '../styles/MoodCheckIn.styles';
 import { apiClient } from '../../../core/api/client';
@@ -62,6 +63,8 @@ const MOOD_HISTORY_KEY = '@mindbloom:mood_history';
 
 export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCompanionId }) => {
   const { theme, companionId: globalCompanionId } = useTheme();
+  const { isDesktop, isTablet } = useResponsiveLayout();
+  const isWide = isDesktop || isTablet;
   const companionKey = propCompanionId || globalCompanionId || 'noodle';
   const companion = COMPANION_MAP[companionKey] || COMPANION_MAP.noodle;
 
@@ -144,8 +147,8 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
   return (
     <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.heroBorder }]}>
       {/* Top row: Title & Mood Pills */}
-      <View style={styles.layout}>
-        <View style={styles.textColumn}>
+      <View style={[styles.layout, !isWide && { flexDirection: 'column', alignItems: 'stretch' }]}>
+        <View style={[styles.textColumn, !isWide && { minWidth: 0, width: '100%' }]}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>How's your heart today?</Text>
           <Text style={[styles.subhead, { color: theme.textSecondary }]}>
             No right answer. Just a moment for you.
@@ -155,7 +158,7 @@ export const MoodCheckIn = ({ onMoodSelect, onOpenAnalytics, companionId: propCo
           </Text>
         </View>
 
-        <View style={styles.moodRow}>
+        <View style={[styles.moodRow, !isWide && { width: '100%' }]}>
           {MOODS.map((m) => {
             const isSelected = selectedMoodId === m.id;
             return (

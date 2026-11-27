@@ -41,7 +41,7 @@ export const LocalSetupScreen = ({ navigation, route }) => {
     navigation.navigate('CompanionSelect', {
       ...(route?.params ?? {}),
       country: finalCountry,
-      language,
+      language: 'en',
     });
   };
 
