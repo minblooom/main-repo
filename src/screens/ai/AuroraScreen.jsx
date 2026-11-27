@@ -2,7 +2,7 @@
 // Aurora AI Companion — Vent, Reflect, or Guide with distress detection,
 // evidence-based coping pivots, before/after intensity check-ins, and Crisis Shield.
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -52,12 +52,6 @@ const MODE_CONFIG = {
     desc: 'Actionable CBT reframing & nervous system steps',
     placeholder: 'What challenge would you like guidance on?',
   },
-};
-
-const MODE_RESPONSE_STYLE = {
-  vent: 'Validate first, no heavy fixing unless user asks, and end with one gentle check-in question.',
-  reflect: 'Use curiosity and self-inquiry prompts, mirror patterns, and ask reflective questions.',
-  guide: 'Give a clear 3-step practical plan with direct action language and a follow-up checkpoint.',
 };
 
 const ADULT_STARTER_PROMPTS = [
@@ -526,6 +520,7 @@ export const AuroraContent = ({
 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [crisisVisible, setCrisisVisible] = useState(false);
   const [failedMethods, setFailedMethods] = useState([]);
   const [intensityRating, setIntensityRating] = useState(null);
@@ -637,26 +632,6 @@ export const AuroraContent = ({
   const starterPrompts =
     userPrefs.ageBand === '13-17' ? TEEN_STARTER_PROMPTS : ADULT_STARTER_PROMPTS;
 
-  const rollingSummary = useMemo(() => {
-    const recentUserMessages = messages
-      .filter((m) => m.role === 'user')
-      .slice(-2)
-      .map((m) => m.content);
-    const focusText =
-      recentUserMessages.length > 0
-        ? recentUserMessages[recentUserMessages.length - 1]
-        : 'No specific stressor shared yet.';
-    const failedText =
-      failedMethods.length > 0
-        ? failedMethods.map((m) => METHOD_LABELS[m]).join(', ')
-        : 'None flagged yet';
-    const lastResult = intensityLog[intensityLog.length - 1];
-    const progressText = lastResult
-      ? `${METHOD_LABELS[lastResult.method || 'movement-reset']}: ${lastResult.before} -> ${lastResult.after}`
-      : 'No before/after score yet';
-    return { focusText, failedText, progressText };
-  }, [messages, failedMethods, intensityLog]);
-
   const handleNotHelpfulFeedback = (message) => {
     if (message.role !== 'assistant') return;
     const inferredMethod =
@@ -716,6 +691,7 @@ export const AuroraContent = ({
 
   const handleInputChange = (text) => {
     setInput(text);
+    setSendError('');
     const safety = analyzeTextSafety(text);
     if (safety.isCritical) {
       setCrisisVisible(true);
@@ -752,6 +728,7 @@ export const AuroraContent = ({
 
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
+    setSendError('');
     setLoading(true);
 
     const distressProfile = detectDistressProfile(text);
@@ -798,22 +775,15 @@ export const AuroraContent = ({
     }
 
     try {
-      const response = await apiClient.post('/aurora', {
-        message: text,
-        mode: currentMode,
-        modeDirective: MODE_RESPONSE_STYLE[currentMode],
-        history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
-        userProfile: {
-          name: userPrefs.nickname || userName || 'Friend',
-          ageBand: userPrefs.ageBand,
-          primaryIssue: userPrefs.focusAreas[0] || 'wellness',
-          focusAreas: userPrefs.focusAreas,
-          language: userPrefs.language,
+      const response = await apiClient.post(
+        '/aurora',
+        {
+          message: text,
+          mode: currentMode,
+          history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
         },
-        intensity: intensityRating,
-        failedMethods,
-        summary: rollingSummary,
-      });
+        { timeout: 30000 }
+      );
 
       const reply = normalizeAuroraReply({
         apiReply: response.data?.reply || response.data?.data?.reply,
@@ -855,32 +825,22 @@ export const AuroraContent = ({
           before: intensityRating,
         });
       }
-    } catch {
-      const fallbackReply = normalizeAuroraReply({
-        text,
-        mode: currentMode,
-        profile: distressProfile,
-        recentAssistantMessages,
-      });
-      const suggestedByContent = inferSuggestedSupport(`${text} ${fallbackReply}`, failedMethods);
-      const fallbackMsg = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: fallbackReply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        emotion: '🌸',
-        suggestedTool: suggestedByContent.suggestedTool,
-        suggestedTab: suggestedByContent.suggestedTab,
-        suggestedMethod: suggestedByContent.method,
-      };
-      setMessages((prev) => [...prev, fallbackMsg]);
-      if (fallbackMsg.suggestedMethod && intensityRating !== null) {
-        setActiveCheckIn({
-          sourceMessageId: fallbackMsg.id,
-          method: fallbackMsg.suggestedMethod,
-          before: intensityRating,
-        });
+    } catch (error) {
+      const errorCode = error?.response?.data?.error?.code;
+      const status = error?.response?.status;
+      if (errorCode === 'AI_NOT_CONFIGURED') {
+        setSendError(
+          "Aurora's AI service isn't connected yet. The app owner needs to add a Gemini API key to the backend's Render environment."
+        );
+      } else if (status === 401) {
+        setSendError('Your session has expired. Please sign in again, then retry your message.');
+      } else if (errorCode?.startsWith('AI_')) {
+        setSendError("Aurora couldn't get an AI reply just now. Please try again shortly.");
+      } else {
+        setSendError("Aurora couldn't reach the app's AI service. Check your connection and try again.");
       }
+      setMessages((prev) => prev.filter((message) => message.id !== userMsg.id));
+      setInput(text);
     } finally {
       setLoading(false);
     }
@@ -1150,6 +1110,17 @@ export const AuroraContent = ({
         {Boolean(dictationNotice) && (
           <Text style={[styles.dictationNoticeText, { color: textMuted }]}>
             {dictationNotice}
+          </Text>
+        )}
+        {Boolean(sendError) && (
+          <Text
+            style={[
+              styles.sendErrorText,
+              { color: isDark ? '#FFB4AB' : '#B3261E' },
+            ]}
+            accessibilityRole="alert"
+          >
+            {sendError}
           </Text>
         )}
 
@@ -1469,6 +1440,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 6,
     paddingHorizontal: 12,
+  },
+  sendErrorText: {
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 16,
   },
   bubbleContainer: {
     marginBottom: 10,
