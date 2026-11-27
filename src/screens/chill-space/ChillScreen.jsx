@@ -13,6 +13,7 @@ import { useI18n } from '../../services/i18n';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { onboardingStorage } from '../../services/onboardingStorage';
 import { chillLibraryStorage } from '../../services/chillLibraryStorage';
+import { apiClient } from '../../core/api/client';
 import { useAudioPlayer } from '../../core/audio/AudioPlayerContext';
 import { SidebarNav } from '../../components/navigation/SidebarNav';
 import { BottomNavBar } from '../../components/navigation/BottomNavBar';
@@ -70,6 +71,20 @@ export const ChillContent = ({ initialTab = 'stories', vibeLabel = null }) => {
         );
       })
       .catch(() => {});
+
+    apiClient
+      .get('/community/stories')
+      .then((res) => {
+        const remote = res?.data;
+        if (Array.isArray(remote) && remote.length > 0) {
+          setStories((prev) => {
+            const seen = new Set(remote.map((r) => String(r.id)));
+            const localRest = prev.filter((p) => !seen.has(String(p.id)));
+            return [...remote, ...localRest];
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -97,6 +112,9 @@ export const ChillContent = ({ initialTab = 'stories', vibeLabel = null }) => {
       prev.map((story) => {
         if (story.id !== id) return story;
         const nextLiked = !story.isLiked;
+        if (nextLiked && typeof id === 'string' && !id.startsWith('s_') && !id.startsWith('story_')) {
+          apiClient.post(`/community/stories/${encodeURIComponent(id)}/like`).catch(() => {});
+        }
         return {
           ...story,
           isLiked: nextLiked,
@@ -125,10 +143,27 @@ export const ChillContent = ({ initialTab = 'stories', vibeLabel = null }) => {
     );
   }
 
-  function handleAddStory(title, excerpt, tag, category = 'anxiety') {
+  async function handleAddStory(title, excerpt, tag, category = 'anxiety') {
     const city = countryData?.capital && countryData.capital !== 'Global'
       ? countryData.capital
       : 'Your Sanctuary';
+    try {
+      const res = await apiClient.post('/community/stories', {
+        title,
+        excerpt,
+        tag,
+        category,
+        location: `${city} · Just now`,
+      });
+      if (res?.data?.id) {
+        setStories((prev) => [res.data, ...prev]);
+        return;
+      }
+    } catch (err) {
+      if (err?.status === 422 || err?.status === 400) {
+        throw err;
+      }
+    }
     const newStory = {
       id: `s_${Date.now()}`,
       authorName: 'Anonymous',

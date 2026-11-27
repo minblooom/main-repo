@@ -32,6 +32,7 @@ const LANTERNS = [
     glowBorder: '#F3D7A4',
     glowAccent: '#9A5B13',
     blessing: 'A warm light is lit in the room for anyone carrying something quietly today.',
+    circlePrompt: '🏮 Lighting a quiet lantern for anyone carrying something today.',
   },
   {
     key: 'chai',
@@ -43,6 +44,7 @@ const LANTERNS = [
     glowBorder: '#E7C9BC',
     glowAccent: '#7D442B',
     blessing: 'A fresh cup is poured at the table—sit awhile, no rush to speak.',
+    circlePrompt: '🫖 Pouring a warm cup of chai at the table — how is everyone holding up?',
   },
   {
     key: 'wildflower',
@@ -54,6 +56,7 @@ const LANTERNS = [
     glowBorder: '#CFE5D2',
     glowAccent: '#2C5A38',
     blessing: 'A small wildflower rests on the table—a gentle reminder that growth takes time.',
+    circlePrompt: '🌼 Leaving a small wildflower here — wishing everyone gentle growth today.',
   },
   {
     key: 'presence',
@@ -65,6 +68,7 @@ const LANTERNS = [
     glowBorder: '#D9CBEF',
     glowAccent: '#5B3765',
     blessing: 'Steady, quiet company for everyone who simply needed somewhere safe to land.',
+    circlePrompt: '🕯️ Holding quiet space for anyone who just needs steady company today.',
   },
 ];
 
@@ -155,7 +159,7 @@ function VibeChip({ vibe, onPress, picked }) {
 }
 
 // Teen Baraza Table — interactive vibe cloud + live room mood meter + echo boost
-function TeenBarazaTable({ storageKey, theme, onOpenChill }) {
+function TeenBarazaTable({ storageKey, theme, onOpenChill, primaryCircle, onTakeToCircle }) {
   const [pickedId, setPickedId] = useState(null);
   const [activeZone, setActiveZone] = useState('all');
   const [boostSent, setBoostSent] = useState(false);
@@ -369,6 +373,29 @@ function TeenBarazaTable({ storageKey, theme, onOpenChill }) {
                 </Text>
               </TouchableOpacity>
             )}
+
+            {primaryCircle && typeof onTakeToCircle === 'function' && (
+              <TouchableOpacity
+                onPress={() =>
+                  onTakeToCircle(
+                    primaryCircle,
+                    `${picked.emoji} Feeling ${picked.label.toLowerCase()} today — ${picked.reply}`
+                  )
+                }
+                activeOpacity={0.84}
+                style={[
+                  teenStyles.chillBtn,
+                  {
+                    backgroundColor: 'rgba(255,255,255,0.92)',
+                    borderColor: picked.active,
+                  },
+                ]}
+              >
+                <Text style={[teenStyles.chillBtnText, { color: picked.active }]} numberOfLines={1}>
+                  💬 Share in {primaryCircle.title} →
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Animated.View>
       )}
@@ -385,7 +412,12 @@ function TeenBarazaTable({ storageKey, theme, onOpenChill }) {
   );
 }
 
-export const BarazaPresenceBar = ({ cohortKey = '18-24', onOpenChill }) => {
+export const BarazaPresenceBar = ({
+  cohortKey = '18-24',
+  onOpenChill,
+  primaryCircle = null,
+  onTakeToCircle = null,
+}) => {
   const { theme } = useTheme();
   const [litKeys, setLitKeys] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
@@ -445,6 +477,8 @@ export const BarazaPresenceBar = ({ cohortKey = '18-24', onOpenChill }) => {
           storageKey={TEEN_STORAGE_KEY}
           theme={theme}
           onOpenChill={onOpenChill}
+          primaryCircle={primaryCircle}
+          onTakeToCircle={onTakeToCircle}
         />
       ) : (
         // ─── ADULT: Lantern Table ────────────────────────────────────────
@@ -506,8 +540,42 @@ export const BarazaPresenceBar = ({ cohortKey = '18-24', onOpenChill }) => {
 
           {activeLantern && (
             <View style={[styles.blessingBox, { backgroundColor: activeLantern.glowBg, borderColor: activeLantern.glowBorder }]} accessibilityLiveRegion="polite">
-              <Text style={styles.blessingIcon}>{activeLantern.icon}</Text>
-              <Text style={[styles.blessingText, { color: activeLantern.glowAccent }]}>{activeLantern.blessing}</Text>
+              <View style={styles.blessingTopRow}>
+                <Text style={styles.blessingIcon}>{activeLantern.icon}</Text>
+                <Text style={[styles.blessingText, { color: activeLantern.glowAccent }]}>{activeLantern.blessing}</Text>
+              </View>
+              {( (primaryCircle && typeof onTakeToCircle === 'function') || typeof onOpenChill === 'function' ) && (
+                <View style={styles.blessingActionsRow}>
+                  {primaryCircle && typeof onTakeToCircle === 'function' && (
+                    <TouchableOpacity
+                      onPress={() => onTakeToCircle(primaryCircle, activeLantern.circlePrompt)}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.blessingActionBtn,
+                        { backgroundColor: activeLantern.glowAccent, borderColor: activeLantern.glowAccent },
+                      ]}
+                    >
+                      <Text style={[styles.blessingActionText, { color: '#FFFFFF' }]} numberOfLines={1}>
+                        Take it to {primaryCircle.title} →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {typeof onOpenChill === 'function' && (
+                    <TouchableOpacity
+                      onPress={() => onOpenChill('pods', activeLantern.label)}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.blessingActionBtn,
+                        { backgroundColor: 'rgba(255,255,255,0.88)', borderColor: activeLantern.glowBorder },
+                      ]}
+                    >
+                      <Text style={[styles.blessingActionText, { color: activeLantern.glowAccent }]}>
+                        Try a 2-min breath →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
           )}
         </>
@@ -773,10 +841,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  blessingTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  blessingActionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  blessingActionBtn: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    maxWidth: '100%',
+  },
+  blessingActionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   blessingIcon: {
     fontSize: 18,

@@ -40,7 +40,7 @@ export const PrimaryCircleCard = ({
       >
         <View style={[styles.primaryMatchBanner, { backgroundColor: '#FFF0E8' }]}>
           <Text style={[styles.primaryMatchBannerText, { color: '#B8532D' }]}>
-            🎯 {primaryMatch.matchResonance || 98}% Resonance Match • Tailored to {userAgeBand} Cohort
+            🎯 {primaryMatch.matchResonance || 98}% Resonance Match • Tailored to your sanctuary
           </Text>
         </View>
 
@@ -62,7 +62,7 @@ export const PrimaryCircleCard = ({
                 <View style={styles.onlineBadge}>
                   <View style={styles.liveGreenDot} />
                   <Text style={[styles.onlineText, { color: '#16A34A' }]}>
-                    {primaryMatch.isOverflowCohort ? 'Cohort 2 · Open' : 'Open Sanctuary'}
+                    Open Sanctuary
                   </Text>
                 </View>
               </View>

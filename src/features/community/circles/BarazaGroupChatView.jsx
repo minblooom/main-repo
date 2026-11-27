@@ -53,7 +53,7 @@ function formatTimestamp(date = new Date()) {
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 }
 
-export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
+export const BarazaGroupChatView = ({ circle, userAgeBand, initialDraft = '', onBack }) => {
   const { theme } = useTheme();
   const { countryData } = useI18n();
   const circleId = circle?.id || 'campus_grounding';
@@ -92,8 +92,14 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
   const isJoined = joinedCircleIds.includes(circleId);
 
   const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(initialDraft || '');
   const [draftVoiceNote, setDraftVoiceNote] = useState(null);
+
+  useEffect(() => {
+    if (initialDraft) {
+      setInputText(initialDraft);
+    }
+  }, [initialDraft]);
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -514,7 +520,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
               <View style={styles.circleStatusRow}>
                 <View style={styles.onlineDot} />
                 <Text style={[styles.onlineStatusText, { color: '#16A34A' }]}>
-                  Cohort: {circle.ageGroup || '18-24'} • Tap for circle info
+                  Peer Sanctuary • Tap for circle info
                 </Text>
               </View>
             </View>

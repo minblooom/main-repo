@@ -56,6 +56,7 @@ export const CommunityScreen = ({ navigation, route }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [circleLastMessages, setCircleLastMessages] = useState({});
   const [selectedCircle, setSelectedCircle] = useState(null);
+  const [circleDraftText, setCircleDraftText] = useState('');
   const [activeModal, setActiveModal] = useState(null); // 'small_wins' | 'vent_box' | null
   const { joinedCircleIds, hydrate } = useCommunityStore();
   const [userProfile, setUserProfile] = useState({
@@ -225,7 +226,11 @@ export const CommunityScreen = ({ navigation, route }) => {
             <BarazaGroupChatView
               circle={selectedCircle}
               userAgeBand={userAgeBand}
-              onBack={() => setSelectedCircle(null)}
+              initialDraft={circleDraftText}
+              onBack={() => {
+                setCircleDraftText('');
+                setSelectedCircle(null);
+              }}
             />
           ) : (
             <ScrollView
@@ -255,6 +260,11 @@ export const CommunityScreen = ({ navigation, route }) => {
 
                     <BarazaPresenceBar
                       cohortKey={userAgeBand}
+                      primaryCircle={primaryMatch}
+                      onTakeToCircle={(circle, draft) => {
+                        setCircleDraftText(draft || '');
+                        handleSelectCircle(circle);
+                      }}
                       onOpenChill={(initialTab, vibeLabel) =>
                         navigation.navigate('Chill', { initialTab, vibeLabel })
                       }
@@ -305,6 +315,11 @@ export const CommunityScreen = ({ navigation, route }) => {
                     <View style={{ marginTop: 24 }}>
                       <BarazaPresenceBar
                       cohortKey={userAgeBand}
+                      primaryCircle={primaryMatch}
+                      onTakeToCircle={(circle, draft) => {
+                        setCircleDraftText(draft || '');
+                        handleSelectCircle(circle);
+                      }}
                       onOpenChill={(initialTab, vibeLabel) =>
                         navigation.navigate('Chill', { initialTab, vibeLabel })
                       }

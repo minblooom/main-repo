@@ -68,6 +68,7 @@ export const StoriesTab = ({
   const [excerpt, setExcerpt] = useState('');
   const [selectedTagObj, setSelectedTagObj] = useState(tagOptions[0]);
   const [errorMsg, setErrorMsg] = useState('');
+  const [submittingStory, setSubmittingStory] = useState(false);
 
   // Cute centered Reader Popup state (handles featured story, community story, or external essay)
   const [readingItem, setReadingItem] = useState(null); // { type: 'featured' | 'story' | 'article', data }
@@ -285,17 +286,25 @@ export const StoriesTab = ({
     return stories.filter((s) => s.category === selectedCategory);
   }, [stories, selectedCategory, userFocusAreas]);
 
-  function handleSubmit() {
-    if (title.trim() === '' || excerpt.trim() === '') {
-      setErrorMsg('Please add both a headline and your reflection.');
+  async function handleSubmit() {
+    if (submittingStory) return;
+    if (title.trim().length < 3 || excerpt.trim().length < 10) {
+      setErrorMsg('Please add a headline (3+ chars) and reflection (10+ chars).');
       return;
     }
 
-    onAddStory(title.trim(), excerpt.trim(), selectedTagObj.label, selectedTagObj.category);
-    setTitle('');
-    setExcerpt('');
+    setSubmittingStory(true);
     setErrorMsg('');
-    setShowForm(false);
+    try {
+      await onAddStory(title.trim(), excerpt.trim(), selectedTagObj.label, selectedTagObj.category);
+      setTitle('');
+      setExcerpt('');
+      setShowForm(false);
+    } catch (err) {
+      setErrorMsg(err?.message || 'Could not share story right now. Please check your text and try again.');
+    } finally {
+      setSubmittingStory(false);
+    }
   }
 
   function handleSendReflection() {
