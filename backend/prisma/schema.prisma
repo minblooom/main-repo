@@ -1,0 +1,138 @@
+// Prisma Schema for MindBloom Community Spaces Backend
+// Uses SQLite for zero-config local development; switch provider to "postgresql" for Supabase PgBouncer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  nickname       String
+  contact        String?  @unique
+  passwordHash   String
+  ageBand        String   @default("18-24") // '13-17' | '18-24' | '25+'
+  gender         String   @default("prefer_not") // 'female' | 'male' | 'non_binary' | 'prefer_not'
+  companionEmoji String   @default("🌱")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships    SpaceMembership[]
+  messages       CircleMessage[]
+  reports        MessageReport[]
+  smallWins      SmallWin[]
+  eventRsvps     EventRsvp[]
+}
+
+model CommunitySpace {
+  id                 String   @id
+  type               String   // 'circle' | 'group' | 'identity'
+  title              String
+  category           String?
+  icon               String?
+  iconBg             String?
+  description        String
+  ageGroup           String   @default("all") // '13-17' | '18-24' | '25+' | 'all'
+  allowedGendersJson String   @default("[]")
+  issuesJson         String   @default("[]")
+  interestsJson      String   @default("[]")
+  maxMembers         Int?     @default(12)
+  memberCount        Int      @default(0)
+  activeNow          Int      @default(0)
+  isOverflowCohort   Boolean  @default(false)
+  parentCircleId     String?
+  cohortNumber       Int      @default(1)
+  expect             String?
+  dateLabel          String?
+  timeLabel          String?
+  duration           String?
+  availability       String?
+  hasMeetupSpots     Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  memberships        SpaceMembership[]
+  messages           CircleMessage[]
+  reports            MessageReport[]
+}
+
+model SpaceMembership {
+  id       String   @id @default(cuid())
+  spaceId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  space    CommunitySpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([spaceId])
+  @@index([userId])
+}
+
+model CircleMessage {
+  id             String   @id @default(cuid())
+  spaceId        String
+  userId         String
+  senderNickname String
+  senderEmoji    String   @default("🌱")
+  text           String   @default("")
+  voiceNoteJson  String?
+  replyToJson    String?
+  edited         Boolean  @default(false)
+  reactionsJson  String   @default("{\"hugs\":0,\"hearts\":0,\"pray\":0,\"green\":0}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  space          CommunitySpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports        MessageReport[]
+
+  @@index([spaceId, createdAt])
+}
+
+model MessageReport {
+  id         String   @id @default(cuid())
+  messageId  String
+  spaceId    String
+  reporterId String
+  reason     String   @default("safety")
+  createdAt  DateTime @default(now())
+
+  message    CircleMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  space      CommunitySpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  reporter   User           @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, reporterId])
+}
+
+model SmallWin {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  category   String   @default("personal")
+  isPublic   Boolean  @default(true)
+  cheerCount Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+model EventRsvp {
+  id           String   @id @default(cuid())
+  eventId      String
+  userId       String
+  eventTitle   String?
+  eventDateStr String?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+}
