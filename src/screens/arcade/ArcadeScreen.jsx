@@ -90,25 +90,25 @@ export const ArcadeContent = ({
         if (name) {
           setDisplayName(name);
         }
-        if (savedPrefs?.focusAreas && savedPrefs.focusAreas.length > 0) {
+        if (Array.isArray(savedPrefs?.focusAreas)) {
           setUserFocusAreas(savedPrefs.focusAreas);
-        } else if (storedUser?.primaryStruggles && storedUser.primaryStruggles.length > 0) {
+        } else if (Array.isArray(storedUser?.primaryStruggles)) {
           setUserFocusAreas(storedUser.primaryStruggles);
         }
 
-        if (savedPrefs?.interests && savedPrefs.interests.length > 0) {
+        if (Array.isArray(savedPrefs?.interests)) {
           setUserInterests(savedPrefs.interests);
-        } else if (storedUser?.interests && storedUser.interests.length > 0) {
+        } else if (Array.isArray(storedUser?.interests)) {
           setUserInterests(storedUser.interests);
         }
 
         // Check backend database for cloud-synced struggles, interests, and tailored catalog
         try {
           const backendCatalog = await ArcadeSyncService.getCatalog();
-          if (backendCatalog?.primaryStruggles && backendCatalog.primaryStruggles.length > 0) {
+          if (!Array.isArray(savedPrefs?.focusAreas) && Array.isArray(backendCatalog?.primaryStruggles)) {
             setUserFocusAreas(backendCatalog.primaryStruggles);
           }
-          if (backendCatalog?.interests && backendCatalog.interests.length > 0) {
+          if (!Array.isArray(savedPrefs?.interests) && Array.isArray(backendCatalog?.interests)) {
             setUserInterests(backendCatalog.interests);
           }
         } catch { }

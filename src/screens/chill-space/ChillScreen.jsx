@@ -56,7 +56,7 @@ export const ChillContent = ({ initialTab = 'stories', vibeLabel = null }) => {
     onboardingStorage
       .getPreferences()
       .then((prefs) => {
-        if (prefs?.focusAreas && prefs.focusAreas.length > 0) {
+        if (Array.isArray(prefs?.focusAreas)) {
           setUserFocusAreas(prefs.focusAreas);
         }
       })

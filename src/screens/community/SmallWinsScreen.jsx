@@ -29,6 +29,8 @@ export const SmallWinsScreen = ({ navigation, route }) => {
       navigation.navigate('Journal');
     } else if (routeId === 'arcade') {
       navigation.navigate('Arcade');
+    } else if (routeId === 'chill' || routeId === 'soundscapes') {
+      navigation.navigate('Chill');
     } else if (routeId === 'sanctuary') {
       navigation.navigate('Profile');
     } else if (routeId === 'baraza' || routeId === 'community') {

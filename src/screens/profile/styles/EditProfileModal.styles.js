@@ -40,9 +40,9 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#FAF5EE',
     alignItems: 'center',
     justifyContent: 'center',
@@ -60,10 +60,12 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
   inputBox: {
+    minHeight: 44,
+    justifyContent: 'center',
     backgroundColor: '#FAF7F2',
     borderRadius: 14,
     borderWidth: 1.5,
@@ -84,7 +86,9 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
   chip: {
-    paddingVertical: 7,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 14,
     backgroundColor: '#FAF5EE',
@@ -92,8 +96,15 @@ export const styles = StyleSheet.create({
     borderColor: 'rgba(73, 37, 66, 0.06)',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
+  },
+  chipDisabled: {
+    opacity: 0.45,
+  },
+  saveError: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: 'row',
@@ -105,6 +116,8 @@ export const styles = StyleSheet.create({
     borderTopColor: 'rgba(73, 37, 66, 0.06)',
   },
   cancelBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
@@ -115,6 +128,8 @@ export const styles = StyleSheet.create({
   },
   saveBtn: {
     borderRadius: 16,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 11,
     paddingHorizontal: 22,
     shadowColor: '#492542',

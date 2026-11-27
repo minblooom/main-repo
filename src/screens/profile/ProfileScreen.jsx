@@ -51,7 +51,8 @@ import { LegalModal } from '../legal/LegalScreen';
  */
 export const ProfileContent = ({
   companionId: initialCompanionId,
-  userFocusAreas = ['Anxiety & Panic'],
+  userFocusAreas = ['anxiety'],
+  onProfileUpdated,
   onNavigateHome,
   onNavigateChill,
   onNavigateJournal,
@@ -94,9 +95,17 @@ export const ProfileContent = ({
             age: saved?.age || prev.age,
             ageBand: saved?.ageBand || storedUser?.ageBand || prev.ageBand,
             gender: saved?.gender || storedUser?.gender || prev.gender || 'prefer_not',
-            interests: saved?.interests || storedUser?.interests || prev.interests || [],
+            interests: Array.isArray(saved?.interests)
+              ? saved.interests
+              : Array.isArray(storedUser?.interests)
+                ? storedUser.interests
+                : prev.interests || [],
             location: saved?.location || prev.location,
-            focusAreas: saved?.focusAreas && saved.focusAreas.length > 0 ? saved.focusAreas : prev.focusAreas,
+            focusAreas: Array.isArray(saved?.focusAreas)
+              ? saved.focusAreas
+              : Array.isArray(storedUser?.primaryStruggles)
+                ? storedUser.primaryStruggles
+                : prev.focusAreas,
           }));
         }
       } catch (err) {
@@ -112,40 +121,43 @@ export const ProfileContent = ({
       // Age & ageBand remain constant and cannot be changed after onboarding
       age: profile.age,
       ageBand: profile.ageBand,
+      focusAreas: Array.isArray(updated.focusAreas) ? updated.focusAreas : profile.focusAreas,
+      interests: Array.isArray(updated.interests) ? updated.interests : profile.interests,
     };
-    setProfile(newProfile);
-    try {
-      await onboardingStorage.savePreferences({
-        ...newProfile,
-        companionId,
-      });
+    await onboardingStorage.savePreferences({
+      ...newProfile,
+      companionId,
+    });
 
-      // Update local auth session so all screens see the new nickname, bio, gender, interests, and struggles immediately
-      const storedUser = await AuthService.getStoredUser();
-      if (storedUser) {
-        const updatedUser = {
-          ...storedUser,
-          nickname: newProfile.nickname,
-          bio: newProfile.bio,
-          gender: newProfile.gender || storedUser.gender,
-          primaryStruggles: newProfile.focusAreas || storedUser.primaryStruggles || [],
-          interests: newProfile.interests || storedUser.interests || [],
-        };
-        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
-      }
+    const storedUser = await AuthService.getStoredUser();
+    if (storedUser) {
+      const updatedUser = {
+        ...storedUser,
+        nickname: newProfile.nickname,
+        bio: newProfile.bio,
+        primaryStruggles: newProfile.focusAreas,
+        interests: newProfile.interests,
+      };
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedUser));
 
-      // Sync with backend database
       try {
         await apiClient.patch('/user/profile', {
           nickname: newProfile.nickname,
           bio: newProfile.bio,
-          primaryStruggles: newProfile.focusAreas || [],
-          interests: newProfile.interests || [],
+          primaryStruggles: newProfile.focusAreas,
+          interests: newProfile.interests,
         });
       } catch (backendErr) {
-        // Backend offline or local fallback
+        console.warn('Profile saved locally but could not sync with the account:', backendErr);
+        Alert.alert(
+          'Saved on this device',
+          'Your changes are saved here, but could not sync to your account. Reopen Edit Profile and save again when your connection is back.',
+        );
       }
-    } catch { }
+    }
+
+    setProfile(newProfile);
+    onProfileUpdated?.(newProfile);
     setActiveModal(null);
   };
 
@@ -311,13 +323,13 @@ export const ProfileScreen = ({ navigation, route }) => {
   const isWide = isDesktop || isTablet;
 
   const companionId = route?.params?.companion || 'kovu';
-  const focusAreas = route?.params?.focusAreas || ['Anxiety & Panic'];
+  const focusAreas = route?.params?.focusAreas || ['anxiety'];
 
   const handleNavigate = (routeId) => {
     if (routeId === 'home') {
       navigation?.navigate?.('Home', { tab: 'home' });
     } else if (routeId === 'journal') {
-      navigation?.navigate?.('Journal', { companion: companionId, focusAreas });
+      navigation?.navigate?.('Journal', { companion: companionId });
     } else if (routeId === 'sanctuary') {
       // Already on profile
     } else if (routeId === 'chill' || routeId === 'soundscapes') {
@@ -373,7 +385,7 @@ export const ProfileScreen = ({ navigation, route }) => {
               onNavigateHome={() => navigation?.navigate?.('Home', { tab: 'home' })}
               onNavigateChill={() => navigation?.navigate?.('Chill')}
               onNavigateJournal={() =>
-                navigation?.navigate?.('Journal', { companion: companionId, focusAreas })
+                navigation?.navigate?.('Journal', { companion: companionId })
               }
               onSignOut={handleSignOut}
               isWide={isWide}

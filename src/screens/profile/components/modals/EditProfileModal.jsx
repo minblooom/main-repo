@@ -15,23 +15,8 @@ import {
 import { useTheme } from '../../../../theme/ThemeContext';
 import { useI18n } from '../../../../services/i18n';
 import { YOUTH_INTERESTS } from '../../../onboarding/InterestsSelectScreen';
+import { FOCUS_AREAS, MAX_FOCUS_AREAS } from '../../../../constants/focusAreas';
 import { styles } from '../../styles/EditProfileModal.styles';
-
-const AVAILABLE_FOCUS = [
-  { id: 'anxiety', label: 'Anxiety & Panic' },
-  { id: 'burnout', label: 'Burnout & Rest' },
-  { id: 'sleep', label: 'Sleep & Night Calm' },
-  { id: 'low_mood', label: 'Low Mood & Tenderness' },
-  { id: 'relationships', label: 'Relationships & Boundaries' },
-  { id: 'identity', label: 'Identity & Belonging' },
-];
-
-const GENDER_OPTIONS = [
-  { id: 'female', label: 'Female' },
-  { id: 'male', label: 'Male' },
-  { id: 'non_binary', label: 'Non-Binary' },
-  { id: 'prefer_not', label: 'Prefer not to say' },
-];
 
 export const EditProfileModal = ({
   visible,
@@ -46,51 +31,58 @@ export const EditProfileModal = ({
 
   const [nickname, setNickname] = useState(profile?.nickname || '');
   const [bio, setBio] = useState(profile?.bio || '');
-  const [gender, setGender] = useState(profile?.gender || 'prefer_not');
   const [selectedFocus, setSelectedFocus] = useState(profile?.focusAreas || ['anxiety']);
   const [selectedInterests, setSelectedInterests] = useState(profile?.interests || []);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     if (visible) {
       setNickname(profile?.nickname || '');
       setBio(profile?.bio || '');
-      setGender(profile?.gender || 'prefer_not');
       setSelectedFocus(profile?.focusAreas || ['anxiety']);
       setSelectedInterests(profile?.interests || []);
+      setSaveError('');
     }
   }, [visible, profile]);
 
   const toggleInterest = (id) => {
-    if (selectedInterests.includes(id)) {
-      setSelectedInterests(selectedInterests.filter((i) => i !== id));
-    } else if (selectedInterests.length < 5) {
-      setSelectedInterests([...selectedInterests, id]);
-    }
+    setSelectedInterests((current) => {
+      if (current.includes(id)) return current.filter((interest) => interest !== id);
+      if (current.length >= 5) return current;
+      return [...current, id];
+    });
   };
 
   const toggleFocus = (id) => {
-    if (selectedFocus.includes(id)) {
-      if (selectedFocus.length > 1) {
-        setSelectedFocus(selectedFocus.filter((f) => f !== id));
-      }
-    } else {
-      if (selectedFocus.length < 3) {
-        setSelectedFocus([...selectedFocus, id]);
-      }
-    }
+    setSelectedFocus((current) => {
+      if (current.includes(id)) return current.filter((focus) => focus !== id);
+      if (current.length >= MAX_FOCUS_AREAS) return current;
+      return [...current, id];
+    });
   };
 
-  const handleSave = () => {
-    onSave?.({
-      ...profile,
-      nickname: nickname.trim(),
-      bio: bio.trim(),
-      location: countryData?.regionName || profile?.location || 'East Africa',
-      gender,
-      focusAreas: selectedFocus,
-      interests: selectedInterests,
-    });
-    onClose();
+  const handleSave = async () => {
+    if (isSaving) return;
+    if (!nickname.trim()) {
+      setSaveError('Please enter a nickname before saving your profile.');
+      return;
+    }
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSave?.({
+        nickname: nickname.trim(),
+        bio: bio.trim(),
+        location: countryData?.regionName || profile?.location || 'East Africa',
+        focusAreas: selectedFocus,
+        interests: selectedInterests,
+      });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Unable to save your changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -103,7 +95,13 @@ export const EditProfileModal = ({
               <Text style={[styles.tag, { color: theme.textMuted }]}>YOUR SPACE</Text>
               <Text style={[styles.title, { color: theme.textPrimary }]}>Edit profile</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Close edit profile"
+            >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -122,6 +120,8 @@ export const EditProfileModal = ({
                   ]}
                   value={nickname}
                   onChangeText={setNickname}
+                  maxLength={50}
+                  accessibilityLabel="Nickname"
                   placeholder="e.g. Amani or your preferred nickname"
                   placeholderTextColor="#A092B0"
                 />
@@ -141,6 +141,8 @@ export const EditProfileModal = ({
                   ]}
                   value={bio}
                   onChangeText={setBio}
+                  maxLength={250}
+                  accessibilityLabel="Personal energy or bio"
                   placeholder="e.g. Quiet pocket of peace or your personal bio"
                   placeholderTextColor="#A092B0"
                 />
@@ -160,54 +162,29 @@ export const EditProfileModal = ({
               </View>
             </View>
 
-            {/* Gender Selection */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.textSecondary }]}>Gender Identity</Text>
-              <View style={styles.chipsWrap}>
-                {GENDER_OPTIONS.map((item) => {
-                  const isSelected = gender === item.id;
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={[
-                        styles.chip,
-                        isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
-                      ]}
-                      onPress={() => setGender(item.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          { color: isSelected ? theme.accent : theme.textSecondary },
-                          isSelected && { fontWeight: '800' },
-                        ]}
-                      >
-                        {item.label} {isSelected ? '✓' : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
             {/* Focus Areas Picker */}
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: theme.textSecondary }]}>
-                What needs space right now? ({selectedFocus.length}/3)
+                What needs space right now? ({selectedFocus.length}/{MAX_FOCUS_AREAS})
               </Text>
               <View style={styles.chipsWrap}>
-                {AVAILABLE_FOCUS.map((item) => {
+                {FOCUS_AREAS.map((item) => {
                   const isSelected = selectedFocus.includes(item.id);
+                  const isDisabled = !isSelected && selectedFocus.length >= MAX_FOCUS_AREAS;
                   return (
                     <TouchableOpacity
                       key={item.id}
                       style={[
                         styles.chip,
                         isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                        isDisabled && styles.chipDisabled,
                       ]}
                       onPress={() => toggleFocus(item.id)}
                       activeOpacity={0.8}
+                      disabled={isDisabled}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+                      accessibilityLabel={item.label}
                     >
                       <Text
                         style={[
@@ -231,15 +208,21 @@ export const EditProfileModal = ({
               <View style={styles.chipsWrap}>
                 {YOUTH_INTERESTS.map((item) => {
                   const isSelected = selectedInterests.includes(item.id);
+                  const isDisabled = !isSelected && selectedInterests.length >= 5;
                   return (
                     <TouchableOpacity
                       key={item.id}
                       style={[
                         styles.chip,
                         isSelected && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
+                        isDisabled && styles.chipDisabled,
                       ]}
                       onPress={() => toggleInterest(item.id)}
                       activeOpacity={0.8}
+                      disabled={isDisabled}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+                      accessibilityLabel={item.label}
                     >
                       <Text
                         style={[
@@ -255,19 +238,27 @@ export const EditProfileModal = ({
                 })}
               </View>
             </View>
+            {saveError ? (
+              <Text style={[styles.saveError, { color: theme.error || '#B42318' }]} accessibilityRole="alert">
+                {saveError}
+              </Text>
+            ) : null}
           </ScrollView>
 
           {/* Actions */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7} disabled={isSaving}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: theme.accent }]}
               onPress={handleSave}
               activeOpacity={0.88}
+              disabled={isSaving}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isSaving }}
             >
-              <Text style={styles.saveBtnText}>Save changes</Text>
+              <Text style={styles.saveBtnText}>{isSaving ? 'Saving…' : 'Save changes'}</Text>
             </TouchableOpacity>
           </View>
         </View>

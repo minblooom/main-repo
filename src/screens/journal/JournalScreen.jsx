@@ -460,7 +460,7 @@ export const JournalScreen = ({ navigation, route }) => {
           if (saved.companion && !route?.params?.companion) {
             setCompanionId(saved.companion);
           }
-          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
+          if (Array.isArray(saved.focusAreas) && !route?.params?.focusAreas) {
             setUserFocusAreas(saved.focusAreas);
           }
         }

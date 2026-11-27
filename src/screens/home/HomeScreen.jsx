@@ -59,11 +59,17 @@ export const HomeScreen = ({ navigation, route }) => {
           if (saved.companion && !route?.params?.companion) {
             setCompanionId(saved.companion);
           }
-          if (saved.focusAreas && saved.focusAreas.length > 0 && !route?.params?.focusAreas) {
+        }
+        if (!route?.params?.focusAreas) {
+          if (Array.isArray(saved?.focusAreas)) {
             setUserFocusAreas(saved.focusAreas);
+          } else if (Array.isArray(storedUser?.primaryStruggles)) {
+            setUserFocusAreas(storedUser.primaryStruggles);
           }
         }
-      } catch { }
+      } catch (error) {
+        console.warn('Failed loading saved home preferences:', error);
+      }
     })();
   }, [route?.params]);
 
@@ -139,6 +145,10 @@ export const HomeScreen = ({ navigation, route }) => {
                 <ProfileContent
                   companionId={companionId}
                   userFocusAreas={userFocusAreas}
+                  onProfileUpdated={(updatedProfile) => {
+                    setUserFocusAreas(updatedProfile.focusAreas);
+                    setUserName(updatedProfile.nickname || '');
+                  }}
                   onNavigateHome={() => setActiveTab('home')}
                   onNavigateChill={() => setActiveTab('soundscapes')}
                   onNavigateJournal={() => setActiveTab('journal')}

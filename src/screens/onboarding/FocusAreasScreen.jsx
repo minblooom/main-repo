@@ -15,25 +15,7 @@ import { OnboardingHeader } from './components/OnboardingHeader';
 import { OnboardingHeroCard } from './components/OnboardingHeroCard';
 import { onboardingStyles as s } from './onboardingStyles';
 import { COMPANION_MAP } from '../../constants/companions';
-
-const FOCUS_AREAS = [
-  { id: 'anxiety', label: 'Anxiety & Overwhelm', desc: 'Mentally exhausting' },
-  { id: 'burnout', label: 'Daily Hustle Burnout', desc: 'Too much, all at once' },
-  { id: 'low_mood', label: 'Low Mood & Exhaustion', desc: 'Vacant on the inside' },
-  { id: 'sleep', label: 'Sleep & Night Calm', desc: 'Rest that actually restores' },
-  { id: 'body', label: 'Body Peace & Respect', desc: 'A gentler relationship with self' },
-  { id: 'strong_one', label: 'Strong One Burden', desc: 'Always holding it together' },
-  { id: 'relationships', label: 'Relationship Strain', desc: 'In spaces sometimes strained' },
-  { id: 'trauma', label: 'Past Wounds & Trauma', desc: 'Things that still echo' },
-  { id: 'grief', label: 'Sacred Grief Space', desc: 'Loss, in its many forms' },
-  { id: 'self_doubt', label: 'Self-Doubt & Inner Critic', desc: 'An unfair inner mirror' },
-  { id: 'isolation', label: 'Digital Isolation', desc: 'Connected, yet very alone' },
-  { id: 'identity', label: 'Identity & Belonging', desc: 'Finding where you fit' },
-  { id: 'feeling_off', label: "Feeling 'Off'", desc: "Can't quite name it" },
-  { id: 'emptiness', label: 'Exhaustion & Emptiness', desc: 'Running on nothing' },
-];
-
-const MAX_SELECT = 3;
+import { FOCUS_AREAS, MAX_FOCUS_AREAS } from '../../constants/focusAreas';
 
 export const FocusAreasScreen = ({ navigation, route }) => {
   const { isDesktop, isTablet } = useResponsiveLayout();
@@ -45,7 +27,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
   const toggle = (id) => {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= MAX_SELECT) return prev;
+      if (prev.length >= MAX_FOCUS_AREAS) return prev;
       return [...prev, id];
     });
   };
@@ -98,7 +80,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
                 Choose up to 3. There are no wrong answers — you can change them later.
               </Text>
               <Text style={styles.counter}>
-                {selected.length} of {MAX_SELECT} chosen
+                {selected.length} of {MAX_FOCUS_AREAS} chosen
               </Text>
 
               {/* Two-column grid */}
@@ -107,7 +89,7 @@ export const FocusAreasScreen = ({ navigation, route }) => {
                   <View key={ci} style={styles.col}>
                     {col.map((area) => {
                       const isOn = selected.includes(area.id);
-                      const isDisabled = !isOn && selected.length >= MAX_SELECT;
+                      const isDisabled = !isOn && selected.length >= MAX_FOCUS_AREAS;
                       return (
                         <TouchableOpacity
                           key={area.id}

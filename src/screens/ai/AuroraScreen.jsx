@@ -544,7 +544,7 @@ export const AuroraContent = ({
           setUserPrefs({
             ageBand: normalizeAgeBand(prefs.ageBand || prefs.ageGroup || prefs.age),
             nickname: prefs.nickname || userName || 'Friend',
-            focusAreas: Array.isArray(prefs.focusAreas) && prefs.focusAreas.length > 0 ? prefs.focusAreas : ['wellness'],
+            focusAreas: Array.isArray(prefs.focusAreas) ? prefs.focusAreas : ['wellness'],
             language: prefs.language || 'en',
           });
         }
