@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer } from 'expo-audio';
 import { styles } from '../styles/ChillScreen.styles';
 
 export const MiniPlayer = ({ episode, isPlaying, onTogglePlay, onClose }) => {
@@ -10,25 +10,23 @@ export const MiniPlayer = ({ episode, isPlaying, onTogglePlay, onClose }) => {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadAudio() {
+    function loadAudio() {
       if (soundRef.current) {
-        await soundRef.current.unloadAsync();
+        soundRef.current.remove();
         soundRef.current = null;
       }
       if (!episode || !episode.audioUrl) return;
 
       try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: episode.audioUrl },
-          { shouldPlay: true }
-        );
+        const sound = createAudioPlayer(episode.audioUrl);
         if (isMounted) {
           soundRef.current = sound;
+          sound.play();
         } else {
-          await sound.unloadAsync();
+          sound.remove();
         }
       } catch (err) {
-        console.log('Audio playback error:', err);
+        console.warn('[MiniPlayer] Audio playback error:', err);
       }
     }
 
@@ -37,20 +35,18 @@ export const MiniPlayer = ({ episode, isPlaying, onTogglePlay, onClose }) => {
     return () => {
       isMounted = false;
       if (soundRef.current) {
-        soundRef.current.unloadAsync();
+        soundRef.current.remove();
+        soundRef.current = null;
       }
     };
   }, [episode]);
 
   // Pause or resume when user toggles play
   useEffect(() => {
-    async function syncPlayState() {
+    function syncPlayState() {
       if (!soundRef.current) return;
-      if (isPlaying) {
-        await soundRef.current.playAsync();
-      } else {
-        await soundRef.current.pauseAsync();
-      }
+      if (isPlaying) soundRef.current.play();
+      else soundRef.current.pause();
     }
     syncPlayState();
   }, [isPlaying]);

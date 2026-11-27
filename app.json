@@ -40,7 +40,14 @@
         }
       ],
       "expo-asset",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow MindBloom to record voice notes.",
+          "enableBackgroundPlayback": true
+        }
+      ]
     ],
     "extra": {
       "eas": {

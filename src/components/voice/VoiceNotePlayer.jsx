@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer } from 'expo-audio';
 import { useTheme } from '../../theme/ThemeContext';
 import { formatVoiceDuration } from '../../services/voiceNoteService';
 
@@ -21,9 +21,11 @@ export const VoiceNotePlayer = ({
   const totalSec = voiceNote?.durationSec || 1;
 
   useEffect(() => {
+    setIsPlaying(false);
+    setPositionSec(0);
     return () => {
       if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current.remove();
         soundRef.current = null;
       }
     };
@@ -34,35 +36,31 @@ export const VoiceNotePlayer = ({
   const handleTogglePlay = async () => {
     try {
       if (soundRef.current) {
-        const status = await soundRef.current.getStatusAsync();
-        if (status.isLoaded) {
-          if (status.isPlaying) {
-            await soundRef.current.pauseAsync();
-            setIsPlaying(false);
-          } else {
-            if (status.positionMillis >= (status.durationMillis || 0)) {
-              await soundRef.current.setPositionAsync(0);
-            }
-            await soundRef.current.playAsync();
-            setIsPlaying(true);
+        const player = soundRef.current;
+        if (player.playing) {
+          player.pause();
+          setIsPlaying(false);
+        } else {
+          if (player.isLoaded && player.currentTime >= (player.duration || 0)) {
+            await player.seekTo(0);
           }
-          return;
+          player.play();
+          setIsPlaying(true);
         }
+        return;
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: voiceNote.uri },
-        { shouldPlay: true },
-        (status) => {
-          if (!status.isLoaded) return;
-          setPositionSec(Math.floor((status.positionMillis || 0) / 1000));
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPositionSec(0);
-          }
+      const player = createAudioPlayer(voiceNote.uri, { updateInterval: 500 });
+      player.addListener('playbackStatusUpdate', (status) => {
+        if (!status.isLoaded) return;
+        setPositionSec(Math.floor(status.currentTime || 0));
+        if (status.didJustFinish) {
+          setIsPlaying(false);
+          setPositionSec(0);
         }
-      );
-      soundRef.current = sound;
+      });
+      soundRef.current = player;
+      player.play();
       setIsPlaying(true);
     } catch (err) {
       console.warn('[VoiceNotePlayer] Playback error:', err);

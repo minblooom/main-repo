@@ -1,21 +1,26 @@
 // src/services/voiceNoteService.js
-// Cross-platform Voice Note recording (expo-av) and Web Speech-to-Text dictation.
+// Cross-platform Voice Note recording (expo-audio) and Web Speech-to-Text dictation.
 // Converts Web blob URIs to persistent base64 data URIs so voice notes survive reloads in AsyncStorage.
 
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import {
+  AudioModule,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+} from 'expo-audio';
 
 export const MAX_VOICE_NOTE_SECONDS = 3600; // 1 hour max (WhatsApp-style long voice notes)
 
 const VOICE_RECORDING_OPTIONS = {
-  ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+  ...RecordingPresets.HIGH_QUALITY,
   android: {
-    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.android,
+    ...RecordingPresets.HIGH_QUALITY.android,
     numberOfChannels: 1,
     bitRate: 32000,
   },
   ios: {
-    ...Audio.RecordingOptionsPresets.HIGH_QUALITY.ios,
+    ...RecordingPresets.HIGH_QUALITY.ios,
     numberOfChannels: 1,
     bitRate: 32000,
   },
@@ -59,62 +64,80 @@ let activeRecording = null;
 export async function startVoiceRecording() {
   if (activeRecording) {
     try {
-      await activeRecording.stopAndUnloadAsync();
+      await activeRecording.stop();
     } catch {}
+    activeRecording.release();
     activeRecording = null;
   }
 
-  const permission = await Audio.requestPermissionsAsync();
+  const permission = await requestRecordingPermissionsAsync();
   if (!permission.granted) {
     throw new Error('Microphone permission is needed to record a voice note.');
   }
 
-  await Audio.setAudioModeAsync({
-    allowsRecordingIOS: true,
-    playsInSilentModeIOS: true,
+  await setAudioModeAsync({
+    allowsRecording: true,
+    playsInSilentMode: true,
   });
 
-  const { recording } = await Audio.Recording.createAsync(
-    VOICE_RECORDING_OPTIONS
-  );
-  activeRecording = recording;
-  return recording;
+  const recorder = Platform.OS === 'web'
+    ? new AudioModule.AudioRecorderWeb(VOICE_RECORDING_OPTIONS)
+    : new AudioModule.AudioRecorder(VOICE_RECORDING_OPTIONS);
+  try {
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+  } catch (error) {
+    recorder.release();
+    await setAudioModeAsync({ allowsRecording: false });
+    throw error;
+  }
+  activeRecording = recorder;
+  return recorder;
 }
 
 export async function stopVoiceRecording(recording = activeRecording, maxSeconds = MAX_VOICE_NOTE_SECONDS) {
   const target = recording || activeRecording;
   if (!target) return null;
 
+  let rawUri;
+  let durationSec;
   try {
-    const status = await target.getStatusAsync();
-    const durationSec = Math.max(1, Math.round((status?.durationMillis || 1000) / 1000));
-    await target.stopAndUnloadAsync();
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
+    const status = target.getStatus();
+    durationSec = Math.max(1, Math.round((status.durationMillis || 1000) / 1000));
+    await target.stop();
+    rawUri = target.uri || target.getStatus().url;
+    if (!rawUri) {
+      throw new Error('The recording stopped but did not produce an audio file.');
+    }
+  } finally {
+    activeRecording = null;
+    target.release();
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
     });
-    const rawUri = target.getURI();
-    const persistentUri = await uriToPersistentDataUri(rawUri);
-    activeRecording = null;
-    return {
-      uri: persistentUri,
-      durationSec: Math.min(maxSeconds, durationSec),
-      createdAt: new Date().toISOString(),
-    };
-  } catch (err) {
-    activeRecording = null;
-    throw err;
   }
+
+  const persistentUri = await uriToPersistentDataUri(rawUri);
+  return {
+    uri: persistentUri,
+    durationSec: Math.min(maxSeconds, durationSec),
+    createdAt: new Date().toISOString(),
+  };
 }
 
 export async function cancelVoiceRecording(recording = activeRecording) {
   const target = recording || activeRecording;
   if (!target) return;
   try {
-    await target.stopAndUnloadAsync();
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-  } catch {}
-  activeRecording = null;
+    await target.stop();
+  } catch {
+    // Cancellation should still release the recorder if it was already stopped.
+  } finally {
+    activeRecording = null;
+    target.release();
+    await setAudioModeAsync({ allowsRecording: false });
+  }
 }
 
 // ── Web Speech-to-Text Dictation (Chrome / Edge / Safari) ─────────────────

@@ -1,9 +1,9 @@
 // src/services/soundEngine.js
 // Universal Ambient Soundscape & Chime Synthesizer
-// Uses Web Audio API on Web (zero CORS/network latency) and expo-av on Native.
+// Uses Web Audio API on Web (zero CORS/network latency) and expo-audio on Native.
 
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 class SoundEngine {
   constructor() {
@@ -15,12 +15,12 @@ class SoundEngine {
     this.nativeSoundscape = null;
 
     if (Platform.OS !== 'web') {
-      Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      }).catch(() => {});
+      setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
+        shouldPlayInBackground: true,
+        interruptionMode: 'duckOthers',
+      }).catch((error) => console.warn('[SoundEngine] Audio mode setup failed:', error));
     }
   }
 
@@ -194,12 +194,14 @@ class SoundEngine {
         ocean: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
         chime: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
       };
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: remoteUrls[type] },
-        { shouldPlay: true, isLooping: true, volume }
-      );
-      this.nativeSoundscape = sound;
-    } catch {}
+      const player = createAudioPlayer(remoteUrls[type], { keepAudioSessionActive: true });
+      player.loop = true;
+      player.volume = volume;
+      player.play();
+      this.nativeSoundscape = player;
+    } catch (error) {
+      console.warn('[SoundEngine] Soundscape playback failed:', error);
+    }
   }
 
   playTibetanChime(freq = 432, customGainNode = null, customCtx = null) {
@@ -250,8 +252,8 @@ class SoundEngine {
         this.soundscapeGainNode = null;
       }
     } else if (this.nativeSoundscape) {
-      this.nativeSoundscape.stopAsync().catch(() => {});
-      this.nativeSoundscape.unloadAsync().catch(() => {});
+      this.nativeSoundscape.pause();
+      this.nativeSoundscape.remove();
       this.nativeSoundscape = null;
     }
   }
@@ -260,7 +262,7 @@ class SoundEngine {
     if (Platform.OS === 'web' && this.soundscapeGainNode && this.webAudioCtx) {
       this.soundscapeGainNode.gain.setValueAtTime(vol, this.webAudioCtx.currentTime);
     } else if (this.nativeSoundscape) {
-      this.nativeSoundscape.setVolumeAsync(vol).catch(() => {});
+      this.nativeSoundscape.volume = vol;
     }
   }
 }

@@ -37,13 +37,13 @@ MindBloom is a compassionate, stigma-free digital mental health sanctuary crafte
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Framework** | [React Native](https://reactnative.dev/) with [Expo SDK 52](https://expo.dev/) |
+| **Framework** | [React Native](https://reactnative.dev/) with [Expo SDK 57](https://expo.dev/) |
 | **Platforms** | Android, iOS, and Web (`react-native-web`) |
 | **Navigation** | React Navigation v7 (Native Stack + Bottom Tabs) |
 | **UI & Styling** | Custom Design System inspired by warm African earthy palettes (`#FAF6EF`, `#4A283D`, `#5B8A72`, `#E07A5F`) |
 | **Icons** | `lucide-react-native` & SVG vector graphics |
 | **State & Storage** | React State, Context API (`ThemeContext`, `I18nProvider`), and `@react-native-async-storage/async-storage` |
-| **Audio & Media** | `expo-av`, `expo-linear-gradient`, `expo-haptics` |
+| **Audio & Media** | `expo-audio`, `expo-linear-gradient`, `expo-haptics` |
 | **Backend Integration**| Node.js / Express REST API, Prisma ORM, Supabase PostgreSQL with PgBouncer connection pooling |
 
 ---
@@ -86,6 +86,8 @@ main-repo/
 ├── app.json
 └── package.json
 ```
+
+The Expo Audio config plugin enables microphone access for voice notes and background playback for the podcast player. Rebuild native iOS/Android apps after changing these plugin settings.
 
 ---
 

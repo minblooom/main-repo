@@ -4,7 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, Platform, StyleSheet } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 const AudioPlayerContext = createContext({
   currentEpisode: null,
@@ -32,22 +32,14 @@ export const AudioPlayerProvider = ({ children }) => {
     currentRef.current = currentEpisode;
   }, [currentEpisode]);
 
-  // Configure expo-av for background playback across screens & phone surfing
+  // Configure background playback across screens and while the phone is locked.
   useEffect(() => {
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-    }).catch(() => {});
-
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-    };
+    setAudioModeAsync({
+      allowsRecording: false,
+      shouldPlayInBackground: true,
+      playsInSilentMode: true,
+      interruptionMode: 'doNotMix',
+    }).catch((error) => console.warn('[AudioPlayer] Audio mode setup failed:', error));
   }, []);
 
   const playNext = () => {
@@ -64,45 +56,50 @@ export const AudioPlayerProvider = ({ children }) => {
       setIsPlaying(true);
     } else {
       setIsPlaying(false);
+      soundRef.current?.setActiveForLockScreen(false);
     }
   };
 
   // Load new episode when currentEpisode changes
   useEffect(() => {
     let mounted = true;
+    let player = null;
 
     async function loadAudio() {
       if (soundRef.current) {
-        try {
-          await soundRef.current.unloadAsync();
-        } catch {}
+        soundRef.current.remove();
         soundRef.current = null;
       }
 
       if (!currentEpisode?.audioUrl) return;
 
       try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        }).catch(() => {});
+        await setAudioModeAsync({
+          allowsRecording: false,
+          shouldPlayInBackground: true,
+          playsInSilentMode: true,
+          interruptionMode: 'doNotMix',
+        });
 
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: currentEpisode.audioUrl },
-          { shouldPlay: true }
-        );
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status?.isLoaded && status.didJustFinish && !status.isLooping) {
+        player = createAudioPlayer(currentEpisode.audioUrl, {
+          updateInterval: 500,
+          keepAudioSessionActive: true,
+        });
+        player.addListener('playbackStatusUpdate', (status) => {
+          if (status.isLoaded && status.didJustFinish && !status.loop) {
             playNext();
           }
         });
 
         if (mounted) {
-          soundRef.current = sound;
+          soundRef.current = player;
+          player.setActiveForLockScreen(true, {
+            title: currentEpisode.title || 'MindBloom Podcast',
+            artist: currentEpisode.collectionName || currentEpisode.host || 'MindBloom Audio',
+            albumTitle: currentEpisode.collectionName,
+            artworkUrl: currentEpisode.artworkUrl,
+          });
+          player.play();
           setIsPlaying(true);
 
           if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
@@ -117,12 +114,19 @@ export const AudioPlayerProvider = ({ children }) => {
               navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true));
               navigator.mediaSession.setActionHandler('pause', () => setIsPlaying(false));
               navigator.mediaSession.setActionHandler('nexttrack', () => playNext());
-            } catch {}
+            } catch (error) {
+              console.warn('[AudioPlayer] Media session setup failed:', error);
+            }
           }
         } else {
-          await sound.unloadAsync().catch(() => {});
+          player.remove();
         }
-      } catch {
+      } catch (error) {
+        console.warn('[AudioPlayer] Episode playback failed:', error);
+        if (player) {
+          player.remove();
+          if (soundRef.current === player) soundRef.current = null;
+        }
         if (mounted) setIsPlaying(false);
       }
     }
@@ -131,20 +135,26 @@ export const AudioPlayerProvider = ({ children }) => {
 
     return () => {
       mounted = false;
+      if (player && soundRef.current === player) {
+        soundRef.current = null;
+        player.remove();
+      }
     };
   }, [currentEpisode?.id, currentEpisode?.audioUrl]);
 
   // Sync play/pause state
   useEffect(() => {
-    async function syncState() {
+    function syncState() {
       if (!soundRef.current) return;
       try {
         if (isPlaying) {
-          await soundRef.current.playAsync();
+          soundRef.current.play();
         } else {
-          await soundRef.current.pauseAsync();
+          soundRef.current.pause();
         }
-      } catch {}
+      } catch (error) {
+        console.warn('[AudioPlayer] Playback state update failed:', error);
+      }
     }
     syncState();
   }, [isPlaying]);
@@ -173,9 +183,8 @@ export const AudioPlayerProvider = ({ children }) => {
     setIsPlaying(false);
     setCurrentEpisode(null);
     if (soundRef.current) {
-      try {
-        await soundRef.current.unloadAsync();
-      } catch {}
+      soundRef.current.setActiveForLockScreen(false);
+      soundRef.current.remove();
       soundRef.current = null;
     }
   };
