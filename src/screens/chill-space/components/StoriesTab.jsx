@@ -15,6 +15,7 @@ import { COMPANION_MAP } from '../../../constants/companions';
 import { chillLibraryStorage } from '../../../services/chillLibraryStorage';
 import { featuredStory } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
+import { ShareToCircleModal } from '../../../components/modals/ShareToCircleModal';
 
 const STORY_CATEGORIES = [
   { id: 'for_you', label: '🌿 For You' },
@@ -73,6 +74,7 @@ export const StoriesTab = ({
   const [fullArticleBody, setFullArticleBody] = useState('');
   const [loadingFullArticle, setLoadingFullArticle] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
+  const [shareCircleStory, setShareCircleStory] = useState(null);
 
   // Fetch multi-source wellness articles (DEV.to + Wikipedia REST + Search) with pagination
   async function fetchArticlesPage(pageNum = 1, append = false) {
@@ -565,9 +567,14 @@ export const StoriesTab = ({
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity onPress={() => onToggleSave(story.id)}>
-                <Text style={styles.actionText}>{story.isSaved ? '🔖 Saved' : '🏷️ Save'}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity onPress={() => setShareCircleStory(story)}>
+                  <Text style={[styles.actionText, { color: theme?.accent || '#42213D' }]}>💬 Circle</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => onToggleSave(story.id)}>
+                  <Text style={styles.actionText}>{story.isSaved ? '🔖 Saved' : '🏷️ Save'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         );
@@ -841,6 +848,13 @@ export const StoriesTab = ({
           </View>
         </View>
       </Modal>
+
+      <ShareToCircleModal
+        visible={!!shareCircleStory}
+        type="story"
+        item={shareCircleStory}
+        onClose={() => setShareCircleStory(null)}
+      />
     </View>
   );
 };

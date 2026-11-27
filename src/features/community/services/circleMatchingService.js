@@ -177,7 +177,7 @@ export function getMatchingCirclesForUser({
         ...circle,
         id: `${circle.id}_part2`,
         parentCircleId: circle.id,
-        title: `${circle.title} · Cohort 2`,
+        title: circle.title,
         memberCount: 1,
         maxMembers: maxCap,
         isFull: false,

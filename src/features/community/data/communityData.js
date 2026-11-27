@@ -181,7 +181,7 @@ export const barazaCircles = [
     lastMessage: {
       sender: 'Twiga Giraffe',
       emoji: '🦒',
-      text: 'Circle at full capacity. Next cohort opens tonight at 8pm.',
+      text: 'This circle is full — a fresh space is ready for you.',
       time: '35m ago',
     },
   },

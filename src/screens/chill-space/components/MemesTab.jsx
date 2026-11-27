@@ -13,6 +13,7 @@ import { onboardingStorage } from '../../../services/onboardingStorage';
 import { AuthService } from '../../../core/api/authService';
 import { initialMemes } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
+import { ShareToCircleModal } from '../../../components/modals/ShareToCircleModal';
 
 const INTEREST_SUBREDDITS = {
   music: ['wholesomememes', 'MadeMeSmile'],
@@ -44,6 +45,7 @@ export const MemesTab = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedMemeIdx, setSelectedMemeIdx] = useState(-1);
   const [userInterests, setUserInterests] = useState([]);
+  const [shareCircleItem, setShareCircleItem] = useState(null);
 
   const seenUrlsRef = useRef(new Set());
   const poolRef = useRef(DEFAULT_SUBREDDITS);
@@ -285,9 +287,14 @@ export const MemesTab = () => {
                 {meme.liked ? '❤️' : '🤍'} {meme.ups}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleShare(meme.title)}>
-              <Text style={styles.actionText}>↗️ Share</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShareCircleItem(meme)}>
+                <Text style={[styles.actionText, { color: theme?.accent || '#42213D' }]}>💬 Circle</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleShare(meme.title)}>
+                <Text style={styles.actionText}>↗️ Share</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       ))}
@@ -361,6 +368,19 @@ export const MemesTab = () => {
                       <Text style={styles.smallBtnText}>Next ›</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      style={[styles.smallBtn, { backgroundColor: theme?.heroBg || '#F1EBF8' }]}
+                      onPress={() => {
+                        const target = {
+                          title: activeMeme.title,
+                          imageUrl: activeMeme.url,
+                        };
+                        setSelectedMemeIdx(-1);
+                        setShareCircleItem(target);
+                      }}
+                    >
+                      <Text style={[styles.smallBtnText, { color: theme?.accent || '#42213D' }]}>💬 Circle</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={[styles.smallBtn, { backgroundColor: theme?.accent || '#42213D' }]}
                       onPress={() => handleShare(`${activeMeme.title} ${activeMeme.postLink || ''}`)}
                     >
@@ -373,6 +393,13 @@ export const MemesTab = () => {
           </View>
         </View>
       </Modal>
+
+      <ShareToCircleModal
+        visible={!!shareCircleItem}
+        type="meme"
+        item={shareCircleItem}
+        onClose={() => setShareCircleItem(null)}
+      />
     </View>
   );
 };

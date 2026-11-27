@@ -18,8 +18,11 @@ import {
   Platform,
   Modal,
   Alert,
+  Dimensions,
 } from 'react-native';
-import { Mic, MoreHorizontal, Send } from 'lucide-react-native';
+import { Mic, MoreHorizontal, Send, Sparkles } from 'lucide-react-native';
+import { initialMemes, initialStories, GUIDED_MEDITATIONS } from '../../../screens/chill-space/chillData';
+import { formatChillShareText } from '../../../components/modals/ShareToCircleModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient, AUTH_STORAGE_KEYS } from '../../../core/api/client';
 import { AuthService } from '../../../core/api/authService';
@@ -99,7 +102,21 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
   const [showCircleInfo, setShowCircleInfo] = useState(false);
   const [showHelplineNudge, setShowHelplineNudge] = useState(false);
   const [activeMsgMenu, setActiveMsgMenu] = useState(null);
+  const [activeMsgAnchor, setActiveMsgAnchor] = useState(null);
+  const [showChillAttach, setShowChillAttach] = useState(false);
+  const [chillAttachTab, setChillAttachTab] = useState('memes'); // 'memes' | 'stories' | 'podcasts'
   const [isRecording, setIsRecording] = useState(false);
+
+  const openMsgMenu = (msg, evt) => {
+    const pageX = evt?.nativeEvent?.pageX;
+    const pageY = evt?.nativeEvent?.pageY;
+    if (typeof pageX === 'number' && typeof pageY === 'number') {
+      setActiveMsgAnchor({ x: pageX, y: pageY });
+    } else {
+      setActiveMsgAnchor(null);
+    }
+    setActiveMsgMenu(msg);
+  };
   const [elapsedSec, setElapsedSec] = useState(0);
   const [isDictating, setIsDictating] = useState(false);
 
@@ -410,14 +427,14 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
       } catch {}
     };
     if (Platform.OS === 'web') {
-      if (window.confirm('Let go of this message?')) {
+      if (window.confirm('Delete this message?')) {
         doDelete();
       }
       return;
     }
-    Alert.alert('Let Go of Message', 'Gently remove this message from the circle?', [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Let go', style: 'destructive', onPress: doDelete },
+    Alert.alert('Delete Message', 'Delete this message from the circle?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: doDelete },
     ]);
   };
 
@@ -612,7 +629,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
                       <View style={styles.myBubbleRow}>
                         <TouchableOpacity
                           activeOpacity={0.92}
-                          onLongPress={() => setActiveMsgMenu(item)}
+                          onLongPress={(e) => openMsgMenu(item, e)}
                           style={[styles.myBubble, { backgroundColor: theme.accent }]}
                         >
                           <View style={styles.bubbleTopMenuRow}>
@@ -625,7 +642,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
                               )}
                             </View>
                             <TouchableOpacity
-                              onPress={() => setActiveMsgMenu(item)}
+                              onPress={(e) => openMsgMenu(item, e)}
                               style={styles.bubbleMenuIconBtn}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               activeOpacity={0.7}
@@ -670,7 +687,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
                             {item.time}
                           </Text>
                           <TouchableOpacity
-                            onPress={() => setActiveMsgMenu(item)}
+                            onPress={(e) => openMsgMenu(item, e)}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             activeOpacity={0.7}
                           >
@@ -679,7 +696,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
                         </View>
                         <TouchableOpacity
                           activeOpacity={0.92}
-                          onLongPress={() => setActiveMsgMenu(item)}
+                          onLongPress={(e) => openMsgMenu(item, e)}
                           style={[
                             styles.peerBubble,
                             { backgroundColor: theme.cardBg, borderColor: theme.divider },
@@ -804,6 +821,22 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
           </View>
         ) : (
           <View style={styles.inputRow}>
+            <TouchableOpacity
+              onPress={() => setShowChillAttach(true)}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.bg,
+                borderWidth: 1,
+                borderColor: theme.divider,
+              }}
+              activeOpacity={0.8}
+            >
+              <Sparkles size={17} color={theme.accent} />
+            </TouchableOpacity>
             <View
               style={[
                 styles.composerPill,
@@ -866,7 +899,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
         )}
       </View>
 
-      {/* ── WHATSAPP-STYLE MESSAGE ACTION MENU ───────────────── */}
+      {/* ── WHATSAPP-STYLE ANCHORED MESSAGE ACTION MENU ──────── */}
       <Modal
         visible={!!activeMsgMenu}
         transparent
@@ -874,80 +907,185 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
         onRequestClose={() => setActiveMsgMenu(null)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[
+            styles.modalOverlay,
+            activeMsgAnchor
+              ? { justifyContent: 'flex-start', alignItems: 'flex-start' }
+              : null,
+          ]}
           activeOpacity={1}
           onPress={() => setActiveMsgMenu(null)}
         >
-          <View style={[styles.msgMenuCard, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
-            {!!activeMsgMenu?.text && (
-              <Text style={[styles.msgMenuPreview, { color: theme.textMuted }]} numberOfLines={2}>
-                "{activeMsgMenu.text}"
-              </Text>
-            )}
-            <TouchableOpacity
-              style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
-              onPress={() => {
-                const msg = activeMsgMenu;
-                setActiveMsgMenu(null);
-                if (msg) setReplyingTo(msg);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>Reply</Text>
-            </TouchableOpacity>
+          {(() => {
+            const win = Dimensions.get('window');
+            const menuWidth = 240;
+            const estHeight = 220;
+            const anchoredStyle = activeMsgAnchor
+              ? {
+                  position: 'absolute',
+                  top: Math.min(Math.max(60, activeMsgAnchor.y + 10), win.height - estHeight - 24),
+                  left: Math.min(Math.max(16, activeMsgAnchor.x - menuWidth / 2), win.width - menuWidth - 16),
+                  width: menuWidth,
+                }
+              : null;
+            return (
+              <View style={[styles.msgMenuCard, anchoredStyle, { backgroundColor: theme.cardBg, borderColor: theme.divider }]}>
+                {!!activeMsgMenu?.text && (
+                  <Text style={[styles.msgMenuPreview, { color: theme.textMuted }]} numberOfLines={2}>
+                    "{activeMsgMenu.text}"
+                  </Text>
+                )}
+                <TouchableOpacity
+                  style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                  onPress={() => {
+                    const msg = activeMsgMenu;
+                    setActiveMsgMenu(null);
+                    if (msg) setReplyingTo(msg);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>↩️ Reply</Text>
+                </TouchableOpacity>
 
-            {activeMsgMenu?.isMe && !!activeMsgMenu?.text && (
-              <TouchableOpacity
-                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
-                onPress={() => {
-                  const msg = activeMsgMenu;
-                  setActiveMsgMenu(null);
-                  if (msg) {
-                    setEditingMsgId(msg.id);
-                    setInputText(msg.text);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>Edit</Text>
-              </TouchableOpacity>
-            )}
+                {activeMsgMenu?.isMe && !!activeMsgMenu?.text && (
+                  <TouchableOpacity
+                    style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                    onPress={() => {
+                      const msg = activeMsgMenu;
+                      setActiveMsgMenu(null);
+                      if (msg) {
+                        setEditingMsgId(msg.id);
+                        setInputText(msg.text);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.msgMenuText, { color: theme.textPrimary }]}>✏️ Edit</Text>
+                  </TouchableOpacity>
+                )}
 
-            {activeMsgMenu?.isMe ? (
-              <TouchableOpacity
-                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
-                onPress={() => {
-                  const msg = activeMsgMenu;
-                  setActiveMsgMenu(null);
-                  if (msg) handleDeleteMessage(msg.id);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>Let go</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
-                onPress={() => {
-                  const msg = activeMsgMenu;
-                  setActiveMsgMenu(null);
-                  if (msg) handleReportMessage(msg.id);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>Hide & report</Text>
-              </TouchableOpacity>
-            )}
+                {activeMsgMenu?.isMe ? (
+                  <TouchableOpacity
+                    style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                    onPress={() => {
+                      const msg = activeMsgMenu;
+                      setActiveMsgMenu(null);
+                      if (msg) handleDeleteMessage(msg.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>🗑️ Delete</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.msgMenuItem, { borderBottomColor: theme.divider }]}
+                    onPress={() => {
+                      const msg = activeMsgMenu;
+                      setActiveMsgMenu(null);
+                      if (msg) handleReportMessage(msg.id);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.msgMenuText, { color: '#DC2626' }]}>Hide & report</Text>
+                  </TouchableOpacity>
+                )}
 
-            <TouchableOpacity
-              style={[styles.msgMenuItem, { borderBottomWidth: 0 }]}
-              onPress={() => setActiveMsgMenu(null)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.msgMenuText, { color: theme.textMuted }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity
+                  style={[styles.msgMenuItem, { borderBottomWidth: 0 }]}
+                  onPress={() => setActiveMsgMenu(null)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.msgMenuText, { color: theme.textMuted }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
         </TouchableOpacity>
+      </Modal>
+
+      {/* ── SHARE CHILL CONTENT TO THIS CIRCLE MODAL ────────── */}
+      <Modal
+        visible={showChillAttach}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowChillAttach(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.guidelinesCard, { backgroundColor: theme.cardBg, borderColor: theme.divider, maxHeight: '80%' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={[styles.guidelinesTitle, { color: theme.textPrimary }]}>✨ Share to {circle.title}</Text>
+              <TouchableOpacity onPress={() => setShowChillAttach(false)} style={{ padding: 4 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: theme.textMuted }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {[
+                { id: 'memes', label: '😂 Memes' },
+                { id: 'stories', label: '📖 Stories' },
+                { id: 'podcasts', label: '🎧 Podcasts' },
+              ].map((tab) => {
+                const active = chillAttachTab === tab.id;
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    onPress={() => setChillAttachTab(tab.id)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 12,
+                      backgroundColor: active ? theme.accent : theme.bg,
+                      borderWidth: 1,
+                      borderColor: active ? theme.accent : theme.divider,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#FFF' : theme.textPrimary }}>
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 280 }}>
+              <View style={{ gap: 8 }}>
+                {(chillAttachTab === 'memes'
+                  ? initialMemes
+                  : chillAttachTab === 'stories'
+                    ? initialStories
+                    : GUIDED_MEDITATIONS
+                ).map((entry) => (
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={{
+                      backgroundColor: theme.bg,
+                      borderColor: theme.divider,
+                      borderWidth: 1,
+                      borderRadius: 14,
+                      padding: 12,
+                    }}
+                    onPress={() => {
+                      const shareKind =
+                        chillAttachTab === 'memes'
+                          ? 'meme'
+                          : chillAttachTab === 'stories'
+                            ? 'story'
+                            : 'podcast';
+                      setInputText(formatChillShareText(shareKind, entry));
+                      setShowChillAttach(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 13.5, fontWeight: '800', color: theme.textPrimary }}>
+                      {entry.title}
+                    </Text>
+                    <Text style={{ fontSize: 11.5, color: theme.textMuted, marginTop: 2 }} numberOfLines={2}>
+                      {entry.subtext || entry.excerpt || entry.quote || entry.guide}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {/* ── CIRCLE INFO MODAL (WhatsApp-style Group Info) ─────── */}
@@ -966,7 +1104,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, onBack }) => {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.guidelinesTitle, { color: theme.textPrimary }]}>{circle.title}</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, fontWeight: '600' }}>
-                  Age Cohort {circle.ageGroup || '18-24'} · {Math.min(12, (circle.memberCount || 1) + (isJoined ? 1 : 0))}/12 Members
+                  Peer Circle · {Math.min(12, (circle.memberCount || 1) + (isJoined ? 1 : 0))}/12 Members
                 </Text>
               </View>
             </View>

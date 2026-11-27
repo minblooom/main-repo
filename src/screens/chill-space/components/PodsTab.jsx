@@ -17,6 +17,7 @@ import { soundEngine } from '../../../services/soundEngine';
 import { chillLibraryStorage } from '../../../services/chillLibraryStorage';
 import { GUIDED_MEDITATIONS } from '../chillData';
 import { styles } from '../styles/ChillScreen.styles';
+import { ShareToCircleModal } from '../../../components/modals/ShareToCircleModal';
 
 const PODCAST_TOPICS = [
   { id: 'all', label: 'All Voices', term: 'mental health mindfulness' },
@@ -70,6 +71,7 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
   const [pageIdx, setPageIdx] = useState(0);
   const [savedIds, setSavedIds] = useState(new Set());
   const [error, setError] = useState('');
+  const [shareCirclePod, setShareCirclePod] = useState(null);
 
   // Ambient Soundscape quick-play
   const [activeSound, setActiveSound] = useState(null);
@@ -538,7 +540,12 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
                 {ep.description.replace(/<[^>]+>/g, '')}
               </Text>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 14, marginTop: 8 }}>
+                <TouchableOpacity onPress={() => setShareCirclePod(ep)}>
+                  <Text style={[styles.actionText, { color: theme?.accent || '#42213D' }]}>
+                    💬 Send to Circle
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleToggleSaveEpisode(ep)}>
                   <Text style={styles.actionText}>
                     {savedIds.has(`pod_${ep.id}`) ? '🔖 Saved' : '🏷️ Save'}
@@ -697,6 +704,13 @@ export const PodsTab = ({ currentEpisode, isPlaying, onSelectEpisode, onTogglePl
           </View>
         </View>
       </Modal>
+
+      <ShareToCircleModal
+        visible={!!shareCirclePod}
+        type="podcast"
+        item={shareCirclePod}
+        onClose={() => setShareCirclePod(null)}
+      />
     </View>
   );
 };
