@@ -338,7 +338,7 @@ export const MemesTab = () => {
                   {activeMeme.title}
                 </Text>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <TouchableOpacity
                     style={[styles.reactionPill, { backgroundColor: theme?.heroBg || '#F5F1FA' }]}
                     onPress={() => handleApiReact(selectedMemeIdx)}
@@ -348,7 +348,7 @@ export const MemesTab = () => {
                     </Text>
                   </TouchableOpacity>
 
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, flexShrink: 1 }}>
                     <TouchableOpacity
                       style={[styles.smallBtn, { backgroundColor: theme?.bg || '#F1EBF8' }]}
                       onPress={() =>

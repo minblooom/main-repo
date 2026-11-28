@@ -1110,7 +1110,7 @@ export const BarazaGroupChatView = ({ circle, userAgeBand, initialDraft = '', on
               <View style={{ flex: 1 }}>
                 <Text style={[styles.guidelinesTitle, { color: theme.textPrimary }]}>{circle.title}</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, fontWeight: '600' }}>
-                  Peer Circle · {Math.min(12, (circle.memberCount || 1) + (isJoined ? 1 : 0))}/12 Members
+                  Peer Circle · Active Space
                 </Text>
               </View>
             </View>

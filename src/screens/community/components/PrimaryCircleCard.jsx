@@ -26,7 +26,7 @@ export const PrimaryCircleCard = ({
             💬 Your Matched Sanctuary Circle
           </Text>
           <Text style={[styles.sectionSub, { color: theme.textMuted }]}>
-            Locked to Age {userAgeBand} • Shared Struggles & Passions • Max 12
+            Locked to Age {userAgeBand} • Shared Struggles & Passions
           </Text>
         </View>
       </View>
@@ -55,11 +55,6 @@ export const PrimaryCircleCard = ({
                 {primaryMatch.title}
               </Text>
               <View style={styles.circleMetaRow}>
-                <View style={[styles.capacityBadge, { backgroundColor: 'rgba(217, 107, 67, 0.1)' }]}>
-                  <Text style={[styles.capacityText, { color: '#D96B43' }]}>
-                    {memberCount}/{primaryMatch.maxMembers || 12} members
-                  </Text>
-                </View>
                 <View style={styles.onlineBadge}>
                   <View style={styles.liveGreenDot} />
                   <Text style={[styles.onlineText, { color: '#16A34A' }]}>

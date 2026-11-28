@@ -66,7 +66,7 @@ export const TeenSanctuaryBox = ({
           type="circle"
           title={primaryMatch.title}
           description={primaryMatch.description}
-          meta={`${memberCount}/${maxMembers} members`}
+          meta={isJoined ? 'Joined' : 'Open teen circle'}
           joined={isJoined}
           quickLabel="Enter"
           onPress={() => onSelectCircle?.(primaryMatch)}

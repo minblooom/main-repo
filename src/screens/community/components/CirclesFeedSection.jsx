@@ -191,21 +191,23 @@ export const CirclesFeedSection = ({
                     <Text style={[styles.circleItemTitle, { color: theme.textPrimary }]}>
                       {circle.title}
                     </Text>
-                    <View
-                      style={[
-                        styles.memberCapBadge,
-                        { backgroundColor: isJoined ? 'rgba(22, 163, 74, 0.14)' : 'rgba(217, 107, 67, 0.1)' },
-                      ]}
-                    >
-                      <Text
+                    {isJoined && (
+                      <View
                         style={[
-                          styles.memberCapText,
-                          { color: isJoined ? '#16A34A' : '#D96B43' },
+                          styles.memberCapBadge,
+                          { backgroundColor: 'rgba(22, 163, 74, 0.14)' },
                         ]}
                       >
-                        {isJoined ? '✓ Joined' : `${memberCount}/${maxCap}`}
-                      </Text>
-                    </View>
+                        <Text
+                          style={[
+                            styles.memberCapText,
+                            { color: '#16A34A' },
+                          ]}
+                        >
+                          ✓ Joined
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   {lastMsg ? (
@@ -227,7 +229,7 @@ export const CirclesFeedSection = ({
                     <View style={styles.circleActiveNowBadge}>
                       <View style={styles.liveGreenDotSmall} />
                       <Text style={[styles.circleActiveNowText, { color: '#16A34A' }]}>
-                        {`${maxCap - memberCount} spots open`}
+                        Open circle
                       </Text>
                     </View>
                     <Text style={[styles.circleTimeText, { color: theme.textMuted }]}>
