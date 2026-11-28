@@ -6,9 +6,9 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   Platform,
 } from 'react-native';
+import { styles } from './styles/CirclesFeedSection.styles';
 import { useTheme } from '../../../theme/ThemeContext';
 
 export const CirclesFeedSection = ({
@@ -243,65 +243,3 @@ export const CirclesFeedSection = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  sectionHeaderRow: { marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
-  searchBarWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  searchBarInput: { flex: 1, fontSize: 13.5, paddingVertical: 2 },
-  categoriesScroll: { gap: 8, paddingBottom: 14 },
-  categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 99,
-    borderWidth: 1,
-  },
-  categoryPillText: { fontSize: 12.5, fontWeight: '700' },
-  circlesFeed: { gap: 12 },
-  circleItemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1.5,
-  },
-  circleItemIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleItemIconText: { fontSize: 22 },
-  circleItemContent: { flex: 1, gap: 4 },
-  circleItemTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  circleItemTitle: { fontSize: 15, fontWeight: '800', flex: 1 },
-  memberCapBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
-  memberCapText: { fontSize: 11, fontWeight: '800' },
-  circleItemSnippet: { fontSize: 13, lineHeight: 18 },
-  circleItemBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  circleActiveNowBadge: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  liveGreenDotSmall: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' },
-  circleActiveNowText: { fontSize: 11.5, fontWeight: '700' },
-  circleTimeText: { fontSize: 11, fontWeight: '600' },
-});

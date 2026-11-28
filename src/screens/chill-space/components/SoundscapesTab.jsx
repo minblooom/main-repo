@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { s } from './styles/SoundscapesTab.styles';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../theme/ThemeContext';
 import { AnimatedCompanion } from '../../../components/companion/AnimatedCompanion';
@@ -194,65 +195,3 @@ export const SoundscapesTab = () => {
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  wrap: { gap: 16 },
-  pacerCard: {
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 22,
-    alignItems: 'center',
-  },
-  pacerTag: { fontSize: 10.5, fontWeight: '800', letterSpacing: 1 },
-  pacerTitle: { fontSize: 18, fontWeight: '800', marginTop: 4 },
-  pacerSub: { fontSize: 12.5, textAlign: 'center', marginTop: 4, maxWidth: 320 },
-  phaseLabel: { fontSize: 16, fontWeight: '700', marginTop: 4 },
-  counterNum: { fontSize: 30, fontWeight: '900', marginVertical: 4 },
-  breathBtn: {
-    marginTop: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    borderRadius: 20,
-  },
-  breathBtnText: { color: '#FFFFFF', fontSize: 13.5, fontWeight: '800' },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  sectionHeading: { fontSize: 17, fontWeight: '800' },
-  sectionSub: { fontSize: 12, marginTop: 2 },
-  stopPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  stopPillText: { fontSize: 12, fontWeight: '700' },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  soundCard: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    minWidth: 155,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    gap: 6,
-  },
-  soundEmoji: { fontSize: 28 },
-  soundTitle: { fontSize: 14.5, fontWeight: '800' },
-  soundDesc: { fontSize: 12, lineHeight: 17 },
-  playPill: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  playPillText: { fontSize: 11.5, fontWeight: '800' },
-});

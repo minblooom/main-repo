@@ -3,7 +3,8 @@
 // Reuses the CommunityGreeting and CommunitySpaceCard layouts from features/community/baraza.
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
+import { styles } from './styles/TeenSanctuaryBox.styles';
 import { useTheme } from '../../../theme/ThemeContext';
 import { CommunityGreeting } from '../../../features/community/baraza/CommunityGreeting';
 import { CommunitySpaceCard } from '../../../features/community/baraza/CommunitySpaceCard';
@@ -75,32 +76,3 @@ export const TeenSanctuaryBox = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  box: {
-    borderRadius: 24,
-    borderWidth: 1.5,
-    padding: 16,
-    gap: 14,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  lockPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 99,
-  },
-  lockPillText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-  },
-  guardNote: {
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-});
